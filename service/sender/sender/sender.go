@@ -19,10 +19,10 @@ package sender
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/bnb-chain/zkbnb/dao/tx"
-	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/shopspring/decimal"
 	"gorm.io/plugin/dbresolver"
@@ -34,6 +34,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	"github.com/bnb-chain/zkbnb/common/chain"
@@ -107,10 +108,11 @@ type Sender struct {
 	config sconfig.Config
 
 	// Client
-	cli                *rpc.ProviderClient
-	authCliCommitBlock *rpc.AuthClient
-	authCliVerifyBlock *rpc.AuthClient
-	zkbnbInstance      *zkbnb.ZkBNB
+	cli           *rpc.ProviderClient
+	zkbnbInstance *zkbnb.ZkBNB
+	kmsClient     *kms.Client
+	commitAddress common.Address
+	verifyAddress common.Address
 
 	// Data access objects
 	db                   *gorm.DB
@@ -123,6 +125,69 @@ type Sender struct {
 }
 
 func NewSender(c sconfig.Config) *Sender {
+
+	masterDataSource := c.Postgres.MasterDataSource
+	slaveDataSource := c.Postgres.SlaveDataSource
+	db, err := gorm.Open(postgres.Open(masterDataSource))
+	db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
+		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+	}))
+	if c.ChainConfig.MaxGasPriceIncreasePercentage == 0 {
+		//((MaxGasPrice-GasPrice)/GasPrice)*100
+		c.ChainConfig.MaxGasPriceIncreasePercentage = 50
+	}
+
+	s := &Sender{
+		config:               c,
+		db:                   db,
+		blockModel:           block.NewBlockModel(db),
+		compressedBlockModel: compressedblock.NewCompressedBlockModel(db),
+		l1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(db),
+		sysConfigModel:       sysconfig.NewSysConfigModel(db),
+		proofModel:           proof.NewProofModel(db),
+		txModel:              tx.NewTxModel(db),
+	}
+
+	s.commitAddress = common.HexToAddress(c.ChainConfig.CommitAddress)
+	s.verifyAddress = common.HexToAddress(c.ChainConfig.VerifyAddress)
+
+	l1RPCEndpoint, err := s.sysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
+	if err != nil {
+		logx.Severef("fatal error, failed to get network rpc configuration, err:%v, SysConfigName:%s",
+			err, c.ChainConfig.NetworkRPCSysConfigName)
+		panic("failed to get network rpc configuration, err:" + err.Error() + ", SysConfigName:" +
+			c.ChainConfig.NetworkRPCSysConfigName)
+	}
+	rollupAddress, err := s.sysConfigModel.GetSysConfigByName(types.ZkBNBContract)
+	if err != nil {
+		logx.Severef("fatal error, failed to get zkBNB contract configuration, err:%v, SysConfigName:%s",
+			err, types.ZkBNBContract)
+		panic("fatal error, failed to get zkBNB contract configuration, err:" + err.Error() + "SysConfigName:" +
+			types.ZkBNBContract)
+	}
+
+	s.cli, err = rpc.NewClient(l1RPCEndpoint.Value)
+	if err != nil {
+		logx.Severef("failed to create client instance, %v", err)
+		panic("failed to create client instance, err:" + err.Error())
+	}
+	s.zkbnbInstance, err = zkbnb.LoadZkBNBInstance(s.cli, rollupAddress.Value)
+	if err != nil {
+		logx.Severef("failed to load ZkBNB instance, %v", err)
+		panic("failed to load ZkBNB instance, err:" + err.Error())
+	}
+	cfg, err := config.LoadDefaultConfig(context.Background())
+	if err != nil {
+		logx.Severef("failed to load KMS client config, %v", err)
+		panic("failed to load KMS client config, err:" + err.Error())
+	}
+	s.kmsClient = kms.NewFromConfig(cfg)
+
+	return s
+}
+
+func InitPrometheusFacility() {
 	if err := prometheus.Register(l2BlockCommitToChainHeightMetric); err != nil {
 		logx.Errorf("prometheus.Register l2BlockCommitToChainHeightMetric error: %v", err)
 	}
@@ -135,10 +200,6 @@ func NewSender(c sconfig.Config) *Sender {
 	if err := prometheus.Register(l2BlockVerifiedHeightMetric); err != nil {
 		logx.Errorf("prometheus.Register l2BlockVerifiedHeightMetric error: %v", err)
 	}
-
-	masterDataSource := c.Postgres.MasterDataSource
-	slaveDataSource := c.Postgres.SlaveDataSource
-	db, err := gorm.Open(postgres.Open(masterDataSource))
 	if err := prometheus.Register(l2BlockCommitToChainHeightMetric); err != nil {
 		logx.Errorf("prometheus.Register l2BlockCommitToChainHeightMetric error: %v", err)
 	}
@@ -169,67 +230,6 @@ func NewSender(c sconfig.Config) *Sender {
 	if err := prometheus.Register(contractBalanceMetric); err != nil {
 		logx.Errorf("prometheus.Register contractBalanceMetric error: %v", err)
 	}
-
-	db.Use(dbresolver.Register(dbresolver.Config{
-		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
-		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
-	}))
-	if c.ChainConfig.MaxGasPriceIncreasePercentage == 0 {
-		//((MaxGasPrice-GasPrice)/GasPrice)*100
-		c.ChainConfig.MaxGasPriceIncreasePercentage = 50
-	}
-	s := &Sender{
-		config:               c,
-		db:                   db,
-		blockModel:           block.NewBlockModel(db),
-		compressedBlockModel: compressedblock.NewCompressedBlockModel(db),
-		l1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(db),
-		sysConfigModel:       sysconfig.NewSysConfigModel(db),
-		proofModel:           proof.NewProofModel(db),
-		txModel:              tx.NewTxModel(db),
-	}
-
-	l1RPCEndpoint, err := s.sysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
-	if err != nil {
-		logx.Severef("fatal error, failed to get network rpc configuration, err:%v, SysConfigName:%s",
-			err, c.ChainConfig.NetworkRPCSysConfigName)
-		panic("failed to get network rpc configuration, err:" + err.Error() + ", SysConfigName:" +
-			c.ChainConfig.NetworkRPCSysConfigName)
-	}
-	rollupAddress, err := s.sysConfigModel.GetSysConfigByName(types.ZkBNBContract)
-	if err != nil {
-		logx.Severef("fatal error, failed to get zkBNB contract configuration, err:%v, SysConfigName:%s",
-			err, types.ZkBNBContract)
-		panic("fatal error, failed to get zkBNB contract configuration, err:" + err.Error() + "SysConfigName:" +
-			types.ZkBNBContract)
-	}
-
-	s.cli, err = rpc.NewClient(l1RPCEndpoint.Value)
-	if err != nil {
-		logx.Severef("failed to create client instance, %v", err)
-		panic("failed to create client instance, err:" + err.Error())
-	}
-	chainId, err := s.cli.ChainID(context.Background())
-	if err != nil {
-		logx.Severef("failed to get chainId, %v", err)
-		panic("failed to get chainId, err:" + err.Error())
-	}
-	s.authCliCommitBlock, err = rpc.NewAuthClient(c.ChainConfig.CommitBlockSk, chainId)
-	if err != nil {
-		logx.Severe(err)
-		panic(err)
-	}
-	s.authCliVerifyBlock, err = rpc.NewAuthClient(c.ChainConfig.VerifyBlockSk, chainId)
-	if err != nil {
-		logx.Severef("failed to create auth client instance, %v", err)
-		panic("failed to create auth client instance, err:" + err.Error())
-	}
-	s.zkbnbInstance, err = zkbnb.LoadZkBNBInstance(s.cli, rollupAddress.Value)
-	if err != nil {
-		logx.Severef("failed to load ZkBNB instance, %v", err)
-		panic("failed to load ZkBNB instance, err:" + err.Error())
-	}
-	return s
 }
 
 func (s *Sender) CommitBlocks() (err error) {
@@ -248,9 +248,8 @@ func (s *Sender) CommitBlocks() (err error) {
 	}
 
 	var (
-		cli                = s.cli
-		authCliCommitBlock = s.authCliCommitBlock
-		zkbnbInstance      = s.zkbnbInstance
+		cli           = s.cli
+		zkbnbInstance = s.zkbnbInstance
 	)
 	pendingTx, err := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeCommit)
 	if err != nil && err != types.DbErrNotFound {
@@ -307,7 +306,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	var nonce uint64
 
 	maxGasPrice := (decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromInt(int64(s.config.ChainConfig.MaxGasPriceIncreasePercentage))).Div(decimal.NewFromInt(100))).Add(decimal.NewFromInt(gasPrice.Int64()))
-	nonce, err = cli.GetPendingNonce(authCliCommitBlock.Address.Hex())
+	nonce, err = cli.GetPendingNonce(s.commitAddress.Hex())
 	if err != nil {
 		return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
 	}
@@ -328,7 +327,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	retry := false
 	for {
 		if retry {
-			newNonce, err := cli.GetPendingNonce(authCliCommitBlock.Address.Hex())
+			newNonce, err := cli.GetPendingNonce(s.commitAddress.Hex())
 			if err != nil {
 				return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
 			}
@@ -343,31 +342,42 @@ func (s *Sender) CommitBlocks() (err error) {
 			gasPrice = standByGasPrice.RoundUp(0).BigInt()
 			logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 
-			maxCommitUnitGas := sconfig.GetSenderConfig().MaxCommitUnitGas
-			if err := s.ShouldContinueProcess(blocks, maxCommitUnitGas); err != nil {
+			// AWS KMS configuration
+			commitKeyId := s.config.KMSConfig.CommitKeyId
+			chainId := new(big.Int).SetInt64(s.config.KMSConfig.ChainId)
+
+			// Judge whether the blocks should be committed to the chain for better gas consumption
+			shouldCommit := s.ShouldCommitBlocks(s.kmsClient, commitKeyId, chainId, s.commitAddress,
+				zkbnbInstance,
+				lastStoredBlockInfo,
+				pendingCommitBlocks,
+				blocks,
+				gasPrice,
+				s.config.ChainConfig.GasLimit, nonce)
+			if !shouldCommit {
 				logx.Errorf("abandon commit block to l1, EstimateGas value is greater than MaxUnitGas!")
 				return nil
 			}
-		}
 
-		// commit blocks on-chain
-		txHash, err = zkbnb.CommitBlocksWithNonce(
-			cli, authCliCommitBlock,
-			zkbnbInstance,
-			lastStoredBlockInfo,
-			pendingCommitBlocks,
-			gasPrice,
-			s.config.ChainConfig.GasLimit, nonce)
-		if err != nil {
-			commitExceptionHeightMetric.Set(float64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber))
-			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
-				logx.Errorf("failed to send commit tx,try again: errL %v:%s", err, txHash)
-				retry = true
-				continue
+			// commit blocks on-chain
+			txHash, err = zkbnb.CommitBlocksWithNonceAndKms(
+				context.Background(), s.kmsClient, commitKeyId, chainId, s.commitAddress,
+				zkbnbInstance,
+				lastStoredBlockInfo,
+				pendingCommitBlocks,
+				gasPrice,
+				s.config.ChainConfig.GasLimit, nonce)
+			if err != nil {
+				commitExceptionHeightMetric.Set(float64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber))
+				if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
+					logx.Errorf("failed to send commit tx,try again: errL %v:%s", err, txHash)
+					retry = true
+					continue
+				}
+				return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
 			}
-			return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
+			break
 		}
-		break
 	}
 
 	commitExceptionHeightMetric.Set(float64(0))
@@ -491,9 +501,8 @@ func (s *Sender) UpdateSentTxs() (err error) {
 
 func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	var (
-		cli                = s.cli
-		authCliVerifyBlock = s.authCliVerifyBlock
-		zkbnbInstance      = s.zkbnbInstance
+		cli           = s.cli
+		zkbnbInstance = s.zkbnbInstance
 	)
 	pendingTx, err := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeVerifyAndExecute)
 	if err != nil && err != types.DbErrNotFound {
@@ -570,7 +579,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	var nonce uint64
 
 	maxGasPrice := (decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromInt(int64(s.config.ChainConfig.MaxGasPriceIncreasePercentage))).Div(decimal.NewFromInt(100))).Add(decimal.NewFromInt(gasPrice.Int64()))
-	nonce, err = cli.GetPendingNonce(authCliVerifyBlock.Address.Hex())
+	nonce, err = cli.GetPendingNonce(s.verifyAddress.Hex())
 	if err != nil {
 		return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
 	}
@@ -591,7 +600,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	retry := false
 	for {
 		if retry {
-			newNonce, err := cli.GetPendingNonce(authCliVerifyBlock.Address.Hex())
+			newNonce, err := cli.GetPendingNonce(s.verifyAddress.Hex())
 			if err != nil {
 				return fmt.Errorf("failed to get nonce for verify block, errL %v", err)
 			}
@@ -607,9 +616,15 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 
 		}
+
+		// AWS KMS configuration for VerifyAndExecuteBlocks
+		verifyKeyId := s.config.KMSConfig.VerifyKeyId
+		chainId := new(big.Int).SetInt64(s.config.KMSConfig.ChainId)
+
 		// Verify blocks on-chain
-		txHash, err = zkbnb.VerifyAndExecuteBlocksWithNonce(authCliVerifyBlock, zkbnbInstance,
-			pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit, nonce)
+		txHash, err = zkbnb.VerifyAndExecuteBlocksWithNonceAndKms(
+			context.Background(), s.kmsClient, verifyKeyId, chainId, s.verifyAddress, zkbnbInstance, pendingVerifyAndExecuteBlocks,
+			proofs, gasPrice, s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
 			verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))
 			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
@@ -643,25 +658,60 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	return nil
 }
 
-func (s *Sender) ShouldSend2L1(blocks []*compressedblock.CompressedBlock, maxUnitGas uint64) bool {
-	estimatedGas, err := s.cli.EstimateGas(context.Background(), ethereum.CallMsg{
-		From: s.authCliCommitBlock.Address,
-	})
-	if err != nil {
-		logx.Errorf("abandon commit block to l1, EstimateGas operation get some error:%s", err.Error())
-		return nil
+func (s *Sender) ShouldCommitBlocks(kmsSvc *kms.Client, keyId string, chainID *big.Int, address common.Address, instance *zkbnb.ZkBNB,
+	lastBlock zkbnb.StorageStoredBlockInfo, commitBlocksInfo []zkbnb.ZkBNBCommitBlockInfo, blocks []*compressedblock.CompressedBlock,
+	gasPrice *big.Int, gasLimit uint64, nonce uint64) bool {
+
+	// Judge the tx count waiting to be committed, if the tx count is greater
+	// than the maxCommitTxCount, commit the blocks directly
+	maxCommitTxCount := sconfig.GetSenderConfig().MaxCommitTxCount
+	totalTxCount := s.CalculateTotalTxCount(blocks)
+	if totalTxCount > maxCommitTxCount {
+		return true
 	}
 
+	// Judge the time interval of the block waiting to be committed, if the time interval is greater
+	// than the maxCommitBlockInterval, commit the blocks directly
+	maxCommitBlockInterval := sconfig.GetSenderConfig().MaxCommitBlockInterval
+	commitBlockInterval := s.CalculateBlockInterval(blocks)
+	if commitBlockInterval > int64(maxCommitBlockInterval) {
+		return true
+	}
+
+	// Judge the average tx gas consumption for the committing operation, if the average tx gas consumption is greater
+	// than the maxCommitAvgUnitGas, abandon commit operation for temporary
+	estimatedFee, err := zkbnb.EstimateCommitGasWithNonceAndKms(context.Background(), kmsSvc, keyId, chainID, address,
+		instance, lastBlock, commitBlocksInfo, gasPrice, gasLimit, nonce)
+	if err != nil {
+		logx.Errorf("abandon commit block to l1, EstimateGas operation get some error:%s", err.Error())
+		return false
+	}
+
+	maxCommitBlockUnitGas := sconfig.GetSenderConfig().MaxCommitAvgUnitGas
+	unitGas := estimatedFee / totalTxCount
+	if unitGas > maxCommitBlockUnitGas {
+		logx.Info("abandon commit block to l1, UnitGasFee is greater than MaxCommitBlockUnitGas, UnitGasFee:%d, "+
+			"MaxCommitBlockUnitGas:%d", unitGas, maxCommitBlockUnitGas)
+		return false
+	}
+	return true
+}
+
+func (s *Sender) CalculateBlockInterval(blocks []*compressedblock.CompressedBlock) int64 {
+	if len(blocks) > 0 {
+		block := blocks[0]
+		interval := time.Now().Unix() - block.CreatedAt.Unix()
+		return interval
+	}
+	return 0
+}
+
+func (s *Sender) CalculateTotalTxCount(blocks []*compressedblock.CompressedBlock) uint64 {
 	var totalTxCount uint16 = 0
 	for _, b := range blocks {
 		totalTxCount = totalTxCount + b.BlockSize
 	}
-
-	unitGas := estimatedGas / uint64(totalTxCount)
-	if unitGas > maxUnitGas {
-		return errors.New("abandon commit block to l1, EstimateGas value is greater than MaxUnitGas")
-	}
-	return nil
+	return uint64(totalTxCount)
 }
 
 func (s *Sender) Shutdown() {

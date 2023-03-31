@@ -17,8 +17,14 @@ var senderConfig *SenderConfig = &SenderConfig{}
 var apolloClient agollo.Client
 
 type SenderConfig struct {
+	MaxCommitTxCount uint64
+	MaxVerifyTxCount uint64
+
+	MaxCommitBlockInterval uint64
+	MaxVerifyBlockInterval uint64
+
 	MaxCommitAvgUnitGas uint64
-	MaxVerifyUnitGas    uint64
+	MaxVerifyAvgUnitGas uint64
 }
 
 type SenderUpdater struct {

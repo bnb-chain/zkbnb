@@ -20,7 +20,12 @@ func Run(configFile string) error {
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
+<<<<<<< HEAD
 	config.InitApolloConfiguration(c)
+=======
+	//Initiate the Prometheus Monitor Facility
+	sender.InitPrometheusFacility()
+>>>>>>> qa_kms_signature_integration
 
 	s := sender.NewSender(c)
 	// new cron
