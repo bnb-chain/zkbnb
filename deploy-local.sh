@@ -146,7 +146,7 @@ KeyPath: [${PROVING_KEYS}]
 
 BlockConfig:
   OptionalBlockSizes: [${ZKBNB_OPTIONAL_BLOCK_SIZES}]
-  R1CSBatchSize: [${ZKBNB_R1CS_BATCH_SIZE}]
+  R1CSBatchSize: ${ZKBNB_R1CS_BATCH_SIZE}
 
 TreeDB:
   Driver: memorydb
