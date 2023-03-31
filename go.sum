@@ -129,8 +129,8 @@ github.com/bketelsen/crypt v0.0.4/go.mod h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqO
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
-github.com/bnb-chain/gnark-crypto v0.8.1-0.20230324025820-66447c266b51 h1:AIq3pYbJcL2Lnq7g7XumblLWoz+SFZ7AIj3veuuNmgU=
-github.com/bnb-chain/gnark-crypto v0.8.1-0.20230324025820-66447c266b51/go.mod h1:a2DQL4+5ywF6safEeZFEPGRiiGbjzGFRUN2sg06VuU4=
+github.com/bnb-chain/gnark-crypto v0.8.1-0.20230330005531-a6b17e1c3217 h1:irhidnLNB2jTy3Iv4BMuM3Hl+CLabOiZG4v1MFtIqJk=
+github.com/bnb-chain/gnark-crypto v0.8.1-0.20230330005531-a6b17e1c3217/go.mod h1:a2DQL4+5ywF6safEeZFEPGRiiGbjzGFRUN2sg06VuU4=
 github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d h1:2+S4/JdKoSPSJr3D7Z5I/Qmv8TkgVYB73vRP0OOunRY=
 github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d/go.mod h1:G27Jpl0yB6T/NKXw31bD2B2M91my0PM6SUEpbEGWGL8=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
@@ -916,10 +916,8 @@ github.com/prometheus/procfs v0.8.0 h1:ODq8ZFEaYeCaZOJlZZdJA2AbQR98dSHSM1KW/You5
 github.com/prometheus/procfs v0.8.0/go.mod h1:z7EfXMXOkbkqb9IINtpCn86r/to3BnA0uaxHdg830/4=
 github.com/prometheus/tsdb v0.7.1 h1:YZcsG11NqnK4czYLrWd9mpEuAJIHVQLwdrleYfszMAA=
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
-github.com/qct/gnark v0.0.0-20230330140700-e3693ff1608c h1:7FpCE3oteDvoheEYEpS4eyI3xxCRqEiyPbbEJTq+lHY=
-github.com/qct/gnark v0.0.0-20230330140700-e3693ff1608c/go.mod h1:sChEjU5dKa/Bv/SIcoQAwCrwcfQd4h7NvBziphKHkeA=
-github.com/qct/zkbnb-crypto v0.0.0-20230330142112-043a70b1a32c h1:M5syuFQlse6ETCKHNskac2ldFa3vZcS8h31K583Rcck=
-github.com/qct/zkbnb-crypto v0.0.0-20230330142112-043a70b1a32c/go.mod h1:KwVuP5QFwOE07cqCNsKIGsypllgEjPxN+gAMbzySUpE=
+github.com/qct/zkbnb-crypto v0.0.0-20230331121703-13bfa3880cc8 h1:dbA8FNNthRPaao50/cmCeDz5wUHiMRPZhgyhKlw/QTg=
+github.com/qct/zkbnb-crypto v0.0.0-20230331121703-13bfa3880cc8/go.mod h1:v3bUVZM188uSHk4iKSRq63JLUGDPfoUeoCKTduNbbcI=
 github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1 h1:eOCPSifBBQiQD0aGLlAoWoYUdI9aOJLC0zzo8RWAgek=
 github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1/go.mod h1:CHVooyzRRzTqcSUcUKJZlJ5QsOyyS3JPVyML7xU9/uQ=
 github.com/rabbitmq/amqp091-go v1.1.0/go.mod h1:ogQDLSOACsLPsIq0NpbtiifNZi2YOz0VTJ0kHRghqbM=
