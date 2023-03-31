@@ -21,9 +21,9 @@ import (
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb/common/abicoder"
 	monitor2 "github.com/bnb-chain/zkbnb/common/monitor"
-	"github.com/bnb-chain/zkbnb/dao/exodusexit"
+	"github.com/bnb-chain/zkbnb/dao/desertexit"
 	"github.com/bnb-chain/zkbnb/service/monitor/monitor"
-	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/generateproof/config"
 	"github.com/ethereum/go-ethereum/common"
 	"gorm.io/plugin/dbresolver"
 	"math/big"
@@ -48,7 +48,7 @@ type Monitor struct {
 	GovernanceContractAddress string
 	db                        *gorm.DB
 	L1SyncedBlockModel        l1syncedblock.L1SyncedBlockModel
-	ExodusExitBlockModel      exodusexit.ExodusExitBlockModel
+	DesertExitBlockModel      desertexit.DesertExitBlockModel
 }
 
 func NewMonitor(c *config.Config) (*Monitor, error) {
@@ -67,7 +67,7 @@ func NewMonitor(c *config.Config) (*Monitor, error) {
 		Config:               c,
 		db:                   db,
 		L1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),
-		ExodusExitBlockModel: exodusexit.NewExodusExitBlockModel(db),
+		DesertExitBlockModel: desertexit.NewDesertExitBlockModel(db),
 	}
 
 	bscRpcCli, err := rpc.NewClient(c.ChainConfig.BscTestNetRpc)
@@ -83,14 +83,14 @@ func NewMonitor(c *config.Config) (*Monitor, error) {
 }
 
 func (m *Monitor) MonitorGenericBlocks() (err error) {
-	exodusExitBlock, err := m.ExodusExitBlockModel.GetLatestBlock()
+	desertExitBlock, err := m.DesertExitBlockModel.GetLatestBlock()
 	if err != nil && err != types2.DbErrNotFound {
 		logx.Errorf("get latest verify block failed:%s", err.Error())
 		return err
 	}
-	if exodusExitBlock != nil {
-		if exodusExitBlock.BlockHeight == m.Config.ChainConfig.EndL2BlockHeight &&
-			(exodusExitBlock.BlockStatus == exodusexit.StatusVerified || exodusExitBlock.BlockStatus == exodusexit.StatusExecuted) {
+	if desertExitBlock != nil {
+		if desertExitBlock.BlockHeight == m.Config.ChainConfig.EndL2BlockHeight &&
+			(desertExitBlock.BlockStatus == desertexit.StatusVerified || desertExitBlock.BlockStatus == desertexit.StatusExecuted) {
 			logx.Info("get all the l2 blocks from l1 successfully")
 			return nil
 		}
@@ -114,12 +114,10 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		}
 
 		logx.Infof("type is typeGeneric blocks from %d to %d and vlog len: %v", startHeight, endHeight, len(logs))
-		for _, vlog := range logs {
-			logx.Infof("type is typeGeneric blocks from %d to %d and vlog: %v", startHeight, endHeight, vlog)
-		}
+
 		var (
 			l1Events      []*monitor2.L1Event
-			relatedBlocks = make(map[int64]*exodusexit.ExodusExitBlock)
+			relatedBlocks = make(map[int64]*desertexit.DesertExitBlock)
 		)
 		exit := false
 		for _, vlog := range logs {
@@ -137,8 +135,6 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			}
 
 			switch vlog.Topics[0].Hex() {
-			case monitor2.ZkbnbLogWithdrawalSigHash.Hex():
-			case monitor2.ZkbnbLogWithdrawalPendingSigHash.Hex():
 			case monitor2.ZkbnbLogBlockCommitSigHash.Hex():
 				l1EventInfo.EventType = monitor2.EventTypeCommittedBlock
 
@@ -150,12 +146,12 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 				// update block status
 				blockHeight := int64(event.BlockNumber)
 				if relatedBlocks[blockHeight] == nil {
-					relatedBlocks[blockHeight] = &exodusexit.ExodusExitBlock{}
+					relatedBlocks[blockHeight] = &desertexit.DesertExitBlock{}
 				}
 				relatedBlocks[blockHeight].CommittedTxHash = vlog.TxHash.Hex()
 				relatedBlocks[blockHeight].CommittedAt = int64(logBlock.Time)
 				relatedBlocks[blockHeight].L1CommittedHeight = vlog.BlockNumber
-				relatedBlocks[blockHeight].BlockStatus = exodusexit.StatusCommitted
+				relatedBlocks[blockHeight].BlockStatus = desertexit.StatusCommitted
 				relatedBlocks[blockHeight].BlockHeight = blockHeight
 			case monitor2.ZkbnbLogBlockVerificationSigHash.Hex():
 				l1EventInfo.EventType = monitor2.EventTypeVerifiedBlock
@@ -168,12 +164,12 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 				// update block status
 				blockHeight := int64(event.BlockNumber)
 				if relatedBlocks[blockHeight] == nil {
-					relatedBlocks[blockHeight] = &exodusexit.ExodusExitBlock{}
+					relatedBlocks[blockHeight] = &desertexit.DesertExitBlock{}
 				}
 				relatedBlocks[blockHeight].VerifiedTxHash = vlog.TxHash.Hex()
 				relatedBlocks[blockHeight].VerifiedAt = int64(logBlock.Time)
 				relatedBlocks[blockHeight].L1VerifiedHeight = vlog.BlockNumber
-				relatedBlocks[blockHeight].BlockStatus = exodusexit.StatusVerified
+				relatedBlocks[blockHeight].BlockStatus = desertexit.StatusVerified
 				relatedBlocks[blockHeight].BlockHeight = blockHeight
 				if blockHeight > m.Config.ChainConfig.EndL2BlockHeight {
 					logx.Info("get all the l2 blocks from l1 successfully")
@@ -195,47 +191,42 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			heights = append(heights, height)
 		}
 
-		blocks, err := m.ExodusExitBlockModel.GetBlocksByHeights(heights)
+		blocks, err := m.DesertExitBlockModel.GetBlocksByHeights(heights)
 		if err != nil && err != types2.DbErrNotFound {
 			return fmt.Errorf("failed to get blocks by heights, err: %v", err)
 		}
-		committedTxHashMap := make(map[string]bool, 0)
-
-		for height, pendingUpdateBlock := range relatedBlocks {
-			for _, block := range blocks {
-				if block.BlockHeight == height {
-					pendingUpdateBlock.ID = block.ID
-					if pendingUpdateBlock.CommittedTxHash == "" {
-						pendingUpdateBlock.CommittedTxHash = block.CommittedTxHash
-					}
-					break
+		for _, block := range blocks {
+			pendingUpdateBlock := relatedBlocks[block.BlockHeight]
+			if pendingUpdateBlock != nil {
+				pendingUpdateBlock.ID = block.ID
+				if pendingUpdateBlock.CommittedTxHash == "" {
+					pendingUpdateBlock.CommittedTxHash = block.CommittedTxHash
 				}
 			}
-			if exodusexit.StatusVerified == pendingUpdateBlock.BlockStatus {
+		}
+		commitBlockInfoHashMap := make(map[uint32]*ZkBNBCommitBlockInfo, 0)
+		for _, pendingUpdateBlock := range relatedBlocks {
+			if desertexit.StatusVerified == pendingUpdateBlock.BlockStatus {
 				if pendingUpdateBlock.CommittedTxHash == "" {
 					return fmt.Errorf("committed tx hash is blank, block height: %d", pendingUpdateBlock.BlockHeight)
 				}
-				committedTxHashMap[pendingUpdateBlock.CommittedTxHash] = true
+				commitBlocksCallData, err := m.getCommitBlocksCallData(pendingUpdateBlock.CommittedTxHash)
+				if err != nil {
+					return err
+				}
+				for _, blocksData := range commitBlocksCallData.NewBlocksData {
+					commitBlockInfoHashMap[blocksData.BlockNumber] = &blocksData
+				}
 			}
-		}
-		commitBlockInfoList := make([]ZkBNBCommitBlockInfo, 0)
-		for committedTx, _ := range committedTxHashMap {
-			commitBlocksCallData, err := m.getCommitBlocksCallData(committedTx)
-			if err != nil {
-				return err
-			}
-			commitBlockInfoList = append(commitBlockInfoList, commitBlocksCallData.NewBlocksData...)
 		}
 
-		updateBlocks := make([]*exodusexit.ExodusExitBlock, 0)
+		updateBlocks := make([]*desertexit.DesertExitBlock, 0)
 
 		for height, pendingUpdateBlock := range relatedBlocks {
-			for _, commitBlockInfo := range commitBlockInfoList {
-				if commitBlockInfo.BlockNumber == uint32(height) {
-					pendingUpdateBlock.BlockSize = commitBlockInfo.BlockSize
-					pendingUpdateBlock.PubData = common.Bytes2Hex(commitBlockInfo.PublicData)
-					break
-				}
+			commitBlockInfo := commitBlockInfoHashMap[uint32(height)]
+			if commitBlockInfo != nil {
+				pendingUpdateBlock.BlockSize = commitBlockInfo.BlockSize
+				pendingUpdateBlock.PubData = common.Bytes2Hex(commitBlockInfo.PublicData)
 			}
 			updateBlocks = append(updateBlocks, pendingUpdateBlock)
 		}
@@ -257,7 +248,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 				return err
 			}
 			//update blocks
-			err = m.ExodusExitBlockModel.BatchInsertOrUpdateInTransact(tx, updateBlocks)
+			err = m.DesertExitBlockModel.BatchInsertOrUpdateInTransact(tx, updateBlocks)
 			if err != nil {
 				return err
 			}

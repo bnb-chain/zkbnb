@@ -159,14 +159,12 @@ func (f *Fetcher) fetcherForChangePubKey(txInfo string) (string, error) {
 }
 
 func (f *Fetcher) fetchL1AddressByAccountIndex(accountIndex int64) (string, error) {
-	account, err := f.svcCtx.MemCache.GetAccountWithFallback(accountIndex, func() (interface{}, error) {
-		return f.svcCtx.AccountModel.GetAccountByIndex(accountIndex)
-	})
+	l1Address, err := f.svcCtx.MemCache.GetL1AddressByIndex(accountIndex)
 	if err != nil {
 		if err == types.DbErrNotFound {
 			return "", types.AppErrAccountNotFound
 		}
 		return "", err
 	}
-	return account.L1Address, nil
+	return l1Address, nil
 }

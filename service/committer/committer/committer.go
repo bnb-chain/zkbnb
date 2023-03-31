@@ -35,6 +35,7 @@ type Config struct {
 
 	BlockConfig struct {
 		OptionalBlockSizes    []int
+		MaxCommitterInterval  int  `json:",optional"`
 		SaveBlockDataPoolSize int  `json:",optional"`
 		RollbackOnly          bool `json:",optional"`
 	}
@@ -43,10 +44,11 @@ type Config struct {
 }
 
 type Committer struct {
-	running            bool
-	config             *Config
-	maxTxsPerBlock     int
-	optionalBlockSizes []int
+	running              bool
+	config               *Config
+	maxTxsPerBlock       int
+	maxCommitterInterval int
+	optionalBlockSizes   []int
 
 	bc                            *core.BlockChain
 	executeTxWorker               *core.TxWorker
@@ -91,17 +93,21 @@ func NewCommitter(config *Config) (*Committer, error) {
 	if saveBlockDataPoolSize == 0 {
 		saveBlockDataPoolSize = 100
 	}
+	if config.BlockConfig.MaxCommitterInterval == 0 {
+		config.BlockConfig.MaxCommitterInterval = MaxCommitterInterval
+	}
 	pool, err := ants.NewPool(saveBlockDataPoolSize, ants.WithPanicHandler(func(p interface{}) {
 		panic("worker exits from a panic")
 	}))
 	common.NewIPFS(config.IpfsUrl)
 	committer := &Committer{
-		running:            true,
-		config:             config,
-		maxTxsPerBlock:     config.BlockConfig.OptionalBlockSizes[len(config.BlockConfig.OptionalBlockSizes)-1],
-		optionalBlockSizes: config.BlockConfig.OptionalBlockSizes,
-		bc:                 bc,
-		pool:               pool,
+		running:              true,
+		config:               config,
+		maxTxsPerBlock:       config.BlockConfig.OptionalBlockSizes[len(config.BlockConfig.OptionalBlockSizes)-1],
+		maxCommitterInterval: config.BlockConfig.MaxCommitterInterval,
+		optionalBlockSizes:   config.BlockConfig.OptionalBlockSizes,
+		bc:                   bc,
+		pool:                 pool,
 	}
 
 	return committer, nil
@@ -1054,7 +1060,7 @@ func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 		return false
 	}
 	var now = time.Now()
-	if (len(c.bc.Statedb.Txs) > 0 && now.Unix()-curBlock.CreatedAt.Unix() >= MaxCommitterInterval) ||
+	if (len(c.bc.Statedb.Txs) > 0 && now.Unix()-curBlock.CreatedAt.Unix() >= int64(c.maxCommitterInterval)) ||
 		len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
 		return true
 	}

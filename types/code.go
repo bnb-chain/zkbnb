@@ -142,6 +142,7 @@ var (
 	AppErrInvalidMutableAttributes = NewBusinessError(21608, "mutableAttributes should not be larger than ")
 	AppErrInvalidNftNonce          = NewBusinessError(21609, "invalid nft nonce")
 	AppErrInvalidRoyaltyRate       = NewBusinessError(21610, "invalid royalty rate")
+	AppErrInvalidNftContentType    = NewBusinessError(21611, "nftContentType should be 0 or 1")
 	// Collection
 	AppErrInvalidCollectionId   = NewBusinessError(21700, "invalid collection id")
 	AppErrInvalidCollectionName = NewBusinessError(21701, "invalid collection name")

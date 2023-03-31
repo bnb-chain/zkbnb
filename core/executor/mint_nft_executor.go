@@ -36,7 +36,7 @@ func NewMintNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 func (e *MintNftExecutor) Prepare() error {
 	txInfo := e.TxInfo
 	if !e.bc.StateDB().DryRun {
-		if !e.isExodusExit {
+		if !e.isDesertExit {
 			// Set the right nft index for tx info.
 			if e.tx.Rollback == false {
 				nextNftIndex := e.bc.StateDB().GetNextNftIndex()
@@ -68,6 +68,10 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
 		return err
+	}
+
+	if txInfo.NftContentType != 0 && txInfo.NftContentType != 1 {
+		return types.AppErrInvalidNftContentType
 	}
 
 	creatorAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.CreatorAccountIndex)
@@ -116,7 +120,7 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 		NftContentType:      txInfo.NftContentType,
 	})
 	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
-	if !e.isExodusExit {
+	if !e.isDesertExit {
 		if e.tx.Rollback == false {
 			e.bc.StateDB().UpdateNftIndex(txInfo.NftIndex)
 		}
@@ -235,6 +239,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		NftContentHash:      txInfo.NftContentHash,
 		RoyaltyRate:         txInfo.RoyaltyRate,
 		CollectionId:        txInfo.NftCollectionId,
+		NftContentType:      txInfo.NftContentType,
 	}
 	order++
 	txDetails = append(txDetails, &tx.TxDetail{

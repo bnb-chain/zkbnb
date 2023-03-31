@@ -1,9 +1,9 @@
-package performexodus
+package performdesert
 
 import (
-	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/generateproof"
-	"github.com/bnb-chain/zkbnb/tools/exodusexit/performexodus/config"
-	"github.com/bnb-chain/zkbnb/tools/exodusexit/performexodus/performexodus"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/generateproof/generateproof"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/performdesert/config"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/performdesert/performdesert"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -17,6 +17,8 @@ const CommandPerformNft = "performNft"
 const CommandCancelOutstandingDeposit = "cancelOutstandingDeposit"
 const CommandWithdrawNFT = "withdrawNFT"
 const CommandWithdrawAsset = "withdrawAsset"
+const CommandGetBalance = "getBalance"
+const CommandGetPendingBalance = "getPendingBalance"
 
 func Run(configFile string, command string, amount string, nftIndex string, owner string, privateKey string, proof string, token string) error {
 	var c config.Config
@@ -29,7 +31,7 @@ func Run(configFile string, command string, amount string, nftIndex string, owne
 	if privateKey != "" {
 		c.ChainConfig.PrivateKey = privateKey
 	}
-	m, err := performexodus.NewPerformExodus(c)
+	m, err := performdesert.NewPerformDesert(c)
 	if err != nil {
 		logx.Severe(err)
 		return err
@@ -86,6 +88,20 @@ func Run(configFile string, command string, amount string, nftIndex string, owne
 			return nil
 		}
 		err = m.WithdrawPendingBalance(common.HexToAddress(owner), common.HexToAddress(token), bigIntAmount)
+		if err != nil {
+			logx.Severe(err)
+			return err
+		}
+		break
+	case CommandGetBalance:
+		_, err := m.GetBalance(common.HexToAddress(owner), common.HexToAddress(token))
+		if err != nil {
+			logx.Severe(err)
+			return err
+		}
+		break
+	case CommandGetPendingBalance:
+		_, err := m.GetPendingBalance(common.HexToAddress(owner), common.HexToAddress(token))
 		if err != nil {
 			logx.Severe(err)
 			return err

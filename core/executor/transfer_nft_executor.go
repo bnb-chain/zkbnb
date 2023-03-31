@@ -36,7 +36,7 @@ func NewTransferNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 func (e *TransferNftExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo
-	if !e.isExodusExit {
+	if !e.isDesertExit {
 		txInfo.ToAccountIndex = types.NilAccountIndex
 	}
 	_, err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
@@ -51,7 +51,7 @@ func (e *TransferNftExecutor) Prepare() error {
 		return err
 	}
 	if err == types.AppErrAccountNotFound {
-		if !e.isExodusExit {
+		if !e.isDesertExit {
 			if !e.bc.StateDB().DryRun {
 				if e.tx.Rollback == false {
 					nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
@@ -296,6 +296,7 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		NftContentHash:      nftModel.NftContentHash,
 		RoyaltyRate:         nftModel.RoyaltyRate,
 		CollectionId:        nftModel.CollectionId,
+		NftContentType:      nftModel.NftContentType,
 	}
 	newNftInfo := &types.NftInfo{
 		NftIndex:            nftModel.NftIndex,
@@ -304,6 +305,7 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		NftContentHash:      nftModel.NftContentHash,
 		RoyaltyRate:         nftModel.RoyaltyRate,
 		CollectionId:        nftModel.CollectionId,
+		NftContentType:      nftModel.NftContentType,
 	}
 	order++
 	txDetails = append(txDetails, &tx.TxDetail{
@@ -348,7 +350,7 @@ func (e *TransferNftExecutor) Finalize() error {
 	if e.IsCreateAccount {
 		bc := e.bc
 		txInfo := e.TxInfo
-		if !e.isExodusExit {
+		if !e.isDesertExit {
 			bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.ToAccountIndex, bc.CurrentBlock().BlockHeight)
 		}
 		accountInfo := e.GetCreatingAccount()
