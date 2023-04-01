@@ -21,8 +21,7 @@ import (
 	"encoding/json"
 	"github.com/bnb-chain/zkbnb/dao/desertexit"
 	"github.com/bnb-chain/zkbnb/dao/rollback"
-	"github.com/bnb-chain/zkbnb/tools/desertexit/generateproof/config"
-
+	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/zeromicro/go-zero/core/conf"

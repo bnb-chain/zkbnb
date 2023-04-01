@@ -15,6 +15,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 	"math/big"
+	"sort"
 	"time"
 )
 
@@ -79,6 +80,10 @@ func RevertCommittedBlocks(configFile string, height int64) (err error) {
 		storedBlockInfoList = append(storedBlockInfoList, storedBlockInfo)
 		height++
 	}
+
+	sort.Slice(storedBlockInfoList, func(i, j int) bool {
+		return storedBlockInfoList[i].BlockNumber > storedBlockInfoList[j].BlockNumber
+	})
 
 	var gasPrice *big.Int
 	if c.ChainConfig.GasPrice > 0 {

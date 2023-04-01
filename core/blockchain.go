@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/metrics"
-	"github.com/bnb-chain/zkbnb/tools/desertexit/generateproof/config"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/dgraph-io/ristretto"
 	"gorm.io/plugin/dbresolver"

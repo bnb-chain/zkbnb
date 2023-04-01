@@ -56,7 +56,7 @@ func (c *CacheConfig) sanitize() *CacheConfig {
 }
 
 type StateDB struct {
-	DryRun bool
+	IsFromApi bool
 	// State cache
 	*StateCache
 	chainDb    *ChainDB
@@ -204,7 +204,7 @@ func NewStateDBForDesertExit(redisCache dbcache.Cache, cacheConfig *CacheConfig,
 	}
 
 	return &StateDB{
-		DryRun:         false,
+		IsFromApi:      false,
 		redisCache:     redisCache,
 		chainDb:        chainDb,
 		AccountCache:   accountCache,
@@ -233,7 +233,7 @@ func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, cha
 	}
 
 	return &StateDB{
-		DryRun:         true,
+		IsFromApi:      true,
 		redisCache:     redisCache,
 		chainDb:        chainDb,
 		AccountCache:   accountCache,
@@ -504,7 +504,7 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 		if creatingAccountIndex == accountIndex {
 			continue
 		}
-		if s.DryRun {
+		if s.IsFromApi {
 			account := &account.Account{}
 			redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), account)
 			if err == nil && redisAccount != nil {
@@ -540,7 +540,7 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 }
 
 func (s *StateDB) PrepareNft(nftIndex int64) (*nft.L2Nft, error) {
-	if s.DryRun {
+	if s.IsFromApi {
 		n := &nft.L2Nft{}
 		redisNft, err := s.redisCache.Get(context.Background(), dbcache.NftKeyByIndex(nftIndex), n)
 		if err == nil && redisNft != nil {

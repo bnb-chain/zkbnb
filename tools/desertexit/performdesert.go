@@ -1,9 +1,8 @@
-package performdesert
+package desertexit
 
 import (
-	"github.com/bnb-chain/zkbnb/tools/desertexit/generateproof/generateproof"
-	"github.com/bnb-chain/zkbnb/tools/desertexit/performdesert/config"
-	"github.com/bnb-chain/zkbnb/tools/desertexit/performdesert/performdesert"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/desertexit"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -20,7 +19,7 @@ const CommandWithdrawAsset = "withdrawAsset"
 const CommandGetBalance = "getBalance"
 const CommandGetPendingBalance = "getPendingBalance"
 
-func Run(configFile string, command string, amount string, nftIndex string, owner string, privateKey string, proof string, token string) error {
+func Perform(configFile string, command string, amount string, nftIndex string, owner string, privateKey string, proof string, token string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
 	logx.MustSetup(c.LogConf)
@@ -31,7 +30,7 @@ func Run(configFile string, command string, amount string, nftIndex string, owne
 	if privateKey != "" {
 		c.ChainConfig.PrivateKey = privateKey
 	}
-	m, err := performdesert.NewPerformDesert(c)
+	m, err := desertexit.NewPerformDesert(c)
 	if err != nil {
 		logx.Severe(err)
 		return err
@@ -45,7 +44,7 @@ func Run(configFile string, command string, amount string, nftIndex string, owne
 		}
 		break
 	case CommandPerformAsset:
-		var performDesertAsset generateproof.PerformDesertAssetData
+		var performDesertAsset desertexit.PerformDesertAssetData
 		conf.MustLoad(proof, &performDesertAsset)
 		err = m.PerformDesert(performDesertAsset)
 		if err != nil {
@@ -54,7 +53,7 @@ func Run(configFile string, command string, amount string, nftIndex string, owne
 		}
 		break
 	case CommandPerformNft:
-		var performDesertNftData generateproof.PerformDesertNftData
+		var performDesertNftData desertexit.PerformDesertNftData
 		conf.MustLoad(proof, &performDesertNftData)
 		err = m.PerformDesertNft(performDesertNftData)
 		if err != nil {
