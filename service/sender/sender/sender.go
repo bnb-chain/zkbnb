@@ -19,6 +19,7 @@ package sender
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -108,11 +109,13 @@ type Sender struct {
 	config sconfig.Config
 
 	// Client
-	cli           *rpc.ProviderClient
-	zkbnbInstance *zkbnb.ZkBNB
-	kmsClient     *kms.Client
-	commitAddress common.Address
-	verifyAddress common.Address
+	cli                *rpc.ProviderClient
+	zkbnbInstance      *zkbnb.ZkBNB
+	kmsClient          *kms.Client
+	commitAuthClient   *rpc.AuthClient
+	verifyAuthClient   *rpc.AuthClient
+	commitKmsKeyClient *rpc.KMSKeyClient
+	verifyKmsKeyClient *rpc.KMSKeyClient
 
 	// Data access objects
 	db                   *gorm.DB
@@ -149,9 +152,6 @@ func NewSender(c sconfig.Config) *Sender {
 		txModel:              tx.NewTxModel(db),
 	}
 
-	s.commitAddress = common.HexToAddress(c.ChainConfig.CommitAddress)
-	s.verifyAddress = common.HexToAddress(c.ChainConfig.VerifyAddress)
-
 	l1RPCEndpoint, err := s.sysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
 		logx.Severef("fatal error, failed to get network rpc configuration, err:%v, SysConfigName:%s",
@@ -184,6 +184,45 @@ func NewSender(c sconfig.Config) *Sender {
 	}
 	s.kmsClient = kms.NewFromConfig(cfg)
 
+	chainId, err := s.cli.ChainID(context.Background())
+	if err != nil {
+		logx.Severef("fatal error, failed to get the chainId from the l1 server, err:%v", err)
+		panic("fatal error, failed to get the chainId from the l1 server, err:" + err.Error())
+	}
+
+	sendSignatureMode := c.ChainConfig.SendSignatureMode
+	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
+		commitAuthClient, err := rpc.NewAuthClient(c.AuthConfig.CommitBlockSk, chainId)
+		if err != nil {
+			logx.Severef("fatal error, failed to initiate commit authClient instance, err:%v", err)
+			panic("fatal error, failed to initiate commit authClient instance, err:" + err.Error())
+		}
+		s.commitAuthClient = commitAuthClient
+
+		verifyAuthClient, err := rpc.NewAuthClient(c.AuthConfig.VerifyBlockSk, chainId)
+		if err != nil {
+			logx.Severef("fatal error, failed to initiate verify authClient instance, err:%v", err)
+			panic("fatal error, failed to initiate verify authClient instance, err:" + err.Error())
+		}
+		s.verifyAuthClient = verifyAuthClient
+	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+		commitKeyClient, err := rpc.NewKMSKeyClient(s.kmsClient, c.KMSConfig.CommitKeyId, chainId)
+		if err != nil {
+			logx.Severef("fatal error, failed to initiate commit kmsKeyClient instance, err:%v", err)
+			panic("fatal error, failed to initiate commit kmsKeyClient instance, err:" + err.Error())
+		}
+		s.commitKmsKeyClient = commitKeyClient
+
+		verifyKeyClient, err := rpc.NewKMSKeyClient(s.kmsClient, c.KMSConfig.VerifyKeyId, chainId)
+		if err != nil {
+			logx.Severef("fatal error, failed to initiate verify kmsKeyClient instance, err:%v", err)
+			panic("fatal error, failed to initiate verify kmsKeyClient instance, err:" + err.Error())
+		}
+		s.verifyKmsKeyClient = verifyKeyClient
+	} else {
+		logx.Severef("fatal error, sendSignatureMode can only be PrivateKeySignMode or KeyManageSignMode!")
+		panic("fatal error, sendSignatureMode can only be PrivateKeySignMode or KeyManageSignMode!")
+	}
 	return s
 }
 
@@ -259,7 +298,6 @@ func (s *Sender) CommitBlocks() (err error) {
 	if pendingTx != nil {
 		return nil
 	}
-
 	lastHandledTx, err := s.l1RollupTxModel.GetLatestHandledTx(l1rolluptx.TxTypeCommit)
 	if err != nil && err != types.DbErrNotFound {
 		return err
@@ -268,12 +306,13 @@ func (s *Sender) CommitBlocks() (err error) {
 	if lastHandledTx != nil {
 		start = lastHandledTx.L2BlockHeight + 1
 	}
+
 	// commit new blocks
-	blocks, err := s.compressedBlockModel.GetCompressedBlocksBetween(start,
-		start+int64(s.config.ChainConfig.MaxBlockCount))
-	if err != nil && err != types.DbErrNotFound {
-		return fmt.Errorf("failed to get compress block err: %v", err)
+	blocks, err := s.GetCompressedBlocksForCommit(start)
+	if err != nil {
+		return err
 	}
+
 	if len(blocks) == 0 {
 		return nil
 	}
@@ -306,7 +345,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	var nonce uint64
 
 	maxGasPrice := (decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromInt(int64(s.config.ChainConfig.MaxGasPriceIncreasePercentage))).Div(decimal.NewFromInt(100))).Add(decimal.NewFromInt(gasPrice.Int64()))
-	nonce, err = cli.GetPendingNonce(s.commitAddress.Hex())
+	nonce, err = cli.GetPendingNonce(s.GetCommitAddress().Hex())
 	if err != nil {
 		return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
 	}
@@ -327,7 +366,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	retry := false
 	for {
 		if retry {
-			newNonce, err := cli.GetPendingNonce(s.commitAddress.Hex())
+			newNonce, err := cli.GetPendingNonce(s.GetCommitAddress().Hex())
 			if err != nil {
 				return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
 			}
@@ -342,26 +381,24 @@ func (s *Sender) CommitBlocks() (err error) {
 			gasPrice = standByGasPrice.RoundUp(0).BigInt()
 			logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 
-			// AWS KMS configuration
-			commitKeyId := s.config.KMSConfig.CommitKeyId
-			chainId := new(big.Int).SetInt64(s.config.KMSConfig.ChainId)
-
 			// Judge whether the blocks should be committed to the chain for better gas consumption
-			shouldCommit := s.ShouldCommitBlocks(s.kmsClient, commitKeyId, chainId, s.commitAddress,
-				zkbnbInstance,
-				lastStoredBlockInfo,
-				pendingCommitBlocks,
-				blocks,
-				gasPrice,
-				s.config.ChainConfig.GasLimit, nonce)
+			shouldCommit := s.ShouldCommitBlocks(zkbnbInstance, lastStoredBlockInfo, pendingCommitBlocks,
+				blocks, gasPrice, s.config.ChainConfig.GasLimit, nonce)
 			if !shouldCommit {
 				logx.Errorf("abandon commit block to l1, EstimateGas value is greater than MaxUnitGas!")
 				return nil
 			}
 
+			// generate the transaction constructor for the commit block function
+			transactorConstructor, err := s.GenerateConstructorForCommit()
+			if err != nil {
+				logx.Errorf("abandon commit block to l1, GenerateConstructorForCommit get some error:%s", err.Error())
+				return err
+			}
+
 			// commit blocks on-chain
-			txHash, err = zkbnb.CommitBlocksWithNonceAndKms(
-				context.Background(), s.kmsClient, commitKeyId, chainId, s.commitAddress,
+			txHash, err = zkbnb.CommitBlocksWithNonce(
+				transactorConstructor,
 				zkbnbInstance,
 				lastStoredBlockInfo,
 				pendingCommitBlocks,
@@ -374,30 +411,30 @@ func (s *Sender) CommitBlocks() (err error) {
 					retry = true
 					continue
 				}
-				return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
+				break
 			}
-			break
+
+			commitExceptionHeightMetric.Set(float64(0))
+			for _, pendingCommitBlock := range pendingCommitBlocks {
+				l2BlockCommitToChainHeightMetric.Set(float64(pendingCommitBlock.BlockNumber))
+			}
+			newRollupTx := &l1rolluptx.L1RollupTx{
+				L1TxHash:      txHash,
+				TxStatus:      l1rolluptx.StatusPending,
+				TxType:        l1rolluptx.TxTypeCommit,
+				L2BlockHeight: int64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber),
+				L1Nonce:       int64(nonce),
+				GasPrice:      gasPrice.Int64(),
+			}
+			err = s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)
+			if err != nil {
+				return fmt.Errorf("failed to create tx in database, err: %v", err)
+			}
+			l2BlockCommitToChainHeightMetric.Set(float64(newRollupTx.L2BlockHeight))
+			logx.Infof("new blocks have been committed(height): %v:%s", newRollupTx.L2BlockHeight, newRollupTx.L1TxHash)
+			return nil
 		}
 	}
-
-	commitExceptionHeightMetric.Set(float64(0))
-	for _, pendingCommitBlock := range pendingCommitBlocks {
-		l2BlockCommitToChainHeightMetric.Set(float64(pendingCommitBlock.BlockNumber))
-	}
-	newRollupTx := &l1rolluptx.L1RollupTx{
-		L1TxHash:      txHash,
-		TxStatus:      l1rolluptx.StatusPending,
-		TxType:        l1rolluptx.TxTypeCommit,
-		L2BlockHeight: int64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber),
-		L1Nonce:       int64(nonce),
-		GasPrice:      gasPrice.Int64(),
-	}
-	err = s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)
-	if err != nil {
-		return fmt.Errorf("failed to create tx in database, err: %v", err)
-	}
-	l2BlockCommitToChainHeightMetric.Set(float64(newRollupTx.L2BlockHeight))
-	logx.Infof("new blocks have been committed(height): %v:%s", newRollupTx.L2BlockHeight, newRollupTx.L1TxHash)
 	return nil
 }
 
@@ -522,10 +559,9 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	if lastHandledTx != nil {
 		start = lastHandledTx.L2BlockHeight + 1
 	}
-	blocks, err := s.blockModel.GetCommittedBlocksBetween(start,
-		start+int64(s.config.ChainConfig.MaxBlockCount))
-	if err != nil && err != types.DbErrNotFound {
-		return fmt.Errorf("unable to get blocks to prove, err: %v", err)
+	blocks, err := s.GetBlocksForVerifyAndExecute(start)
+	if err != nil {
+		return err
 	}
 	if len(blocks) == 0 {
 		return nil
@@ -579,7 +615,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	var nonce uint64
 
 	maxGasPrice := (decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromInt(int64(s.config.ChainConfig.MaxGasPriceIncreasePercentage))).Div(decimal.NewFromInt(100))).Add(decimal.NewFromInt(gasPrice.Int64()))
-	nonce, err = cli.GetPendingNonce(s.verifyAddress.Hex())
+	nonce, err = cli.GetPendingNonce(s.GetVerifyAddress().Hex())
 	if err != nil {
 		return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
 	}
@@ -600,7 +636,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	retry := false
 	for {
 		if retry {
-			newNonce, err := cli.GetPendingNonce(s.verifyAddress.Hex())
+			newNonce, err := cli.GetPendingNonce(s.GetVerifyAddress().Hex())
 			if err != nil {
 				return fmt.Errorf("failed to get nonce for verify block, errL %v", err)
 			}
@@ -614,16 +650,20 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			}
 			gasPrice = standByGasPrice.RoundUp(0).BigInt()
 			logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
-
 		}
 
-		// AWS KMS configuration for VerifyAndExecuteBlocks
-		verifyKeyId := s.config.KMSConfig.VerifyKeyId
-		chainId := new(big.Int).SetInt64(s.config.KMSConfig.ChainId)
+		// generate the transaction constructor for verify and execute block function
+		transactorConstructor, err := s.GenerateConstructorForVerifyAndExecute()
+		if err != nil {
+			logx.Errorf("abandon verify and execute block to l1, GenerateConstructorForVerifyAndExecute get some error:%s", err.Error())
+			return nil
+		}
 
 		// Verify blocks on-chain
-		txHash, err = zkbnb.VerifyAndExecuteBlocksWithNonceAndKms(
-			context.Background(), s.kmsClient, verifyKeyId, chainId, s.verifyAddress, zkbnbInstance, pendingVerifyAndExecuteBlocks,
+		txHash, err = zkbnb.VerifyAndExecuteBlocksWithNonce(
+			transactorConstructor,
+			zkbnbInstance,
+			pendingVerifyAndExecuteBlocks,
 			proofs, gasPrice, s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
 			verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))
@@ -658,14 +698,35 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	return nil
 }
 
-func (s *Sender) ShouldCommitBlocks(kmsSvc *kms.Client, keyId string, chainID *big.Int, address common.Address, instance *zkbnb.ZkBNB,
-	lastBlock zkbnb.StorageStoredBlockInfo, commitBlocksInfo []zkbnb.ZkBNBCommitBlockInfo, blocks []*compressedblock.CompressedBlock,
+func (s *Sender) GetCompressedBlocksForCommit(start int64) (blocksForCommit []*compressedblock.CompressedBlock, err error) {
+	commitTxCountLimit := sconfig.GetSenderConfig().CommitTxCountLimit
+	maxCommitBlockCount := sconfig.GetSenderConfig().MaxCommitBlockCount
+	var totalTxCount uint64 = 0
+	for {
+		blocks, err := s.compressedBlockModel.GetCompressedBlocksBetween(start,
+			start+int64(maxCommitBlockCount))
+		if err != nil && err != types.DbErrNotFound {
+			return nil, fmt.Errorf("failed to get compress block err: %v", err)
+		}
+
+		totalTxCount = s.CalculateTotalTxCountForCompressBlock(blocks)
+		if totalTxCount < commitTxCountLimit {
+			return blocks, nil
+		}
+		if maxCommitBlockCount > 1 {
+			maxCommitBlockCount--
+		}
+	}
+}
+
+func (s *Sender) ShouldCommitBlocks(instance *zkbnb.ZkBNB, lastBlock zkbnb.StorageStoredBlockInfo,
+	commitBlocksInfo []zkbnb.ZkBNBCommitBlockInfo, blocks []*compressedblock.CompressedBlock,
 	gasPrice *big.Int, gasLimit uint64, nonce uint64) bool {
 
 	// Judge the tx count waiting to be committed, if the tx count is greater
 	// than the maxCommitTxCount, commit the blocks directly
 	maxCommitTxCount := sconfig.GetSenderConfig().MaxCommitTxCount
-	totalTxCount := s.CalculateTotalTxCount(blocks)
+	totalTxCount := s.CalculateTotalTxCountForCompressBlock(blocks)
 	if totalTxCount > maxCommitTxCount {
 		return true
 	}
@@ -680,7 +741,13 @@ func (s *Sender) ShouldCommitBlocks(kmsSvc *kms.Client, keyId string, chainID *b
 
 	// Judge the average tx gas consumption for the committing operation, if the average tx gas consumption is greater
 	// than the maxCommitAvgUnitGas, abandon commit operation for temporary
-	estimatedFee, err := zkbnb.EstimateCommitGasWithNonceAndKms(context.Background(), kmsSvc, keyId, chainID, address,
+	// generate the transaction constructor for verify and execute block function
+	transactorConstructor, err := s.GenerateConstructorForCommit()
+	if err != nil {
+		logx.Errorf("abandon commit block to l1, GenerateConstructorForCommit get some error:%s", err.Error())
+		return false
+	}
+	estimatedFee, err := zkbnb.EstimateCommitGasWithNonce(transactorConstructor,
 		instance, lastBlock, commitBlocksInfo, gasPrice, gasLimit, nonce)
 	if err != nil {
 		logx.Errorf("abandon commit block to l1, EstimateGas operation get some error:%s", err.Error())
@@ -697,6 +764,27 @@ func (s *Sender) ShouldCommitBlocks(kmsSvc *kms.Client, keyId string, chainID *b
 	return true
 }
 
+func (s *Sender) GetBlocksForVerifyAndExecute(start int64) (blocksForCommit []*block.Block, err error) {
+	verifyTxCountLimit := sconfig.GetSenderConfig().VerifyTxCountLimit
+	maxVerifyBlockCount := sconfig.GetSenderConfig().MaxVerifyBlockCount
+	var totalTxCount uint64 = 0
+	for {
+		blocks, err := s.blockModel.GetCommittedBlocksBetween(start,
+			start+int64(maxVerifyBlockCount))
+		if err != nil && err != types.DbErrNotFound {
+			return nil, fmt.Errorf("unable to get blocks to prove, err: %v", err)
+		}
+
+		totalTxCount = s.CalculateTotalTxCountForBlock(blocks)
+		if totalTxCount < verifyTxCountLimit {
+			return blocks, nil
+		}
+		if maxVerifyBlockCount > 1 {
+			maxVerifyBlockCount--
+		}
+	}
+}
+
 func (s *Sender) CalculateBlockInterval(blocks []*compressedblock.CompressedBlock) int64 {
 	if len(blocks) > 0 {
 		block := blocks[0]
@@ -706,12 +794,66 @@ func (s *Sender) CalculateBlockInterval(blocks []*compressedblock.CompressedBloc
 	return 0
 }
 
-func (s *Sender) CalculateTotalTxCount(blocks []*compressedblock.CompressedBlock) uint64 {
+func (s *Sender) CalculateTotalTxCountForCompressBlock(blocks []*compressedblock.CompressedBlock) uint64 {
 	var totalTxCount uint16 = 0
-	for _, b := range blocks {
-		totalTxCount = totalTxCount + b.BlockSize
+	if len(blocks) > 0 {
+		for _, b := range blocks {
+			totalTxCount = totalTxCount + b.BlockSize
+		}
+		return uint64(totalTxCount)
 	}
-	return uint64(totalTxCount)
+	return 0
+}
+
+func (s *Sender) CalculateTotalTxCountForBlock(blocks []*block.Block) uint64 {
+	var totalTxCount uint16 = 0
+	if len(blocks) > 0 {
+		for _, b := range blocks {
+			totalTxCount = totalTxCount + b.BlockSize
+		}
+		return uint64(totalTxCount)
+	}
+	return 0
+}
+
+func (s *Sender) GenerateConstructorForCommit() (zkbnb.TransactOptsConstructor, error) {
+	sendSignatureMode := s.config.ChainConfig.SendSignatureMode
+	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
+		return s.commitAuthClient, nil
+	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+		return s.commitKmsKeyClient, nil
+	}
+	return nil, errors.New("sendSignatureMode can only be PrivateKeySignMode or KeyManageSignMode")
+}
+
+func (s *Sender) GenerateConstructorForVerifyAndExecute() (zkbnb.TransactOptsConstructor, error) {
+	sendSignatureMode := s.config.ChainConfig.SendSignatureMode
+	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
+		return s.verifyAuthClient, nil
+	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+		return s.verifyKmsKeyClient, nil
+	}
+	return nil, errors.New("sendSignatureMode can only be PrivateKeySignMode or KeyManageSignMode")
+}
+
+func (s *Sender) GetCommitAddress() common.Address {
+	sendSignatureMode := s.config.ChainConfig.SendSignatureMode
+	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
+		return s.commitAuthClient.GetL1Address()
+	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+		return s.commitKmsKeyClient.GetL1Address()
+	}
+	return [20]byte{}
+}
+
+func (s *Sender) GetVerifyAddress() common.Address {
+	sendSignatureMode := s.config.ChainConfig.SendSignatureMode
+	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
+		return s.verifyAuthClient.GetL1Address()
+	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+		return s.verifyKmsKeyClient.GetL1Address()
+	}
+	return [20]byte{}
 }
 
 func (s *Sender) Shutdown() {

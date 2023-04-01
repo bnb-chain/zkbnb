@@ -207,7 +207,7 @@ replace (
 	github.com/consensys/gnark-crypto => github.com/bnb-chain/gnark-crypto v0.7.1-0.20230203031630-7c643ad11891
 )
 
-replace github.com/bnb-chain/zkbnb-eth-rpc => github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230331215646-4f010068fa34
+replace github.com/bnb-chain/zkbnb-eth-rpc => github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230401223548-c64e6b9ba2a0
 
 replace github.com/bnb-chain/zkbnb-crypto => github.com/15000785133/zkbnb-crypto v0.0.8-0.20230330200044-c6f6b08fc397
 
