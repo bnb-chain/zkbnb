@@ -70,6 +70,7 @@ func Run(configFile string, address string, token string, nftIndexListStr string
 	if err != nil {
 		return err
 	}
+
 	err = desertExit.Run()
 	if err != nil {
 		logx.Severe(err)

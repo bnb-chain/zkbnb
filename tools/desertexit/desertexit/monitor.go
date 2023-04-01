@@ -95,6 +95,7 @@ func (m *DesertExit) MonitorGenericBlocks() (err error) {
 			logx.Info("get all the l2 blocks from l1 successfully")
 			return nil
 		}
+
 		startHeight, endHeight, err := m.getBlockRangeToSync(l1syncedblock.TypeGeneric)
 		if err != nil {
 			logx.Errorf("get block range to sync error, err: %s", err.Error())
@@ -110,11 +111,11 @@ func (m *DesertExit) MonitorGenericBlocks() (err error) {
 		if err != nil {
 			return fmt.Errorf("failed to get priority request count, err: %v", err)
 		}
+
 		logs, err := monitor.GetZkBNBContractLogs(m.cli, m.ZkBnbContractAddress, uint64(startHeight), uint64(endHeight))
 		if err != nil {
 			return fmt.Errorf("failed to get contract logs, err: %v", err)
 		}
-
 		logx.Infof("type is typeGeneric blocks from %d to %d and vlog len: %v", startHeight, endHeight, len(logs))
 
 		var (
@@ -142,7 +143,6 @@ func (m *DesertExit) MonitorGenericBlocks() (err error) {
 			case monitor2.ZkbnbLogNewPriorityRequestSigHash.Hex():
 				priorityRequestCountCheck++
 				l1EventInfo.EventType = monitor2.EventTypeNewPriorityRequest
-
 				l2TxEventMonitorInfo, err := monitor.ConvertLogToNewPriorityRequestEvent(vlog)
 				if err != nil {
 					return fmt.Errorf("failed to convert NewPriorityRequest log, err: %v", err)
@@ -150,7 +150,6 @@ func (m *DesertExit) MonitorGenericBlocks() (err error) {
 				priorityRequests = append(priorityRequests, l2TxEventMonitorInfo)
 			case monitor2.ZkbnbLogBlockCommitSigHash.Hex():
 				l1EventInfo.EventType = monitor2.EventTypeCommittedBlock
-
 				var event zkbnb.ZkBNBBlockCommit
 				if err := monitor2.ZkBNBContractAbi.UnpackIntoInterface(&event, monitor2.EventNameBlockCommit, vlog.Data); err != nil {
 					return fmt.Errorf("failed to unpack ZkBNBBlockCommit event, err: %v", err)
@@ -201,11 +200,12 @@ func (m *DesertExit) MonitorGenericBlocks() (err error) {
 
 			l1Events = append(l1Events, l1EventInfo)
 		}
+
 		if priorityRequestCount != priorityRequestCountCheck {
 			return fmt.Errorf("new priority requests events not match, try it again")
 		}
-		heights := make([]int64, 0, len(relatedBlocks))
 
+		heights := make([]int64, 0, len(relatedBlocks))
 		for height, _ := range relatedBlocks {
 			heights = append(heights, height)
 		}
@@ -214,33 +214,39 @@ func (m *DesertExit) MonitorGenericBlocks() (err error) {
 		if err != nil && err != types2.DbErrNotFound {
 			return fmt.Errorf("failed to get blocks by heights, err: %v", err)
 		}
+
 		for _, block := range blocks {
 			pendingUpdateBlock := relatedBlocks[block.BlockHeight]
-			if pendingUpdateBlock != nil {
-				pendingUpdateBlock.ID = block.ID
-				if pendingUpdateBlock.CommittedTxHash == "" {
-					pendingUpdateBlock.CommittedTxHash = block.CommittedTxHash
-				}
+			if pendingUpdateBlock == nil {
+				continue
+			}
+			pendingUpdateBlock.ID = block.ID
+			if pendingUpdateBlock.CommittedTxHash == "" {
+				pendingUpdateBlock.CommittedTxHash = block.CommittedTxHash
 			}
 		}
+
 		commitBlockInfoHashMap := make(map[uint32]*ZkBNBCommitBlockInfo, 0)
 		for _, pendingUpdateBlock := range relatedBlocks {
-			if desertexit.StatusVerified == pendingUpdateBlock.BlockStatus {
-				if pendingUpdateBlock.CommittedTxHash == "" {
-					return fmt.Errorf("committed tx hash is blank, block height: %d", pendingUpdateBlock.BlockHeight)
-				}
-				commitBlocksCallData, err := m.getCommitBlocksCallData(pendingUpdateBlock.CommittedTxHash)
-				if err != nil {
-					return err
-				}
-				for _, blocksData := range commitBlocksCallData.NewBlocksData {
-					commitBlockInfoHashMap[blocksData.BlockNumber] = &blocksData
-				}
+			if desertexit.StatusVerified != pendingUpdateBlock.BlockStatus {
+				continue
+			}
+			if pendingUpdateBlock.CommittedTxHash == "" {
+				return fmt.Errorf("committed tx hash is blank, block height: %d", pendingUpdateBlock.BlockHeight)
+			}
+			if commitBlockInfoHashMap[uint32(pendingUpdateBlock.BlockHeight)] != nil {
+				continue
+			}
+			commitBlocksCallData, err := m.getCommitBlocksCallData(pendingUpdateBlock.CommittedTxHash)
+			if err != nil {
+				return err
+			}
+			for _, blocksData := range commitBlocksCallData.NewBlocksData {
+				commitBlockInfoHashMap[blocksData.BlockNumber] = &blocksData
 			}
 		}
 
 		updateBlocks := make([]*desertexit.DesertExitBlock, 0)
-
 		for height, pendingUpdateBlock := range relatedBlocks {
 			commitBlockInfo := commitBlockInfoHashMap[uint32(height)]
 			if commitBlockInfo != nil {
@@ -249,6 +255,7 @@ func (m *DesertExit) MonitorGenericBlocks() (err error) {
 			}
 			updateBlocks = append(updateBlocks, pendingUpdateBlock)
 		}
+
 		eventInfosBytes, err := json.Marshal(l1Events)
 		if err != nil {
 			return err
@@ -261,22 +268,26 @@ func (m *DesertExit) MonitorGenericBlocks() (err error) {
 
 		//update db
 		err = m.db.Transaction(func(tx *gorm.DB) error {
+
 			if l1BlockMonitorDesertInfo != nil {
 				err := m.L1SyncedBlockModel.CreateL1SyncedBlockInTransact(tx, l1BlockMonitorDesertInfo)
 				if err != nil {
 					return err
 				}
 			}
+
 			//create l1 synced block
 			err := m.L1SyncedBlockModel.CreateL1SyncedBlockInTransact(tx, l1BlockMonitorInfo)
 			if err != nil {
 				return err
 			}
+
 			//create priority requests
 			err = m.PriorityRequestModel.CreatePriorityRequestsInTransact(tx, priorityRequests)
 			if err != nil {
 				return err
 			}
+
 			//update blocks
 			err = m.DesertExitBlockModel.BatchInsertOrUpdateInTransact(tx, updateBlocks)
 			if err != nil {
@@ -297,6 +308,7 @@ func (m *DesertExit) getCommitBlocksCallData(hash string) (*CommitBlocksCallData
 		logx.Severe(err)
 		return nil, err
 	}
+
 	storageStoredBlockInfo := StorageStoredBlockInfo{}
 	newBlocksData := make([]ZkBNBCommitBlockInfo, 0)
 	callData := CommitBlocksCallData{LastCommittedBlockData: &storageStoredBlockInfo, NewBlocksData: newBlocksData}
@@ -312,13 +324,13 @@ func (m *DesertExit) getLastStoredBlockInfo(verifyTxHash string, height int64) (
 	if err != nil {
 		return nil, err
 	}
+
 	for _, blocksInfo := range blocksCallData.VerifyAndExecuteBlocksInfo {
 		if blocksInfo.BlockHeader.BlockNumber == uint32(height) {
 			return &blocksInfo.BlockHeader, nil
 		}
 	}
-	logx.Severe("not find last stored block")
-	return nil, nil
+	return nil, fmt.Errorf("not find last stored block")
 }
 
 func (m *DesertExit) getVerifyAndExecuteBlocksCallData(hash string) (*VerifyAndExecuteBlocksCallData, error) {
@@ -328,6 +340,7 @@ func (m *DesertExit) getVerifyAndExecuteBlocksCallData(hash string) (*VerifyAndE
 		logx.Severe(err)
 		return nil, err
 	}
+
 	newBlocksData := make([]ZkBNBVerifyAndExecuteBlockInfo, 0)
 	proofs := make([]*big.Int, 0)
 	callData := VerifyAndExecuteBlocksCallData{Proofs: proofs, VerifyAndExecuteBlocksInfo: newBlocksData}
@@ -366,6 +379,7 @@ func (m *DesertExit) getBlockRangeToSync(monitorType int) (int64, int64, error) 
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to get l1 height, err: %v", err)
 	}
+
 	safeHeight := latestHeight - m.Config.ChainConfig.ConfirmBlocksCount
 	safeHeight = uint64(common2.MinInt64(int64(safeHeight), handledHeight+m.Config.ChainConfig.MaxHandledBlocksCount))
 	return handledHeight + 1, int64(safeHeight), nil

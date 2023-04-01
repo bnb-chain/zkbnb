@@ -43,9 +43,11 @@ func NewGenerateProof(config *config.Config) (*GenerateProof, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
 	}
+
 	pool, err := ants.NewPool(50, ants.WithPanicHandler(func(p interface{}) {
 		panic("worker exits from a panic")
 	}))
+
 	if config.ProofFolder == "" {
 		config.ProofFolder = "./tools/desertexit/proofdata/"
 	}
@@ -63,10 +65,12 @@ func (c *GenerateProof) Run() error {
 	if err != nil {
 		return err
 	}
+
 	err = c.loadAllNfts()
 	if err != nil {
 		return err
 	}
+
 	limit := 1000
 	executedBlock, err := c.bc.DesertExitBlockModel.GetLatestExecutedBlock()
 	if err != nil && err != types.DbErrNotFound {
@@ -102,23 +106,28 @@ func (c *GenerateProof) Run() error {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
+
 		for _, pendingBlock := range pendingBlocks {
 			if int(pendingBlock.BlockHeight)-int(executedTxMaxHeight) != 1 {
 				time.Sleep(50 * time.Millisecond)
 				logx.Infof("not equal block height=%s", pendingBlock.BlockHeight)
 				break
 			}
+
 			err := c.executeBlockFunc(pendingBlock)
 			if err != nil {
 				return err
 			}
+
 			err = c.saveToDb(pendingBlock)
 			if err != nil {
 				return err
 			}
+
 			executedTxMaxHeight = pendingBlock.BlockHeight
 		}
 	}
+
 	if allBlocksHandled {
 		logx.Info("execute all the l2 blocks successfully")
 		account, err := c.bc.AccountModel.GetAccountByL1Address(c.config.Address)
@@ -126,6 +135,7 @@ func (c *GenerateProof) Run() error {
 			logx.Errorf("get account by address error L1Address=%s,%v,", c.config.Address, err)
 			return err
 		}
+
 		err = c.getMerkleProofs(executedTxMaxHeight, account.AccountIndex, c.config.NftIndexList, c.config.Token)
 		if err != nil {
 			return err
@@ -275,6 +285,7 @@ func (c *GenerateProof) executeBlockFunc(desertExitBlock *desertexit.DesertExitB
 			return fmt.Errorf("%d exists in PendingNftMap but not in DirtyNftMap", nftInfo.NftIndex)
 		}
 	}
+
 	for nftIndex, _ := range c.bc.Statedb.StateCache.GetDirtyNftMap() {
 		_, exist := c.bc.Statedb.StateCache.GetPendingNft(nftIndex)
 		if !exist {
@@ -309,10 +320,12 @@ func (c *GenerateProof) saveToDb(desertExitBlock *desertexit.DesertExitBlock) er
 		if err != nil {
 			return err
 		}
+
 		err = c.bc.DB().AccountModel.BatchInsertOrUpdateInTransact(tx, pendingAccounts)
 		if err != nil {
 			return err
 		}
+
 		err = c.bc.DB().L2NftModel.BatchInsertOrUpdateInTransact(tx, pendingNfts)
 		if err != nil {
 			return err
@@ -323,12 +336,15 @@ func (c *GenerateProof) saveToDb(desertExitBlock *desertexit.DesertExitBlock) er
 		logx.Errorf("saveToDb failed:%s,blockHeight:%d", err.Error(), desertExitBlock.BlockHeight)
 		return err
 	}
+
 	for _, accountInfo := range pendingAccounts {
 		c.bc.Statedb.PendingAccountMap[accountInfo.AccountIndex].AccountId = int64(accountInfo.ID)
 	}
+
 	for _, nftInfo := range pendingNfts {
 		c.bc.Statedb.PendingNftMap[nftInfo.NftIndex].ID = nftInfo.ID
 	}
+
 	c.bc.Statedb.SyncPendingAccountToMemoryCache(c.bc.Statedb.PendingAccountMap)
 	c.bc.Statedb.SyncPendingNftToMemoryCache(c.bc.Statedb.PendingNftMap)
 	return nil
@@ -340,19 +356,23 @@ func (c *GenerateProof) loadAllAccounts() error {
 	totalTask := 0
 	errChan := make(chan error, 1)
 	defer close(errChan)
+
 	batchReloadSize := 1000
 	maxAccountIndex, err := c.bc.AccountModel.GetMaxAccountIndex()
 	if err != nil && err != types.DbErrNotFound {
 		return fmt.Errorf("load all accounts failed:%s", err.Error())
 	}
+
 	if maxAccountIndex == -1 {
 		return nil
 	}
+
 	for i := 0; int64(i) <= maxAccountIndex; i += batchReloadSize {
 		toAccountIndex := int64(i+batchReloadSize) - 1
 		if toAccountIndex > maxAccountIndex {
 			toAccountIndex = maxAccountIndex
 		}
+
 		totalTask++
 		err := func(fromAccountIndex int64, toAccountIndex int64) error {
 			return c.pool.Submit(func() {
@@ -373,7 +393,6 @@ func (c *GenerateProof) loadAllAccounts() error {
 						}
 						c.bc.Statedb.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
 						c.bc.Statedb.L1AddressCache.Add(formatAccount.L1Address, formatAccount.AccountIndex)
-
 					}
 				}
 				logx.Infof("GetByNftIndexRange cost time %s", float64(time.Since(start).Milliseconds()))
@@ -401,6 +420,7 @@ func (c *GenerateProof) loadAllNfts() error {
 	totalTask := 0
 	errChan := make(chan error, 1)
 	defer close(errChan)
+
 	batchReloadSize := 1000
 	maxNftIndex, err := c.bc.L2NftModel.GetMaxNftIndex()
 	if err != nil && err != types.DbErrNotFound {
@@ -414,6 +434,7 @@ func (c *GenerateProof) loadAllNfts() error {
 		if toNftIndex > maxNftIndex {
 			toNftIndex = maxNftIndex
 		}
+
 		totalTask++
 		err := func(fromNftIndex int64, toNftIndex int64) error {
 			return c.pool.Submit(func() {
@@ -1066,6 +1087,7 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 		logx.Errorf("init tree database failed: %s", err)
 		return err
 	}
+
 	accountInfo, err := c.bc.DB().AccountModel.GetAccountByIndex(accountIndex)
 	if err != nil {
 		logx.Errorf("get account failed: %s", err)
@@ -1075,6 +1097,7 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 	if err != nil {
 		return err
 	}
+
 	// dbinitializer accountTree and accountStateTrees
 	accountTree, accountAssetTrees, err := tree.InitAccountTree(
 		c.bc.AccountModel,
@@ -1089,6 +1112,7 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 		logx.Error("init merkle tree error:", err)
 		return err
 	}
+
 	accountStateRoot := common.Bytes2Hex(accountTree.Root())
 	logx.Infof("account tree accountStateRoot=%s", accountStateRoot)
 	// dbinitializer nftTree
@@ -1101,6 +1125,7 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 		logx.Errorf("init nft tree error: %s", err.Error())
 		return err
 	}
+
 	nftStateRoot := common.Bytes2Hex(nftTree.Root())
 	logx.Infof("nft tree nftStateRoot=%s", nftStateRoot)
 	stateRoot := tree.ComputeStateRootHash(accountTree.Root(), nftTree.Root())
@@ -1110,6 +1135,7 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 	if err != nil {
 		return err
 	}
+
 	// set account merkle proof
 	merkleProofsAccount, err := prove.SetFixedAccountArray(accountMerkleProofs)
 	if err != nil {
@@ -1131,11 +1157,13 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 		logx.Errorf("get desert exit block failed: %s", err)
 		return err
 	}
+
 	lastStoredBlockInfo, err := m.getLastStoredBlockInfo(desertExitBlock.VerifiedTxHash, desertExitBlock.BlockHeight)
 	if err != nil {
 		logx.Errorf("get last stored block info failed: %s", err)
 		return err
 	}
+
 	storedBlockInfo := StoredBlockInfo{
 		BlockSize:                    lastStoredBlockInfo.BlockSize,
 		BlockNumber:                  lastStoredBlockInfo.BlockNumber,
@@ -1158,6 +1186,7 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 		Nonce:           accountInfo.Nonce,
 		CollectionNonce: accountInfo.CollectionNonce,
 	}
+
 	accountMerkleProof := make([]string, len(merkleProofsAccount))
 	for i, _ := range merkleProofsAccount {
 		accountMerkleProof[i] = common.Bytes2Hex(merkleProofsAccount[i])
@@ -1179,6 +1208,7 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 				return err
 			}
 		}
+
 		assetMerkleProof, err := accountAssetTrees.Get(accountIndex).GetProof(uint64(assetId))
 		if err != nil {
 			return err
@@ -1192,14 +1222,15 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 			return err
 		}
 		logx.Infof("accountIndex=%d,assetId=%d, merkleProofsAccountAsset=%s", accountIndex, assetId, string(merkleProofsAccountAssetBytes))
-		performDesertData := PerformDesertAssetData{}
 
+		performDesertData := PerformDesertAssetData{}
 		performDesertData.AccountMerkleProof = accountMerkleProof
 
 		assetMerkleProofByte := make([]string, len(merkleProofsAccountAsset))
 		for i, _ := range merkleProofsAccountAsset {
 			assetMerkleProofByte[i] = common.Bytes2Hex(merkleProofsAccountAsset[i])
 		}
+
 		performDesertData.AssetMerkleProof = assetMerkleProofByte
 		performDesertData.NftRoot = common.Bytes2Hex(nftTree.Root())
 
@@ -1210,6 +1241,7 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 			OfferCanceledOrFinalized: formatAccountInfo.AssetInfo[int64(assetId)].OfferCanceledOrFinalized.Int64(),
 		}
 		performDesertData.StoredBlockInfo = storedBlockInfo
+
 		data, err := json.Marshal(performDesertData)
 		if err != nil {
 			return err
@@ -1230,6 +1262,7 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 				logx.Errorf("get nft failed: %s", err)
 				return err
 			}
+
 			nftMerkleProofs, err := nftTree.GetProof(uint64(nftIndex))
 			if err != nil {
 				return err
@@ -1243,6 +1276,7 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 				return err
 			}
 			logx.Infof("accountIndex=%d,nftIndex=%d, merkleProofsNft=%s", accountIndex, nftIndex, string(merkleProofsNftBytes))
+
 			exitNftData := DesertVerifierNftExitData{}
 			contentHash := common.Hex2Bytes(nftInfo.NftContentHash)
 			if len(contentHash) >= types2.NftContentHashBytesSize {
@@ -1257,6 +1291,7 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 			exitNftData.CreatorTreasuryRate = nftInfo.RoyaltyRate
 			exitNftData.NftContentType = uint8(nftInfo.NftContentType)
 			exitNftData.OwnerAccountIndex = nftInfo.OwnerAccountIndex
+
 			exitNfts = append(exitNfts, exitNftData)
 			merkleProofsNftByte := make([]string, len(merkleProofsNft))
 			for i, _ := range merkleProofsNft {
@@ -1264,12 +1299,14 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 			}
 			nftMerkleProofsList = append(nftMerkleProofsList, merkleProofsNftByte)
 		}
+
 		performDesertNftData.ExitNfts = exitNfts
 		performDesertNftData.NftMerkleProofs = nftMerkleProofsList
 		performDesertNftData.AssetRoot = common.Bytes2Hex(accountAssetTrees.Get(accountIndex).Root())
 		performDesertNftData.StoredBlockInfo = storedBlockInfo
 		performDesertNftData.AccountExitData = accountExitData
 		performDesertNftData.AccountMerkleProof = accountMerkleProof
+
 		data, err := json.Marshal(performDesertNftData)
 		err = ioutil.WriteFile(m.Config.ProofFolder+"performDesertNft.json", data, 0777)
 		if err != nil {

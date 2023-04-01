@@ -11,6 +11,7 @@ func (m *DesertExit) CleanHistoryBlocks() (err error) {
 	if err != nil {
 		return err
 	}
+
 	minHeight := latestGenericBlock.L1BlockHeight
 	keepHeight := minHeight - m.Config.ChainConfig.KeptHistoryBlocksCount
 	if keepHeight <= 0 {

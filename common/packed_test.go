@@ -18,7 +18,10 @@
 package common
 
 import (
+	"github.com/bnb-chain/zkbnb-crypto/util"
+	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,3 +40,34 @@ func TestToPackedFee(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, fee, int64(32011))
 }
+
+func TestUnpackAmount(t *testing.T) {
+	a, _ := strconv.ParseInt("1111111111111111111111111111111111111111", 2, 40)
+
+	//a, _ := new(big.Int).SetString("1111111111111111111111111111111111111111", 2)
+	logx.Info(a)
+	nAmount, _ := util.UnpackAmount(new(big.Int).SetInt64(a))
+	logx.Info(nAmount.String())
+}
+
+func TestUnpackFee(t *testing.T) {
+	a, _ := strconv.ParseInt("1111111111111111", 2, 16)
+	logx.Info(a)
+	nAmount, _ := util.UnpackFee(new(big.Int).SetInt64(a))
+	logx.Info(nAmount.String())
+
+}
+
+func TestCheckPackedAmount(t *testing.T) {
+	amount, _ := new(big.Int).SetString("123456789012345678901234567890123456789012", 10)
+	logx.Info(amount)
+	packedAmount, _ := util.ToPackedAmount(amount)
+	logx.Info(packedAmount)
+
+	nAmount, _ := util.UnpackAmount(big.NewInt(packedAmount))
+	logx.Info(nAmount.String())
+}
+
+//4570789518076018688
+//4570789518076018688
+//4570789518076018688

@@ -21,11 +21,14 @@ import (
 	"fmt"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
+	common2 "github.com/bnb-chain/zkbnb/common"
+	monitor2 "github.com/bnb-chain/zkbnb/common/monitor"
 	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
 	"github.com/bnb-chain/zkbnb/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
+	"sort"
 )
 
 type PerformDesert struct {
@@ -71,15 +74,19 @@ func NewPerformDesert(c config.Config) (*PerformDesert, error) {
 func (m *PerformDesert) PerformDesert(performDesertAsset PerformDesertAssetData) error {
 	nftRoot := new(big.Int).SetBytes(common.FromHex(performDesertAsset.NftRoot))
 	accountExitData, accountMerkleProof := getVerifierExitData(performDesertAsset.AccountExitData, performDesertAsset.AccountMerkleProof)
+
 	storedBlockInfo := getStoredBlockInfo(performDesertAsset.StoredBlockInfo)
+
 	var assetMerkleProof [16]*big.Int
 	for i, _ := range performDesertAsset.AssetMerkleProof {
 		assetMerkleProof[i] = new(big.Int).SetBytes(common.FromHex(performDesertAsset.AssetMerkleProof[i]))
 	}
+
 	assetExitData := zkbnb.DesertVerifierAssetExitData{}
 	assetExitData.OfferCanceledOrFinalized = new(big.Int).SetInt64(performDesertAsset.AssetExitData.OfferCanceledOrFinalized)
 	assetExitData.Amount = new(big.Int).SetInt64(performDesertAsset.AssetExitData.Amount)
 	assetExitData.AssetId = performDesertAsset.AssetExitData.AssetId
+
 	return m.doPerformDesert(storedBlockInfo, nftRoot, assetExitData, accountExitData, assetMerkleProof, accountMerkleProof)
 }
 
@@ -90,6 +97,7 @@ func (m *PerformDesert) doPerformDesert(storedBlockInfo zkbnb.StorageStoredBlock
 		logx.Errorf("failed to fetch gas price: %v", err)
 		return err
 	}
+
 	txHash, err := zkbnb.PerformDesert(m.cli, m.authCli, m.zkbnbInstance, storedBlockInfo, nftRoot, assetExitData, accountExitData, assetMerkleProof, accountMerkleProof, gasPrice, m.Config.ChainConfig.GasLimit)
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
@@ -128,6 +136,7 @@ func (m *PerformDesert) PerformDesertNft(performDesertNftData PerformDesertNftDa
 			CollectionId:        new(big.Int).SetInt64(nftExitData.CollectionId),
 		})
 	}
+
 	return m.doPerformDesertNft(storedBlockInfo, assetRoot, accountExitData, exitNfts, accountMerkleProof, nftMerkleProofs)
 }
 
@@ -137,6 +146,7 @@ func (m *PerformDesert) doPerformDesertNft(storedBlockInfo zkbnb.StorageStoredBl
 		logx.Errorf("failed to fetch gas price: %v", err)
 		return err
 	}
+
 	txHash, err := zkbnb.PerformDesertNft(m.cli, m.authCli, m.zkbnbInstance, storedBlockInfo, assetRoot, accountExitData, exitNfts, accountMerkleProof, nftMerkleProofs, gasPrice, m.Config.ChainConfig.GasLimit)
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
@@ -207,11 +217,13 @@ func (m *PerformDesert) WithdrawPendingBalance(owner common.Address, token commo
 		logx.Errorf("failed to fetch gas price: %v", err)
 		return err
 	}
+
 	txHash, err := zkbnb.WithdrawPendingBalance(m.cli, m.authCli, m.zkbnbInstance, owner, token, amount, gasPrice, m.Config.ChainConfig.GasLimit)
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}
 	logx.Infof("withdrawPendingBalance success,txHash=%s", txHash)
+
 	pendingBalanceAfter, err := m.GetPendingBalance(owner, token)
 	if err != nil {
 		logx.Errorf("failed to get pending balance: %v", err)
@@ -235,6 +247,7 @@ func (m *PerformDesert) WithdrawPendingNFTBalance(nftIndex *big.Int) error {
 		logx.Errorf("failed to fetch gas price: %v", err)
 		return err
 	}
+
 	txHash, err := zkbnb.WithdrawPendingNFTBalance(m.cli, m.authCli, m.zkbnbInstance, nftIndex, gasPrice, m.Config.ChainConfig.GasLimit)
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
@@ -244,50 +257,57 @@ func (m *PerformDesert) WithdrawPendingNFTBalance(nftIndex *big.Int) error {
 }
 
 func (m *PerformDesert) CancelOutstandingDeposit(address string) error {
-	//newDesertExit, err := NewDesertExit(&m.Config)
-	//if err != nil {
-	//	return err
-	//}
-	//total, err := zkbnb.TotalOpenPriorityRequests(m.zkbnbInstance)
-	//if err != nil {
-	//	return err
-	//}
-	//if total == 0 {
-	//	logx.Infof("There are no outstanding deposits")
-	//	return nil
-	//}
-	//requestId, err := zkbnb.FirstPriorityRequestId(m.zkbnbInstance)
-	//if err != nil {
-	//	return err
-	//}
+	newDesertExit, err := NewDesertExit(&m.Config)
+	if err != nil {
+		return err
+	}
+	total, err := zkbnb.TotalOpenPriorityRequests(m.zkbnbInstance)
+	if err != nil {
+		return err
+	}
+	if total == 0 {
+		logx.Infof("There are no outstanding deposits")
+		return nil
+	}
+	requestId, err := zkbnb.FirstPriorityRequestId(m.zkbnbInstance)
+	if err != nil {
+		return err
+	}
 
-	//newDesertExit.PriorityRequestModel.GetPriorityRequestsByTxTypes(address, int64(requestId), []int64{monitor2.TxTypeDeposit, monitor2.TxTypeDepositNft})
-	//priorityRequests, err := m.getOutstandingDeposits()
-	//if err != nil {
-	//	return err
-	//}
-	//maxRequestId := int64(0)
-	//depositsPubData := make([][]byte, 0)
-	//index := int64(0)
-	//
-	//sort.Slice(priorityRequests, func(i, j int) bool {
-	//	return priorityRequests[i].RequestId < priorityRequests[j].RequestId
-	//})
-	//
-	//for _, request := range priorityRequests {
-	//	logx.Infof("process pending priority request, requestId=%d", request.RequestId)
-	//	depositsPubData[index] = common.FromHex(request.Pubdata)
-	//	maxRequestId = common2.MaxInt64(request.RequestId, maxRequestId)
-	//	if int64(len(depositsPubData[index])) == m.Config.ChainConfig.MaxCancelOutstandingDepositCount {
-	//		m.doCancelOutstandingDeposit(uint64(maxRequestId), depositsPubData)
-	//		maxRequestId = int64(0)
-	//		depositsPubData = make([][]byte, 0)
-	//		index = 0
-	//		continue
-	//	}
-	//	index++
-	//}
-	//m.doCancelOutstandingDeposit(uint64(maxRequestId), depositsPubData)
+	for true {
+		priorityRequests, err := newDesertExit.PriorityRequestModel.GetPriorityRequestsByTxTypes(address, int64(requestId), []int64{monitor2.TxTypeDeposit, monitor2.TxTypeDepositNft})
+		if err != nil && err != types.DbErrNotFound {
+			return err
+		}
+		if priorityRequests == nil {
+			return nil
+		}
+
+		maxRequestId := int64(0)
+		depositsPubData := make([][]byte, 0)
+		index := int64(0)
+
+		sort.Slice(priorityRequests, func(i, j int) bool {
+			return priorityRequests[i].RequestId < priorityRequests[j].RequestId
+		})
+
+		for _, request := range priorityRequests {
+			logx.Infof("process pending priority request, requestId=%d", request.RequestId)
+			depositsPubData[index] = common.FromHex(request.Pubdata)
+			maxRequestId = common2.MaxInt64(request.RequestId, maxRequestId)
+			if int64(len(depositsPubData[index])) == m.Config.ChainConfig.MaxCancelOutstandingDepositCount {
+				m.doCancelOutstandingDeposit(uint64(maxRequestId), depositsPubData)
+				maxRequestId = int64(0)
+				depositsPubData = make([][]byte, 0)
+				index = 0
+				continue
+			}
+			index++
+		}
+
+		m.doCancelOutstandingDeposit(uint64(maxRequestId), depositsPubData)
+		requestId = uint64(maxRequestId + 1)
+	}
 	return nil
 }
 
@@ -300,6 +320,7 @@ func (m *PerformDesert) doCancelOutstandingDeposit(maxRequestId uint64, deposits
 		logx.Errorf("failed to fetch gas price: %v", err)
 		return
 	}
+
 	txHash, err := zkbnb.CancelOutstandingDepositsForDesertMode(m.cli, m.authCli, m.zkbnbInstance, maxRequestId, depositsPubData, gasPrice, m.Config.ChainConfig.GasLimit)
 	if err != nil {
 		logx.Errorf("failed to send tx: %v:%s", err, txHash)
@@ -314,6 +335,7 @@ func (m *PerformDesert) ActivateDesertMode() error {
 		logx.Errorf("failed to fetch gas price: %v", err)
 		return err
 	}
+
 	txHash, err := zkbnb.ActivateDesertMode(m.cli, m.authCli, m.zkbnbInstance, gasPrice, m.Config.ChainConfig.GasLimit)
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
@@ -331,11 +353,13 @@ func (m *PerformDesert) GetBalance(address common.Address, assetAddr common.Addr
 		logx.Infof("get balance,balance=%d", amount.Int64())
 		return amount, nil
 	}
+
 	instance, err := zkbnb.LoadERC20(m.cli, assetAddr.Hex())
 	if err != nil {
 		logx.Severe(err)
 		return nil, err
 	}
+
 	amount, err := zkbnb.BalanceOf(instance, address, assetAddr)
 	if err != nil {
 		return nil, err
