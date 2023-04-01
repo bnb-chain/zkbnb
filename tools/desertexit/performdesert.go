@@ -62,7 +62,7 @@ func Perform(configFile string, command string, amount string, nftIndex string, 
 		}
 		break
 	case CommandCancelOutstandingDeposit:
-		err = m.CancelOutstandingDeposit()
+		err = m.CancelOutstandingDeposit("")
 		if err != nil {
 			logx.Severe(err)
 			return err
