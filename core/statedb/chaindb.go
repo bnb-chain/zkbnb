@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"github.com/bnb-chain/zkbnb/dao/desertexit"
+	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
 	"github.com/bnb-chain/zkbnb/dao/rollback"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
@@ -39,6 +40,7 @@ type ChainDB struct {
 	SysConfigModel sysconfig.SysConfigModel
 
 	DesertExitBlockModel desertexit.DesertExitBlockModel
+	L1SyncedBlockModel   l1syncedblock.L1SyncedBlockModel
 }
 
 func NewChainDB(db *gorm.DB) *ChainDB {
@@ -61,6 +63,7 @@ func NewChainDB(db *gorm.DB) *ChainDB {
 		L2NftMetadataHistoryModel: nft.NewL2NftMetadataHistoryModel(db),
 
 		DesertExitBlockModel: desertexit.NewDesertExitBlockModel(db),
+		L1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),
 	}
 }
 

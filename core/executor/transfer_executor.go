@@ -45,7 +45,7 @@ func (e *TransferExecutor) Prepare() error {
 	}
 	if err == types.AppErrAccountNotFound {
 		if !e.isDesertExit {
-			if !e.bc.StateDB().DryRun {
+			if !e.bc.StateDB().IsFromApi {
 				if e.tx.Rollback == false {
 					nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
 					txInfo.ToAccountIndex = nextAccountIndex

@@ -35,7 +35,7 @@ func NewMintNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 func (e *MintNftExecutor) Prepare() error {
 	txInfo := e.TxInfo
-	if !e.bc.StateDB().DryRun {
+	if !e.bc.StateDB().IsFromApi {
 		if !e.isDesertExit {
 			// Set the right nft index for tx info.
 			if e.tx.Rollback == false {

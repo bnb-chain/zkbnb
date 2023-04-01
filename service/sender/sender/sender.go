@@ -798,7 +798,7 @@ func (s *Sender) CalculateTotalTxCountForCompressBlock(blocks []*compressedblock
 	var totalTxCount uint16 = 0
 	if len(blocks) > 0 {
 		for _, b := range blocks {
-			totalTxCount = totalTxCount + b.BlockSize
+			totalTxCount = totalTxCount + b.RealBlockSize
 		}
 		return uint64(totalTxCount)
 	}

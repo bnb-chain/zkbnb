@@ -1,8 +1,8 @@
-package generateproof
+package desertexit
 
 import (
-	"github.com/bnb-chain/zkbnb/tools/desertexit/generateproof/config"
-	"github.com/bnb-chain/zkbnb/tools/desertexit/generateproof/generateproof"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/desertexit"
 	"github.com/goccy/go-json"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -39,7 +39,7 @@ func Run(configFile string, address string, token string, nftIndexListStr string
 		c.NftIndexList = nftIndexList
 	}
 
-	m, err := generateproof.NewMonitor(&c)
+	m, err := desertexit.NewDesertExit(&c)
 	if err != nil {
 		logx.Severe(err)
 		return err
@@ -66,10 +66,11 @@ func Run(configFile string, address string, token string, nftIndexListStr string
 		}
 	}()
 
-	desertExit, err := generateproof.NewDesertExit(&c)
+	desertExit, err := desertexit.NewGenerateProof(&c)
 	if err != nil {
 		return err
 	}
+
 	err = desertExit.Run()
 	if err != nil {
 		logx.Severe(err)

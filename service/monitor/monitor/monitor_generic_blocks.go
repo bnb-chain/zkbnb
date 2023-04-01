@@ -54,7 +54,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 	logx.Infof("syncing generic l1 blocks from %d to %d", big.NewInt(startHeight), big.NewInt(endHeight))
 
-	priorityRequestCount, err := getPriorityRequestCount(m.cli, m.zkbnbContractAddress, uint64(startHeight), uint64(endHeight))
+	priorityRequestCount, err := GetPriorityRequestCount(m.cli, m.zkbnbContractAddress, uint64(startHeight), uint64(endHeight))
 	if err != nil {
 		return fmt.Errorf("failed to get priority request count, err: %v", err)
 	}
@@ -291,7 +291,7 @@ func GetZkBNBContractLogs(cli *rpc.ProviderClient, zkbnbContract string, startHe
 	return logs, nil
 }
 
-func getPriorityRequestCount(cli *rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) (int, error) {
+func GetPriorityRequestCount(cli *rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) (int, error) {
 	zkbnbInstance, err := zkbnb.LoadZkBNBInstance(cli, zkbnbContract)
 	if err != nil {
 		return 0, err

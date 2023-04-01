@@ -1,4 +1,4 @@
-package generateproof
+package desertexit
 
 import (
 	"github.com/zeromicro/go-zero/core/logx"
@@ -6,11 +6,12 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
 )
 
-func (m *Monitor) CleanHistoryBlocks() (err error) {
+func (m *DesertExit) CleanHistoryBlocks() (err error) {
 	latestGenericBlock, err := m.L1SyncedBlockModel.GetLatestL1SyncedBlockByType(l1syncedblock.TypeGeneric)
 	if err != nil {
 		return err
 	}
+
 	minHeight := latestGenericBlock.L1BlockHeight
 	keepHeight := minHeight - m.Config.ChainConfig.KeptHistoryBlocksCount
 	if keepHeight <= 0 {
