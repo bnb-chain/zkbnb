@@ -31,11 +31,13 @@ const (
 	EventNameNewPriorityRequest = "NewPriorityRequest"
 	EventNameBlockCommit        = "BlockCommit"
 	EventNameBlockVerification  = "BlockVerification"
+	EventNameDesertMode         = "DesertMode"
 
 	EventTypeNewPriorityRequest = 0
 	EventTypeCommittedBlock     = 1
 	EventTypeVerifiedBlock      = 2
 	EventTypeRevertedBlock      = 3
+	EventTypeDesert             = 4
 
 	EventNameNewAsset              = "NewAsset"
 	EventNameNewGovernor           = "NewGovernor"
@@ -66,6 +68,7 @@ var (
 	zkbnbLogBlockCommitSig        = []byte("BlockCommit(uint32)")
 	zkbnbLogBlockVerificationSig  = []byte("BlockVerification(uint32)")
 	zkbnbLogBlocksRevertSig       = []byte("BlocksRevert(uint32,uint32)")
+	zkbnbLogDesertModeSig         = []byte("DesertMode()")
 
 	ZkbnbLogNewPriorityRequestSigHash = crypto.Keccak256Hash(zkbnbLogNewPriorityRequestSig)
 	ZkbnbLogWithdrawalSigHash         = crypto.Keccak256Hash(zkbnbLogWithdrawalSig)
@@ -73,6 +76,7 @@ var (
 	ZkbnbLogBlockCommitSigHash        = crypto.Keccak256Hash(zkbnbLogBlockCommitSig)
 	ZkbnbLogBlockVerificationSigHash  = crypto.Keccak256Hash(zkbnbLogBlockVerificationSig)
 	ZkbnbLogBlocksRevertSigHash       = crypto.Keccak256Hash(zkbnbLogBlocksRevertSig)
+	ZkbnbLogDesertModeSigHash         = crypto.Keccak256Hash(zkbnbLogDesertModeSig)
 
 	GovernanceContractAbi, _ = abi.JSON(strings.NewReader(zkbnb.GovernanceMetaData.ABI))
 

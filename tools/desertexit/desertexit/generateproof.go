@@ -1,4 +1,4 @@
-package generateproof
+package desertexit
 
 import (
 	"encoding/json"
@@ -13,7 +13,8 @@ import (
 	"github.com/bnb-chain/zkbnb/core/executor"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/desertexit"
-	"github.com/bnb-chain/zkbnb/tools/desertexit/generateproof/config"
+	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
 	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/panjf2000/ants/v2"
@@ -30,14 +31,14 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-type DesertExit struct {
+type GenerateProof struct {
 	running bool
 	config  *config.Config
 	bc      *core.BlockChain
 	pool    *ants.Pool
 }
 
-func NewDesertExit(config *config.Config) (*DesertExit, error) {
+func NewGenerateProof(config *config.Config) (*GenerateProof, error) {
 	bc, err := core.NewBlockChainForDesertExit(config)
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
@@ -48,16 +49,16 @@ func NewDesertExit(config *config.Config) (*DesertExit, error) {
 	if config.ProofFolder == "" {
 		config.ProofFolder = "./tools/desertexit/proofdata/"
 	}
-	committer := &DesertExit{
+	desertExit := &GenerateProof{
 		running: true,
 		config:  config,
 		bc:      bc,
 		pool:    pool,
 	}
-	return committer, nil
+	return desertExit, nil
 }
 
-func (c *DesertExit) Run() error {
+func (c *GenerateProof) Run() error {
 	err := c.loadAllAccounts()
 	if err != nil {
 		return err
@@ -76,21 +77,28 @@ func (c *DesertExit) Run() error {
 	if executedBlock != nil {
 		executedTxMaxHeight = executedBlock.BlockHeight
 	}
+	allBlocksHandled := false
 	for {
 		if !c.running {
 			break
 		}
-		if c.config.ChainConfig.EndL2BlockHeight == executedTxMaxHeight {
-			logx.Info("execute all the l2 blocks successfully")
-			break
-		}
+
 		pendingBlocks, err := c.bc.DesertExitBlockModel.GetBlocksByStatusAndMaxHeight(desertexit.StatusVerified, executedTxMaxHeight, int64(limit))
-		if err != nil {
+		if err != nil && err != types.DbErrNotFound {
 			logx.Errorf("get pending blocks from desert exit block failed:%s", err.Error())
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
-		if len(pendingBlocks) == 0 {
+		if err == types.DbErrNotFound {
+			l1SyncedBlock, err := c.bc.L1SyncedBlockModel.GetLatestL1SyncedBlockByType(l1syncedblock.TypeDesert)
+			if err != nil && err != types.DbErrNotFound {
+				return fmt.Errorf("failed to get latest l1 monitor block, err: %v", err)
+			}
+			if l1SyncedBlock != nil {
+				logx.Info("execute all the l2 blocks successfully")
+				allBlocksHandled = true
+				break
+			}
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
@@ -111,7 +119,7 @@ func (c *DesertExit) Run() error {
 			executedTxMaxHeight = pendingBlock.BlockHeight
 		}
 	}
-	if c.config.ChainConfig.EndL2BlockHeight == executedTxMaxHeight {
+	if allBlocksHandled {
 		logx.Info("execute all the l2 blocks successfully")
 		account, err := c.bc.AccountModel.GetAccountByL1Address(c.config.Address)
 		if err != nil {
@@ -126,7 +134,7 @@ func (c *DesertExit) Run() error {
 	return nil
 }
 
-func (c *DesertExit) executeBlockFunc(desertExitBlock *desertexit.DesertExitBlock) error {
+func (c *GenerateProof) executeBlockFunc(desertExitBlock *desertexit.DesertExitBlock) error {
 	pubData := common.FromHex(desertExitBlock.PubData)
 	sizePerTx := types2.PubDataBitsSizePerTx / 8
 	c.bc.Statedb.PurgeCache("")
@@ -222,37 +230,35 @@ func (c *DesertExit) executeBlockFunc(desertExitBlock *desertexit.DesertExitBloc
 		}
 	}
 
-	deleteGasAccount := false
-	for _, formatAccount := range c.bc.Statedb.StateCache.PendingAccountMap {
-		if formatAccount.AccountIndex == types.GasAccount {
-			if len(c.bc.Statedb.StateCache.PendingGasMap) != 0 {
-				for assetId, delta := range c.bc.Statedb.StateCache.PendingGasMap {
-					if asset, ok := formatAccount.AssetInfo[assetId]; ok {
-						formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
-					} else {
-						formatAccount.AssetInfo[assetId] = &types.AccountAsset{
-							Balance:                  delta,
-							OfferCanceledOrFinalized: types.ZeroBigInt,
-						}
+	gasAccount := c.bc.Statedb.StateCache.PendingAccountMap[types.GasAccount]
+	if gasAccount != nil {
+		if len(c.bc.Statedb.StateCache.PendingGasMap) != 0 {
+			for assetId, delta := range c.bc.Statedb.StateCache.PendingGasMap {
+				if asset, ok := gasAccount.AssetInfo[assetId]; ok {
+					gasAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
+				} else {
+					gasAccount.AssetInfo[assetId] = &types.AccountAsset{
+						Balance:                  delta,
+						OfferCanceledOrFinalized: types.ZeroBigInt,
 					}
-					c.bc.Statedb.MarkAccountAssetsDirty(formatAccount.AccountIndex, []int64{assetId})
 				}
-			} else {
-				assetsMap := c.bc.Statedb.GetDirtyAccountsAndAssetsMap()[formatAccount.AccountIndex]
-				if assetsMap == nil {
-					deleteGasAccount = true
-				}
+				c.bc.Statedb.MarkAccountAssetsDirty(gasAccount.AccountIndex, []int64{assetId})
 			}
 		} else {
-			assetsMap := c.bc.Statedb.GetDirtyAccountsAndAssetsMap()[formatAccount.AccountIndex]
+			assetsMap := c.bc.Statedb.GetDirtyAccountsAndAssetsMap()[gasAccount.AccountIndex]
 			if assetsMap == nil {
-				return fmt.Errorf("%d exists in PendingAccountMap but not in GetDirtyAccountsAndAssetsMap", formatAccount.AccountIndex)
+				delete(c.bc.Statedb.StateCache.PendingAccountMap, types.GasAccount)
 			}
 		}
 	}
-	if deleteGasAccount {
-		delete(c.bc.Statedb.StateCache.PendingAccountMap, types.GasAccount)
+
+	for _, formatAccount := range c.bc.Statedb.StateCache.PendingAccountMap {
+		assetsMap := c.bc.Statedb.GetDirtyAccountsAndAssetsMap()[formatAccount.AccountIndex]
+		if assetsMap == nil {
+			return fmt.Errorf("%d exists in PendingAccountMap but not in GetDirtyAccountsAndAssetsMap", formatAccount.AccountIndex)
+		}
 	}
+
 	for accountIndex, _ := range c.bc.Statedb.GetDirtyAccountsAndAssetsMap() {
 		_, exist := c.bc.Statedb.StateCache.GetPendingAccount(accountIndex)
 		if !exist {
@@ -282,7 +288,7 @@ func (c *DesertExit) executeBlockFunc(desertExitBlock *desertexit.DesertExitBloc
 	return nil
 }
 
-func (c *DesertExit) saveToDb(desertExitBlock *desertexit.DesertExitBlock) error {
+func (c *GenerateProof) saveToDb(desertExitBlock *desertexit.DesertExitBlock) error {
 	logx.Infof("saveToDb start, blockHeight:%d", desertExitBlock.BlockHeight)
 	stateDataCopy := &statedb.StateDataCopy{
 		StateCache:   c.bc.Statedb.StateCache,
@@ -328,7 +334,7 @@ func (c *DesertExit) saveToDb(desertExitBlock *desertexit.DesertExitBlock) error
 	return nil
 }
 
-func (c *DesertExit) loadAllAccounts() error {
+func (c *GenerateProof) loadAllAccounts() error {
 	start := time.Now()
 	logx.Infof("load all accounts start")
 	totalTask := 0
@@ -389,7 +395,7 @@ func (c *DesertExit) loadAllAccounts() error {
 	return nil
 }
 
-func (c *DesertExit) loadAllNfts() error {
+func (c *GenerateProof) loadAllNfts() error {
 	start := time.Now()
 	logx.Infof("load all nfts start")
 	totalTask := 0
@@ -442,13 +448,13 @@ func (c *DesertExit) loadAllNfts() error {
 	return nil
 }
 
-func (c *DesertExit) Shutdown() {
+func (c *GenerateProof) Shutdown() {
 	c.running = false
 	c.bc.Statedb.Close()
 	c.bc.ChainDB.Close()
 }
 
-func (c *DesertExit) executeAtomicMatch(pubData []byte) error {
+func (c *GenerateProof) executeAtomicMatch(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
@@ -524,6 +530,7 @@ func (c *DesertExit) executeAtomicMatch(pubData []byte) error {
 		GasFeeAssetAmount: gasFeeAssetAmount,
 		GasFeeAssetId:     int64(gasFeeAssetId),
 	}
+
 	executor := &executor.AtomicMatchExecutor{
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
@@ -543,7 +550,7 @@ func (c *DesertExit) executeAtomicMatch(pubData []byte) error {
 	return nil
 }
 
-func (c *DesertExit) executeCancelOffer(pubData []byte) error {
+func (c *GenerateProof) executeCancelOffer(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
@@ -579,7 +586,7 @@ func (c *DesertExit) executeCancelOffer(pubData []byte) error {
 	return nil
 }
 
-func (c *DesertExit) executeCollection(pubData []byte) error {
+func (c *GenerateProof) executeCollection(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
@@ -615,7 +622,7 @@ func (c *DesertExit) executeCollection(pubData []byte) error {
 	return nil
 }
 
-func (c *DesertExit) executeDeposit(pubData []byte) error {
+func (c *GenerateProof) executeDeposit(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
@@ -649,7 +656,7 @@ func (c *DesertExit) executeDeposit(pubData []byte) error {
 	return nil
 }
 
-func (c *DesertExit) executeDepositNft(pubData []byte) error {
+func (c *GenerateProof) executeDepositNft(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
@@ -690,7 +697,7 @@ func (c *DesertExit) executeDepositNft(pubData []byte) error {
 	return nil
 }
 
-func (c *DesertExit) executeFullExit(pubData []byte) error {
+func (c *GenerateProof) executeFullExit(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
@@ -722,7 +729,7 @@ func (c *DesertExit) executeFullExit(pubData []byte) error {
 	return nil
 }
 
-func (c *DesertExit) executeFullExitNft(pubData []byte) error {
+func (c *GenerateProof) executeFullExitNft(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
@@ -765,7 +772,7 @@ func (c *DesertExit) executeFullExitNft(pubData []byte) error {
 	return nil
 }
 
-func (c *DesertExit) executeMintNft(pubData []byte) error {
+func (c *GenerateProof) executeMintNft(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
@@ -812,7 +819,7 @@ func (c *DesertExit) executeMintNft(pubData []byte) error {
 	return nil
 }
 
-func (c *DesertExit) executeChangePubKey(pubData []byte) error {
+func (c *GenerateProof) executeChangePubKey(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 
@@ -862,7 +869,7 @@ func (c *DesertExit) executeChangePubKey(pubData []byte) error {
 
 }
 
-func (c *DesertExit) executeTransfer(pubData []byte) error {
+func (c *GenerateProof) executeTransfer(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
@@ -910,7 +917,7 @@ func (c *DesertExit) executeTransfer(pubData []byte) error {
 	return nil
 }
 
-func (c *DesertExit) executeTransferNft(pubData []byte) error {
+func (c *GenerateProof) executeTransferNft(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
@@ -953,7 +960,7 @@ func (c *DesertExit) executeTransferNft(pubData []byte) error {
 	return nil
 }
 
-func (c *DesertExit) executeWithdraw(pubData []byte) error {
+func (c *GenerateProof) executeWithdraw(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
@@ -994,7 +1001,7 @@ func (c *DesertExit) executeWithdraw(pubData []byte) error {
 	return nil
 }
 
-func (c *DesertExit) executeWithdrawNft(pubData []byte) error {
+func (c *GenerateProof) executeWithdrawNft(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
@@ -1045,8 +1052,8 @@ func (c *DesertExit) executeWithdrawNft(pubData []byte) error {
 	return nil
 }
 
-func (c *DesertExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftIndexList []int64, assetTokenAddress string) error {
-	treeCtx, err := tree.NewContext("generateproof", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption)
+func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, nftIndexList []int64, assetTokenAddress string) error {
+	treeCtx, err := tree.NewContext("desertexit", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption)
 	if err != nil {
 		logx.Errorf("init tree database failed: %s", err)
 		return err
@@ -1115,7 +1122,7 @@ func (c *DesertExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 	}
 	logx.Infof("accountIndex=%d, merkleProofsAccount=%s", accountIndex, string(merkleProofsAccountBytes))
 
-	m, err := NewMonitor(c.config)
+	m, err := NewDesertExit(c.config)
 	if err != nil {
 		return err
 	}
@@ -1156,7 +1163,7 @@ func (c *DesertExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 		accountMerkleProof[i] = common.Bytes2Hex(merkleProofsAccount[i])
 	}
 	if assetTokenAddress != "" {
-		monitor, err := NewMonitor(m.Config)
+		monitor, err := NewDesertExit(m.Config)
 		if err != nil {
 			logx.Severe(err)
 			return err

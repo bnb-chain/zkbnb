@@ -548,26 +548,6 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		PublicKey:       types.EmptyPk,
 	})
 
-	// gas account asset gas
-	order++
-	accountOrder++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.GasAccountIndex,
-		L1Address:    gasAccount.L1Address,
-		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, types.ZeroBigInt).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           gasAccount.Nonce,
-		CollectionNonce: gasAccount.CollectionNonce,
-		IsGas:           true,
-		PublicKey:       gasAccount.PublicKey,
-	})
-	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-
 	// buyChannelAccount
 	order++
 	accountOrder++
@@ -626,6 +606,26 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		PublicKey:       protocolAccount.PublicKey,
 	})
 	protocolAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(protocolAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.BuyOffer.ProtocolAmount)
+
+	// gas account asset gas
+	order++
+	accountOrder++
+	txDetails = append(txDetails, &tx.TxDetail{
+		AssetId:      txInfo.GasFeeAssetId,
+		AssetType:    types.FungibleAssetType,
+		AccountIndex: txInfo.GasAccountIndex,
+		L1Address:    gasAccount.L1Address,
+		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
+		BalanceDelta: types.ConstructAccountAsset(
+			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, types.ZeroBigInt).String(),
+		Order:           order,
+		AccountOrder:    accountOrder,
+		Nonce:           gasAccount.Nonce,
+		CollectionNonce: gasAccount.CollectionNonce,
+		IsGas:           true,
+		PublicKey:       gasAccount.PublicKey,
+	})
+	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 
 	return txDetails, nil
 }

@@ -193,7 +193,7 @@ replace (
 
 )
 
-replace github.com/bnb-chain/zkbnb-eth-rpc => github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230330142445-a0b4f3eb4f5f
+replace github.com/bnb-chain/zkbnb-eth-rpc => github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230331081635-83e4affe7ceb
 
 replace github.com/bnb-chain/zkbnb-crypto => github.com/15000785133/zkbnb-crypto v0.0.8-0.20230330200044-c6f6b08fc397
 

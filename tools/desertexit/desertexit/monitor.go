@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package generateproof
+package desertexit
 
 import (
 	"fmt"
@@ -22,8 +22,9 @@ import (
 	"github.com/bnb-chain/zkbnb/common/abicoder"
 	monitor2 "github.com/bnb-chain/zkbnb/common/monitor"
 	"github.com/bnb-chain/zkbnb/dao/desertexit"
+	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
 	"github.com/bnb-chain/zkbnb/service/monitor/monitor"
-	"github.com/bnb-chain/zkbnb/tools/desertexit/generateproof/config"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
 	"github.com/ethereum/go-ethereum/common"
 	"gorm.io/plugin/dbresolver"
 	"math/big"
@@ -41,7 +42,7 @@ import (
 	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
-type Monitor struct {
+type DesertExit struct {
 	Config                    *config.Config
 	cli                       *rpc.ProviderClient
 	ZkBnbContractAddress      string
@@ -49,9 +50,10 @@ type Monitor struct {
 	db                        *gorm.DB
 	L1SyncedBlockModel        l1syncedblock.L1SyncedBlockModel
 	DesertExitBlockModel      desertexit.DesertExitBlockModel
+	PriorityRequestModel      priorityrequest.PriorityRequestModel
 }
 
-func NewMonitor(c *config.Config) (*Monitor, error) {
+func NewDesertExit(c *config.Config) (*DesertExit, error) {
 	masterDataSource := c.Postgres.MasterDataSource
 	db, err := gorm.Open(postgres.Open(masterDataSource))
 	if err != nil {
@@ -63,11 +65,12 @@ func NewMonitor(c *config.Config) (*Monitor, error) {
 		Sources: []gorm.Dialector{postgres.Open(masterDataSource)},
 	}))
 
-	monitor := &Monitor{
+	desertExit := &DesertExit{
 		Config:               c,
 		db:                   db,
 		L1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),
 		DesertExitBlockModel: desertexit.NewDesertExitBlockModel(db),
+		PriorityRequestModel: priorityrequest.NewPriorityRequestModel(db),
 	}
 
 	bscRpcCli, err := rpc.NewClient(c.ChainConfig.BscTestNetRpc)
@@ -76,26 +79,22 @@ func NewMonitor(c *config.Config) (*Monitor, error) {
 		return nil, err
 	}
 
-	monitor.ZkBnbContractAddress = c.ChainConfig.ZkBnbContractAddress
-	monitor.GovernanceContractAddress = c.ChainConfig.GovernanceContractAddress
-	monitor.cli = bscRpcCli
-	return monitor, nil
+	desertExit.ZkBnbContractAddress = c.ChainConfig.ZkBnbContractAddress
+	desertExit.GovernanceContractAddress = c.ChainConfig.GovernanceContractAddress
+	desertExit.cli = bscRpcCli
+	return desertExit, nil
 }
 
-func (m *Monitor) MonitorGenericBlocks() (err error) {
-	desertExitBlock, err := m.DesertExitBlockModel.GetLatestBlock()
-	if err != nil && err != types2.DbErrNotFound {
-		logx.Errorf("get latest verify block failed:%s", err.Error())
-		return err
-	}
-	if desertExitBlock != nil {
-		if desertExitBlock.BlockHeight == m.Config.ChainConfig.EndL2BlockHeight &&
-			(desertExitBlock.BlockStatus == desertexit.StatusVerified || desertExitBlock.BlockStatus == desertexit.StatusExecuted) {
+func (m *DesertExit) MonitorGenericBlocks() (err error) {
+	for {
+		l1SyncedBlock, err := m.L1SyncedBlockModel.GetLatestL1SyncedBlockByType(l1syncedblock.TypeDesert)
+		if err != nil && err != types.DbErrNotFound {
+			return fmt.Errorf("failed to get latest l1 monitor block, err: %v", err)
+		}
+		if l1SyncedBlock != nil {
 			logx.Info("get all the l2 blocks from l1 successfully")
 			return nil
 		}
-	}
-	for {
 		startHeight, endHeight, err := m.getBlockRangeToSync(l1syncedblock.TypeGeneric)
 		if err != nil {
 			logx.Errorf("get block range to sync error, err: %s", err.Error())
@@ -107,7 +106,10 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		}
 
 		logx.Infof("syncing generic l1 blocks from %d to %d", big.NewInt(startHeight), big.NewInt(endHeight))
-
+		priorityRequestCount, err := monitor.GetPriorityRequestCount(m.cli, m.ZkBnbContractAddress, uint64(startHeight), uint64(endHeight))
+		if err != nil {
+			return fmt.Errorf("failed to get priority request count, err: %v", err)
+		}
 		logs, err := monitor.GetZkBNBContractLogs(m.cli, m.ZkBnbContractAddress, uint64(startHeight), uint64(endHeight))
 		if err != nil {
 			return fmt.Errorf("failed to get contract logs, err: %v", err)
@@ -116,10 +118,12 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		logx.Infof("type is typeGeneric blocks from %d to %d and vlog len: %v", startHeight, endHeight, len(logs))
 
 		var (
-			l1Events      []*monitor2.L1Event
-			relatedBlocks = make(map[int64]*desertexit.DesertExitBlock)
+			l1Events                  []*monitor2.L1Event
+			priorityRequests          []*priorityrequest.PriorityRequest
+			priorityRequestCountCheck = 0
+			relatedBlocks             = make(map[int64]*desertexit.DesertExitBlock)
 		)
-		exit := false
+		var l1BlockMonitorDesertInfo *l1syncedblock.L1SyncedBlock
 		for _, vlog := range logs {
 			l1EventInfo := &monitor2.L1Event{
 				TxHash: vlog.TxHash.Hex(),
@@ -135,6 +139,15 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			}
 
 			switch vlog.Topics[0].Hex() {
+			case monitor2.ZkbnbLogNewPriorityRequestSigHash.Hex():
+				priorityRequestCountCheck++
+				l1EventInfo.EventType = monitor2.EventTypeNewPriorityRequest
+
+				l2TxEventMonitorInfo, err := monitor.ConvertLogToNewPriorityRequestEvent(vlog)
+				if err != nil {
+					return fmt.Errorf("failed to convert NewPriorityRequest log, err: %v", err)
+				}
+				priorityRequests = append(priorityRequests, l2TxEventMonitorInfo)
 			case monitor2.ZkbnbLogBlockCommitSigHash.Hex():
 				l1EventInfo.EventType = monitor2.EventTypeCommittedBlock
 
@@ -155,7 +168,6 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 				relatedBlocks[blockHeight].BlockHeight = blockHeight
 			case monitor2.ZkbnbLogBlockVerificationSigHash.Hex():
 				l1EventInfo.EventType = monitor2.EventTypeVerifiedBlock
-
 				var event zkbnb.ZkBNBBlockVerification
 				if err := monitor2.ZkBNBContractAbi.UnpackIntoInterface(&event, monitor2.EventNameBlockVerification, vlog.Data); err != nil {
 					return fmt.Errorf("failed to unpack ZkBNBBlockVerification err: %v", err)
@@ -171,12 +183,16 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 				relatedBlocks[blockHeight].L1VerifiedHeight = vlog.BlockNumber
 				relatedBlocks[blockHeight].BlockStatus = desertexit.StatusVerified
 				relatedBlocks[blockHeight].BlockHeight = blockHeight
-				if blockHeight > m.Config.ChainConfig.EndL2BlockHeight {
-					logx.Info("get all the l2 blocks from l1 successfully")
-					return nil
+			case monitor2.ZkbnbLogDesertModeSigHash.Hex():
+				l1EventInfo.EventType = monitor2.EventTypeDesert
+				eventInfosBytes, err := json.Marshal([]*monitor2.L1Event{l1EventInfo})
+				if err != nil {
+					return err
 				}
-				if m.Config.ChainConfig.EndL2BlockHeight == blockHeight {
-					exit = true
+				l1BlockMonitorDesertInfo = &l1syncedblock.L1SyncedBlock{
+					L1BlockHeight: int64(vlog.BlockNumber),
+					BlockInfo:     string(eventInfosBytes),
+					Type:          l1syncedblock.TypeDesert,
 				}
 			case monitor2.ZkbnbLogBlocksRevertSigHash.Hex():
 				l1EventInfo.EventType = monitor2.EventTypeRevertedBlock
@@ -184,6 +200,9 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			}
 
 			l1Events = append(l1Events, l1EventInfo)
+		}
+		if priorityRequestCount != priorityRequestCountCheck {
+			return fmt.Errorf("new priority requests events not match, try it again")
 		}
 		heights := make([]int64, 0, len(relatedBlocks))
 
@@ -195,34 +214,28 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		if err != nil && err != types2.DbErrNotFound {
 			return fmt.Errorf("failed to get blocks by heights, err: %v", err)
 		}
-		committedTxHashMap := make(map[string]bool, 0)
-
-		for height, pendingUpdateBlock := range relatedBlocks {
-			for _, block := range blocks {
-				if block.BlockHeight == height {
-					pendingUpdateBlock.ID = block.ID
-					if pendingUpdateBlock.CommittedTxHash == "" {
-						pendingUpdateBlock.CommittedTxHash = block.CommittedTxHash
-					}
-					break
+		for _, block := range blocks {
+			pendingUpdateBlock := relatedBlocks[block.BlockHeight]
+			if pendingUpdateBlock != nil {
+				pendingUpdateBlock.ID = block.ID
+				if pendingUpdateBlock.CommittedTxHash == "" {
+					pendingUpdateBlock.CommittedTxHash = block.CommittedTxHash
 				}
 			}
+		}
+		commitBlockInfoHashMap := make(map[uint32]*ZkBNBCommitBlockInfo, 0)
+		for _, pendingUpdateBlock := range relatedBlocks {
 			if desertexit.StatusVerified == pendingUpdateBlock.BlockStatus {
 				if pendingUpdateBlock.CommittedTxHash == "" {
 					return fmt.Errorf("committed tx hash is blank, block height: %d", pendingUpdateBlock.BlockHeight)
 				}
-				committedTxHashMap[pendingUpdateBlock.CommittedTxHash] = true
-			}
-		}
-		commitBlockInfoHashMap := make(map[uint32]*ZkBNBCommitBlockInfo, 0)
-
-		for committedTx, _ := range committedTxHashMap {
-			commitBlocksCallData, err := m.getCommitBlocksCallData(committedTx)
-			if err != nil {
-				return err
-			}
-			for _, blocksData := range commitBlocksCallData.NewBlocksData {
-				commitBlockInfoHashMap[blocksData.BlockNumber] = &blocksData
+				commitBlocksCallData, err := m.getCommitBlocksCallData(pendingUpdateBlock.CommittedTxHash)
+				if err != nil {
+					return err
+				}
+				for _, blocksData := range commitBlocksCallData.NewBlocksData {
+					commitBlockInfoHashMap[blocksData.BlockNumber] = &blocksData
+				}
 			}
 		}
 
@@ -248,8 +261,19 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 		//update db
 		err = m.db.Transaction(func(tx *gorm.DB) error {
+			if l1BlockMonitorDesertInfo != nil {
+				err := m.L1SyncedBlockModel.CreateL1SyncedBlockInTransact(tx, l1BlockMonitorDesertInfo)
+				if err != nil {
+					return err
+				}
+			}
 			//create l1 synced block
 			err := m.L1SyncedBlockModel.CreateL1SyncedBlockInTransact(tx, l1BlockMonitorInfo)
+			if err != nil {
+				return err
+			}
+			//create priority requests
+			err = m.PriorityRequestModel.CreatePriorityRequestsInTransact(tx, priorityRequests)
 			if err != nil {
 				return err
 			}
@@ -263,14 +287,10 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		if err != nil {
 			return fmt.Errorf("failed to store monitor info, err: %v", err)
 		}
-		if exit {
-			logx.Info("get all the l2 blocks from l1 successfully")
-			return nil
-		}
 	}
 }
 
-func (m *Monitor) getCommitBlocksCallData(hash string) (*CommitBlocksCallData, error) {
+func (m *DesertExit) getCommitBlocksCallData(hash string) (*CommitBlocksCallData, error) {
 	newABIDecoder := abicoder.NewABIDecoder(monitor2.ZkBNBContractAbi)
 	transaction, _, err := m.cli.Client.TransactionByHash(context.Background(), common.HexToHash(hash))
 	if err != nil {
@@ -287,7 +307,7 @@ func (m *Monitor) getCommitBlocksCallData(hash string) (*CommitBlocksCallData, e
 	return &callData, nil
 }
 
-func (m *Monitor) getLastStoredBlockInfo(verifyTxHash string, height int64) (*StorageStoredBlockInfo, error) {
+func (m *DesertExit) getLastStoredBlockInfo(verifyTxHash string, height int64) (*StorageStoredBlockInfo, error) {
 	blocksCallData, err := m.getVerifyAndExecuteBlocksCallData(verifyTxHash)
 	if err != nil {
 		return nil, err
@@ -301,7 +321,7 @@ func (m *Monitor) getLastStoredBlockInfo(verifyTxHash string, height int64) (*St
 	return nil, nil
 }
 
-func (m *Monitor) getVerifyAndExecuteBlocksCallData(hash string) (*VerifyAndExecuteBlocksCallData, error) {
+func (m *DesertExit) getVerifyAndExecuteBlocksCallData(hash string) (*VerifyAndExecuteBlocksCallData, error) {
 	newABIDecoder := abicoder.NewABIDecoder(monitor2.ZkBNBContractAbi)
 	transaction, _, err := m.cli.Client.TransactionByHash(context.Background(), common.HexToHash(hash))
 	if err != nil {
@@ -318,7 +338,7 @@ func (m *Monitor) getVerifyAndExecuteBlocksCallData(hash string) (*VerifyAndExec
 	return &callData, nil
 }
 
-func (m *Monitor) Shutdown() {
+func (m *DesertExit) Shutdown() {
 	sqlDB, err := m.db.DB()
 	if err == nil && sqlDB != nil {
 		err = sqlDB.Close()
@@ -328,7 +348,7 @@ func (m *Monitor) Shutdown() {
 	}
 }
 
-func (m *Monitor) getBlockRangeToSync(monitorType int) (int64, int64, error) {
+func (m *DesertExit) getBlockRangeToSync(monitorType int) (int64, int64, error) {
 	latestHandledBlock, err := m.L1SyncedBlockModel.GetLatestL1SyncedBlockByType(monitorType)
 	var handledHeight int64
 	if err != nil {
@@ -351,7 +371,7 @@ func (m *Monitor) getBlockRangeToSync(monitorType int) (int64, int64, error) {
 	return handledHeight + 1, int64(safeHeight), nil
 }
 
-func (m *Monitor) ValidateAssetAddress(assetAddr common.Address) (uint16, error) {
+func (m *DesertExit) ValidateAssetAddress(assetAddr common.Address) (uint16, error) {
 	instance, err := zkbnb.LoadGovernanceInstance(m.cli, m.GovernanceContractAddress)
 	if err != nil {
 		logx.Severe(err)
