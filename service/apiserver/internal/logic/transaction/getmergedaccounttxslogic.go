@@ -29,7 +29,7 @@ func NewGetMergedAccountTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 
 func (l *GetMergedAccountTxsLogic) GetMergedAccountTxs(req *types.ReqGetAccountTxs) (resp *types.Txs, err error) {
 	accountIndex, err := l.fetchAccountIndexFromReq(req)
-	if err != nil {
+	if err != nil && err != types2.DbErrNotFound {
 		return nil, err
 	}
 
