@@ -652,6 +652,14 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 		}
 
+		// Judge whether the blocks should be verified and executed to the chain for better gas consumption
+		shouldVerifyAndExecute := s.ShouldVerifyAndExecuteBlocks(zkbnbInstance, blocks, pendingVerifyAndExecuteBlocks, proofs,
+			gasPrice, s.config.ChainConfig.GasLimit, nonce)
+		if !shouldVerifyAndExecute {
+			logx.Errorf("abandon verify and execute block to l1, EstimateGas value is greater than MaxUnitGas!")
+			return nil
+		}
+
 		// generate the transaction constructor for verify and execute block function
 		transactorConstructor, err := s.GenerateConstructorForVerifyAndExecute()
 		if err != nil {
@@ -734,7 +742,7 @@ func (s *Sender) ShouldCommitBlocks(instance *zkbnb.ZkBNB, lastBlock zkbnb.Stora
 	// Judge the time interval of the block waiting to be committed, if the time interval is greater
 	// than the maxCommitBlockInterval, commit the blocks directly
 	maxCommitBlockInterval := sconfig.GetSenderConfig().MaxCommitBlockInterval
-	commitBlockInterval := s.CalculateBlockInterval(blocks)
+	commitBlockInterval := s.CalculateBlockIntervalForCompressedBlock(blocks)
 	if commitBlockInterval > int64(maxCommitBlockInterval) {
 		return true
 	}
@@ -754,17 +762,62 @@ func (s *Sender) ShouldCommitBlocks(instance *zkbnb.ZkBNB, lastBlock zkbnb.Stora
 		return false
 	}
 
-	maxCommitBlockUnitGas := sconfig.GetSenderConfig().MaxCommitAvgUnitGas
+	maxCommitAvgUnitGas := sconfig.GetSenderConfig().MaxCommitAvgUnitGas
 	unitGas := estimatedFee / totalTxCount
-	if unitGas > maxCommitBlockUnitGas {
+	if unitGas > maxCommitAvgUnitGas {
 		logx.Info("abandon commit block to l1, UnitGasFee is greater than MaxCommitBlockUnitGas, UnitGasFee:%d, "+
-			"MaxCommitBlockUnitGas:%d", unitGas, maxCommitBlockUnitGas)
+			"MaxCommitAvgUnitGas:%d", unitGas, maxCommitAvgUnitGas)
 		return false
 	}
 	return true
 }
 
-func (s *Sender) GetBlocksForVerifyAndExecute(start int64) (blocksForCommit []*block.Block, err error) {
+func (s *Sender) ShouldVerifyAndExecuteBlocks(instance *zkbnb.ZkBNB, blocks []*block.Block,
+	verifyAndExecuteBlocksInfo []zkbnb.ZkBNBVerifyAndExecuteBlockInfo, proofs []*big.Int,
+	gasPrice *big.Int, gasLimit uint64, nonce uint64) bool {
+
+	// Judge the tx count waiting to be verified and executed, if the tx count is greater
+	// than the maxVerifyTxCount, verify and execute the blocks directly
+	maxVerifyTxCount := sconfig.GetSenderConfig().MaxVerifyTxCount
+	totalTxCount := s.CalculateTotalTxCountForBlock(blocks)
+	if totalTxCount > maxVerifyTxCount {
+		return true
+	}
+
+	// Judge the time interval of the block waiting to be verified and executed, if the time interval is greater
+	// than the maxVerifyBlockInterval, verify and execute the blocks directly
+	maxVerifyBlockInterval := sconfig.GetSenderConfig().MaxVerifyBlockInterval
+	verifyBlockInterval := s.CalculateBlockIntervalForBlock(blocks)
+	if verifyBlockInterval > int64(maxVerifyBlockInterval) {
+		return true
+	}
+
+	// Judge the average tx gas consumption for the verifying and executing operation, if the average tx gas consumption is greater
+	// than the maxVerifyAvgUnitGas, abandon verify and execute operation for temporary
+	// generate the transaction constructor for verify and execute block function
+	transactorConstructor, err := s.GenerateConstructorForVerifyAndExecute()
+	if err != nil {
+		logx.Errorf("abandon commit block to l1, GenerateConstructorForCommit get some error:%s", err.Error())
+		return false
+	}
+	estimatedFee, err := zkbnb.EstimateVerifyAndExecuteWithNonce(transactorConstructor,
+		instance, verifyAndExecuteBlocksInfo, proofs, gasPrice, gasLimit, nonce)
+	if err != nil {
+		logx.Errorf("abandon commit block to l1, EstimateGas operation get some error:%s", err.Error())
+		return false
+	}
+
+	maxVerifyAvgUnitGas := sconfig.GetSenderConfig().MaxVerifyAvgUnitGas
+	unitGas := estimatedFee / totalTxCount
+	if unitGas > maxVerifyAvgUnitGas {
+		logx.Info("abandon verify and execute block to l1, UnitGasFee is greater than maxVerifyAvgUnitGas, UnitGasFee:%d, "+
+			"MaxVerifyAvgUnitGas:%d", unitGas, maxVerifyAvgUnitGas)
+		return false
+	}
+	return true
+}
+
+func (s *Sender) GetBlocksForVerifyAndExecute(start int64) (blocks []*block.Block, err error) {
 	verifyTxCountLimit := sconfig.GetSenderConfig().VerifyTxCountLimit
 	maxVerifyBlockCount := sconfig.GetSenderConfig().MaxVerifyBlockCount
 	var totalTxCount uint64 = 0
@@ -785,7 +838,16 @@ func (s *Sender) GetBlocksForVerifyAndExecute(start int64) (blocksForCommit []*b
 	}
 }
 
-func (s *Sender) CalculateBlockInterval(blocks []*compressedblock.CompressedBlock) int64 {
+func (s *Sender) CalculateBlockIntervalForCompressedBlock(blocks []*compressedblock.CompressedBlock) int64 {
+	if len(blocks) > 0 {
+		block := blocks[0]
+		interval := time.Now().Unix() - block.CreatedAt.Unix()
+		return interval
+	}
+	return 0
+}
+
+func (s *Sender) CalculateBlockIntervalForBlock(blocks []*block.Block) int64 {
 	if len(blocks) > 0 {
 		block := blocks[0]
 		interval := time.Now().Unix() - block.CreatedAt.Unix()
