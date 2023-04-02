@@ -18,6 +18,7 @@
 package common
 
 import (
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/util"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
@@ -42,12 +43,15 @@ func TestToPackedFee(t *testing.T) {
 }
 
 func TestUnpackAmount(t *testing.T) {
-	a, _ := strconv.ParseInt("1111111111111111111111111111111111111111", 2, 40)
+	//a, _ := strconv.ParseInt("1111111111111111111111111111111111111111", 2, 40)
 
-	//a, _ := new(big.Int).SetString("1111111111111111111111111111111111111111", 2)
+	a, _ := new(big.Int).SetString("3435973836700000000000000000000000000000000", 10)
 	logx.Info(a)
-	nAmount, _ := util.UnpackAmount(new(big.Int).SetInt64(a))
+	packedAmount, _ := util.ToPackedAmount(a)
+	logx.Info(packedAmount)
+	nAmount, _ := util.UnpackAmount(a)
 	logx.Info(nAmount.String())
+
 }
 
 func TestUnpackFee(t *testing.T) {
@@ -59,8 +63,7 @@ func TestUnpackFee(t *testing.T) {
 }
 
 func TestCheckPackedAmount(t *testing.T) {
-	amount, _ := new(big.Int).SetString("123456789012345678901234567890123456789012", 10)
-	logx.Info(amount)
+	amount, _ := new(big.Int).SetString("1", 10)
 	packedAmount, _ := util.ToPackedAmount(amount)
 	logx.Info(packedAmount)
 
@@ -68,6 +71,41 @@ func TestCheckPackedAmount(t *testing.T) {
 	logx.Info(nAmount.String())
 }
 
-//4570789518076018688
-//4570789518076018688
-//4570789518076018688
+func TestZeroPackedAmount(t *testing.T) {
+	amount, _ := new(big.Int).SetString("0", 10)
+	packedAmount, err := util.ToPackedAmount(amount)
+	assert.NoError(t, err)
+	logx.Info(packedAmount)
+
+	nAmount, err := util.UnpackAmount(big.NewInt(packedAmount))
+	assert.NoError(t, err)
+	logx.Info(nAmount.String())
+
+	assert.Equal(t, amount, nAmount)
+}
+
+func TestOnePackedAmount(t *testing.T) {
+	amount, _ := new(big.Int).SetString("1", 10)
+	packedAmount, err := util.ToPackedAmount(amount)
+	assert.NoError(t, err)
+	logx.Info(packedAmount)
+
+	nAmount, err := util.UnpackAmount(big.NewInt(packedAmount))
+	assert.NoError(t, err)
+	logx.Info(nAmount.String())
+
+	assert.Equal(t, amount, nAmount)
+}
+
+func TestMaxPackedAmount(t *testing.T) {
+	amount := ffmath.Add(util.PackedAmountMaxAmount, big.NewInt(0))
+	packedAmount, err := util.ToPackedAmount(amount)
+	assert.NoError(t, err)
+	logx.Info(packedAmount)
+
+	nAmount, err := util.UnpackAmount(big.NewInt(packedAmount))
+	assert.NoError(t, err)
+	logx.Info(nAmount.String())
+
+	assert.Equal(t, amount, nAmount)
+}
