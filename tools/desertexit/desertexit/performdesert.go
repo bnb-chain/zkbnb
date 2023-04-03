@@ -35,6 +35,7 @@ type PerformDesert struct {
 	Config               config.Config
 	cli                  *rpc.ProviderClient
 	authCli              *rpc.AuthClient
+	zkBNBCli             *zkbnb.ZkBNBClient
 	zkbnbInstance        *zkbnb.ZkBNB
 	ZkBnbContractAddress string
 }
@@ -68,6 +69,13 @@ func NewPerformDesert(c config.Config) (*PerformDesert, error) {
 		logx.Severe(err)
 		return nil, err
 	}
+
+	newPerformDesert.zkBNBCli, err = zkbnb.NewZkBNBClient(newPerformDesert.cli, newPerformDesert.ZkBnbContractAddress)
+	if err != nil {
+		logx.Severe(err)
+		return nil, err
+	}
+	newPerformDesert.zkBNBCli.PerformConstructor = newPerformDesert.authCli
 	return newPerformDesert, nil
 }
 
@@ -106,7 +114,7 @@ func (m *PerformDesert) doPerformDesert(storedBlockInfo zkbnb.StorageStoredBlock
 		return err
 	}
 
-	txHash, err := zkbnb.PerformDesert(m.cli, m.authCli, m.zkbnbInstance, storedBlockInfo, nftRoot, assetExitData, accountExitData, assetMerkleProof, accountMerkleProof, gasPrice, m.Config.ChainConfig.GasLimit)
+	txHash, err := m.zkBNBCli.PerformDesert(storedBlockInfo, nftRoot, assetExitData, accountExitData, assetMerkleProof, accountMerkleProof, gasPrice, m.Config.ChainConfig.GasLimit)
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}
@@ -155,7 +163,7 @@ func (m *PerformDesert) doPerformDesertNft(storedBlockInfo zkbnb.StorageStoredBl
 		return err
 	}
 
-	txHash, err := zkbnb.PerformDesertNft(m.cli, m.authCli, m.zkbnbInstance, storedBlockInfo, assetRoot, accountExitData, exitNfts, accountMerkleProof, nftMerkleProofs, gasPrice, m.Config.ChainConfig.GasLimit)
+	txHash, err := m.zkBNBCli.PerformDesertNft(storedBlockInfo, assetRoot, accountExitData, exitNfts, accountMerkleProof, nftMerkleProofs, gasPrice, m.Config.ChainConfig.GasLimit)
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}
@@ -226,7 +234,7 @@ func (m *PerformDesert) WithdrawPendingBalance(owner common.Address, token commo
 		return err
 	}
 
-	txHash, err := zkbnb.WithdrawPendingBalance(m.cli, m.authCli, m.zkbnbInstance, owner, token, amount, gasPrice, m.Config.ChainConfig.GasLimit)
+	txHash, err := m.zkBNBCli.WithdrawPendingBalance(owner, token, amount, gasPrice, m.Config.ChainConfig.GasLimit)
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}
@@ -257,7 +265,7 @@ func (m *PerformDesert) WithdrawPendingNFTBalance(nftIndexes []int64) error {
 			return err
 		}
 
-		txHash, err := zkbnb.WithdrawPendingNFTBalance(m.cli, m.authCli, m.zkbnbInstance, big.NewInt(nftIndex), gasPrice, m.Config.ChainConfig.GasLimit)
+		txHash, err := m.zkBNBCli.WithdrawPendingNFTBalance(big.NewInt(nftIndex), gasPrice, m.Config.ChainConfig.GasLimit)
 		if err != nil {
 			return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 		}
@@ -331,7 +339,7 @@ func (m *PerformDesert) doCancelOutstandingDeposit(maxRequestId uint64, deposits
 		return
 	}
 
-	txHash, err := zkbnb.CancelOutstandingDepositsForDesertMode(m.cli, m.authCli, m.zkbnbInstance, maxRequestId, depositsPubData, gasPrice, m.Config.ChainConfig.GasLimit)
+	txHash, err := m.zkBNBCli.CancelOutstandingDepositsForExodusMode(maxRequestId, depositsPubData, gasPrice, m.Config.ChainConfig.GasLimit)
 	if err != nil {
 		logx.Errorf("failed to send tx: %v:%s", err, txHash)
 		return
@@ -346,7 +354,7 @@ func (m *PerformDesert) ActivateDesertMode() error {
 		return err
 	}
 
-	txHash, err := zkbnb.ActivateDesertMode(m.cli, m.authCli, m.zkbnbInstance, gasPrice, m.Config.ChainConfig.GasLimit)
+	txHash, err := m.zkBNBCli.ActivateDesertMode(gasPrice, m.Config.ChainConfig.GasLimit)
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}

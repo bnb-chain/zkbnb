@@ -228,8 +228,9 @@ func NewSender(c sconfig.Config) *Sender {
 		panic("fatal error, GenerateConstructorForVerifyAndExecute raises error:" + err.Error())
 	}
 
-	s.zkbnbClient, err = zkbnb.NewZkBNBClient(s.client, rollupAddress.Value, commitConstructor, verifyConstructor,
-		nil, nil, nil, nil, nil)
+	s.zkbnbClient, err = zkbnb.NewZkBNBClient(s.client, rollupAddress.Value)
+	s.zkbnbClient.CommitConstructor = commitConstructor
+	s.zkbnbClient.VerifyConstructor = verifyConstructor
 	if err != nil {
 		logx.Severef("fatal error, ZkBNBClient initiate raises error:%v", err)
 		panic("fatal error, ZkBNBClient initiate raises error:" + err.Error())
