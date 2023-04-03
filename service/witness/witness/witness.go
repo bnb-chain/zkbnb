@@ -381,6 +381,7 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 	blockWitness := blockwitness.BlockWitness{
 		Height:      block.BlockHeight,
 		WitnessData: string(bz),
+		BlockSize:   block.BlockSize,
 		Status:      blockwitness.StatusPublished,
 	}
 	return &blockWitness, nil
