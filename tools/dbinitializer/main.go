@@ -143,6 +143,7 @@ func InitializeDesertExit(
 		nftModel:             nft.NewL2NftModel(db),
 		l1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),
 		desertExitBlockModel: desertexit.NewDesertExitBlockModel(db),
+		priorityRequestModel: priorityrequest.NewPriorityRequestModel(db),
 	}
 
 	dropTablesDesertExit(dao)
@@ -302,6 +303,8 @@ func dropTablesDesertExit(dao *dao) {
 	assert.Nil(nil, dao.nftModel.DropL2NftTable())
 	assert.Nil(nil, dao.l1SyncedBlockModel.DropL1SyncedBlockTable())
 	assert.Nil(nil, dao.desertExitBlockModel.DropDesertExitBlockTable())
+	assert.Nil(nil, dao.priorityRequestModel.DropPriorityRequestTable())
+
 }
 
 func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC string) {
@@ -358,4 +361,5 @@ func initTableDesertExit(dao *dao) {
 	assert.Nil(nil, dao.nftModel.CreateL2NftTable())
 	assert.Nil(nil, dao.l1SyncedBlockModel.CreateL1SyncedBlockTable())
 	assert.Nil(nil, dao.desertExitBlockModel.CreateDesertExitBlockTable())
+	assert.Nil(nil, dao.priorityRequestModel.CreatePriorityRequestTable())
 }

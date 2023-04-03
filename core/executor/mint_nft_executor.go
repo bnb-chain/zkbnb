@@ -33,6 +33,13 @@ func NewMintNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}, nil
 }
 
+func NewMintNftExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &MintNftExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.MintNftTxInfo),
+	}, nil
+}
+
 func (e *MintNftExecutor) Prepare() error {
 	txInfo := e.TxInfo
 	if !e.bc.StateDB().IsFromApi {

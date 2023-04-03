@@ -59,7 +59,7 @@ type VerifyAndExecuteBlocksCallData struct {
 }
 
 type PerformDesertAssetData struct {
-	StoredBlockInfo    StoredBlockInfo
+	StoredBlockInfo    *StoredBlockInfo
 	AssetExitData      DesertVerifierAssetExitData
 	AccountExitData    DesertVerifierAccountExitData
 	AssetMerkleProof   []string
@@ -68,7 +68,7 @@ type PerformDesertAssetData struct {
 }
 
 type PerformDesertNftData struct {
-	StoredBlockInfo    StoredBlockInfo
+	StoredBlockInfo    *StoredBlockInfo
 	AccountExitData    DesertVerifierAccountExitData
 	ExitNfts           []DesertVerifierNftExitData
 	AssetRoot          string
@@ -78,8 +78,8 @@ type PerformDesertNftData struct {
 
 type DesertVerifierAssetExitData struct {
 	AssetId                  uint16
-	Amount                   int64
-	OfferCanceledOrFinalized int64
+	Amount                   string
+	OfferCanceledOrFinalized string
 }
 
 type DesertVerifierAccountExitData struct {

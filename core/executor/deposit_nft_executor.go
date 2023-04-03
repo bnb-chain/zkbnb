@@ -35,6 +35,13 @@ func NewDepositNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}, nil
 }
 
+func NewDepositNftExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &DepositNftExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.DepositNftTxInfo),
+	}, nil
+}
+
 func (e *DepositNftExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo

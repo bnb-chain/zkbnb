@@ -39,6 +39,13 @@ func NewAtomicMatchExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}, nil
 }
 
+func NewAtomicMatchExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &AtomicMatchExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.AtomicMatchTxInfo),
+	}, nil
+}
+
 func (e *AtomicMatchExecutor) Prepare() error {
 	txInfo := e.TxInfo
 

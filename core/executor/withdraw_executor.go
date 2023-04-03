@@ -31,6 +31,13 @@ func NewWithdrawExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}, nil
 }
 
+func NewWithdrawExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &WithdrawExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.WithdrawTxInfo),
+	}, nil
+}
+
 func (e *WithdrawExecutor) Prepare() error {
 	txInfo := e.TxInfo
 

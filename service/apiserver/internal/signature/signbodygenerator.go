@@ -18,7 +18,7 @@ func GenerateSignatureBody(txType uint32, txInfo string) (txtypes.TxInfo, error)
 	case types.TxTypeMintNft:
 		return types.ParseMintNftTxInfo(txInfo)
 	case types.TxTypeTransferNft:
-		return types.ParseTransferTxInfo(txInfo)
+		return types.ParseTransferNftTxInfo(txInfo)
 	case types.TxTypeOffer:
 		return types.ParseOfferTxInfo(txInfo)
 	case types.TxTypeCancelOffer:

@@ -107,6 +107,7 @@ type (
 		IsCreateAccount bool
 
 		TxIndex     int64
+		ChannelName string
 		BlockHeight int64 `gorm:"index"`
 		BlockId     uint  `gorm:"index"`
 		TxStatus    int   `gorm:"index"`

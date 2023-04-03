@@ -18,6 +18,10 @@ type Processor interface {
 	Process(tx *tx.Tx) error
 }
 
+type ProcessorForDesert interface {
+	Process(txInfo txtypes.TxInfo) error
+}
+
 type CommitProcessor struct {
 	bc *BlockChain
 }
@@ -112,8 +116,18 @@ type APIProcessor struct {
 	bc *BlockChain
 }
 
+type DesertProcessor struct {
+	bc *BlockChain
+}
+
 func NewAPIProcessor(bc *BlockChain) Processor {
 	return &APIProcessor{
+		bc: bc,
+	}
+}
+
+func NewDesertProcessor(bc *BlockChain) ProcessorForDesert {
+	return &DesertProcessor{
 		bc: bc,
 	}
 }
@@ -137,6 +151,30 @@ func (p *APIProcessor) Process(tx *tx.Tx) error {
 	if err != nil {
 		logx.Error("fail to GetExecutedTx:", err)
 		return mappingExecutedErrors(err)
+	}
+	return nil
+}
+
+func (p *DesertProcessor) Process(txInfo txtypes.TxInfo) error {
+	executor, err := executor.NewTxExecutorForDesert(p.bc, txInfo)
+	if err != nil {
+		return fmt.Errorf("new tx executor failed")
+	}
+
+	err = executor.Prepare()
+	if err != nil {
+		logx.Error("fail to prepare:", err)
+		return mappingPrepareErrors(err)
+	}
+
+	err = executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+
+	err = executor.Finalize()
+	if err != nil {
+		return err
 	}
 	return nil
 }

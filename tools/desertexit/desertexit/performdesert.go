@@ -83,8 +83,16 @@ func (m *PerformDesert) PerformDesert(performDesertAsset PerformDesertAssetData)
 	}
 
 	assetExitData := zkbnb.DesertVerifierAssetExitData{}
-	assetExitData.OfferCanceledOrFinalized = new(big.Int).SetInt64(performDesertAsset.AssetExitData.OfferCanceledOrFinalized)
-	assetExitData.Amount = new(big.Int).SetInt64(performDesertAsset.AssetExitData.Amount)
+	offerCanceledOrFinalized, convertSuccess := new(big.Int).SetString(performDesertAsset.AssetExitData.OfferCanceledOrFinalized, 10)
+	if !convertSuccess {
+		return fmt.Errorf("failed to convert to bigint: %s", performDesertAsset.AssetExitData.OfferCanceledOrFinalized)
+	}
+	assetExitData.OfferCanceledOrFinalized = offerCanceledOrFinalized
+	amount, convertSuccess := new(big.Int).SetString(performDesertAsset.AssetExitData.Amount, 10)
+	if !convertSuccess {
+		return fmt.Errorf("failed to convert to bigint: %s", performDesertAsset.AssetExitData.Amount)
+	}
+	assetExitData.Amount = amount
 	assetExitData.AssetId = performDesertAsset.AssetExitData.AssetId
 
 	return m.doPerformDesert(storedBlockInfo, nftRoot, assetExitData, accountExitData, assetMerkleProof, accountMerkleProof)
@@ -177,7 +185,7 @@ func getVerifierExitData(accountExitData DesertVerifierAccountExitData, accountM
 	return exitData, accountMerkleProof
 }
 
-func getStoredBlockInfo(storedBlockInfo StoredBlockInfo) zkbnb.StorageStoredBlockInfo {
+func getStoredBlockInfo(storedBlockInfo *StoredBlockInfo) zkbnb.StorageStoredBlockInfo {
 	var pendingOnchainOperationsHash [32]byte
 	var stateRoot [32]byte
 	var commitment [32]byte
@@ -241,18 +249,20 @@ func (m *PerformDesert) WithdrawPendingBalance(owner common.Address, token commo
 	return nil
 }
 
-func (m *PerformDesert) WithdrawPendingNFTBalance(nftIndex *big.Int) error {
-	gasPrice, err := m.cli.SuggestGasPrice(context.Background())
-	if err != nil {
-		logx.Errorf("failed to fetch gas price: %v", err)
-		return err
-	}
+func (m *PerformDesert) WithdrawPendingNFTBalance(nftIndexes []int64) error {
+	for _, nftIndex := range nftIndexes {
+		gasPrice, err := m.cli.SuggestGasPrice(context.Background())
+		if err != nil {
+			logx.Errorf("failed to fetch gas price: %v", err)
+			return err
+		}
 
-	txHash, err := zkbnb.WithdrawPendingNFTBalance(m.cli, m.authCli, m.zkbnbInstance, nftIndex, gasPrice, m.Config.ChainConfig.GasLimit)
-	if err != nil {
-		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
+		txHash, err := zkbnb.WithdrawPendingNFTBalance(m.cli, m.authCli, m.zkbnbInstance, big.NewInt(nftIndex), gasPrice, m.Config.ChainConfig.GasLimit)
+		if err != nil {
+			return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
+		}
+		logx.Infof("withdrawPendingNFTBalance success,nftIndex=%d,txHash=%s", nftIndex, txHash)
 	}
-	logx.Infof("withdrawPendingNFTBalance success,txHash=%s", txHash)
 	return nil
 }
 
@@ -293,7 +303,7 @@ func (m *PerformDesert) CancelOutstandingDeposit(address string) error {
 
 		for _, request := range priorityRequests {
 			logx.Infof("process pending priority request, requestId=%d", request.RequestId)
-			depositsPubData[index] = common.FromHex(request.Pubdata)
+			depositsPubData = append(depositsPubData, common.FromHex(request.Pubdata))
 			maxRequestId = common2.MaxInt64(request.RequestId, maxRequestId)
 			if int64(len(depositsPubData[index])) == m.Config.ChainConfig.MaxCancelOutstandingDepositCount {
 				m.doCancelOutstandingDeposit(uint64(maxRequestId), depositsPubData)

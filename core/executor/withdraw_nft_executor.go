@@ -34,6 +34,13 @@ func NewWithdrawNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}, nil
 }
 
+func NewWithdrawNftExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &WithdrawNftExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.WithdrawNftTxInfo),
+	}, nil
+}
+
 func (e *WithdrawNftExecutor) Prepare() error {
 	txInfo := e.TxInfo
 
@@ -68,7 +75,7 @@ func (e *WithdrawNftExecutor) Prepare() error {
 	txInfo.RoyaltyRate = nftInfo.RoyaltyRate
 	txInfo.NftContentHash = common.FromHex(nftInfo.NftContentHash)
 	txInfo.CollectionId = nftInfo.CollectionId
-
+	txInfo.NftContentType = nftInfo.NftContentType
 	return nil
 }
 
