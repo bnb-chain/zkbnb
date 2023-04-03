@@ -1,6 +1,7 @@
 package desertexit
 
 import (
+	"encoding/json"
 	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
 	"github.com/bnb-chain/zkbnb/tools/desertexit/desertexit"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,7 +20,7 @@ const CommandWithdrawAsset = "withdrawAsset"
 const CommandGetBalance = "getBalance"
 const CommandGetPendingBalance = "getPendingBalance"
 
-func Perform(configFile string, command string, amount string, nftIndex string, owner string, privateKey string, proof string, token string) error {
+func Perform(configFile string, command string, amount string, nftIndexListStr string, owner string, privateKey string, proof string, token string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
 	logx.MustSetup(c.LogConf)
@@ -29,6 +30,20 @@ func Perform(configFile string, command string, amount string, nftIndex string, 
 	})
 	if privateKey != "" {
 		c.ChainConfig.PrivateKey = privateKey
+	}
+	if owner != "" {
+		c.Address = owner
+	}
+	if token != "" {
+		c.Token = token
+	}
+	if nftIndexListStr != "" {
+		var nftIndexList []int64
+		err := json.Unmarshal([]byte(nftIndexListStr), &nftIndexList)
+		if err != nil {
+			return err
+		}
+		c.NftIndexList = nftIndexList
 	}
 	m, err := desertexit.NewPerformDesert(c)
 	if err != nil {
@@ -62,19 +77,14 @@ func Perform(configFile string, command string, amount string, nftIndex string, 
 		}
 		break
 	case CommandCancelOutstandingDeposit:
-		err = m.CancelOutstandingDeposit(owner)
+		err = m.CancelOutstandingDeposit(c.Address)
 		if err != nil {
 			logx.Severe(err)
 			return err
 		}
 		break
 	case CommandWithdrawNFT:
-		bigIntNftIndex, success := new(big.Int).SetString(nftIndex, 10)
-		if !success {
-			logx.Severe("failed to transfer big int")
-			return nil
-		}
-		err = m.WithdrawPendingNFTBalance(bigIntNftIndex)
+		err = m.WithdrawPendingNFTBalance(c.NftIndexList)
 		if err != nil {
 			logx.Severe(err)
 			return err
@@ -86,21 +96,21 @@ func Perform(configFile string, command string, amount string, nftIndex string, 
 			logx.Severe("failed to transfer big int")
 			return nil
 		}
-		err = m.WithdrawPendingBalance(common.HexToAddress(owner), common.HexToAddress(token), bigIntAmount)
+		err = m.WithdrawPendingBalance(common.HexToAddress(c.Address), common.HexToAddress(c.Token), bigIntAmount)
 		if err != nil {
 			logx.Severe(err)
 			return err
 		}
 		break
 	case CommandGetBalance:
-		_, err := m.GetBalance(common.HexToAddress(owner), common.HexToAddress(token))
+		_, err := m.GetBalance(common.HexToAddress(c.Address), common.HexToAddress(c.Token))
 		if err != nil {
 			logx.Severe(err)
 			return err
 		}
 		break
 	case CommandGetPendingBalance:
-		_, err := m.GetPendingBalance(common.HexToAddress(owner), common.HexToAddress(token))
+		_, err := m.GetPendingBalance(common.HexToAddress(c.Address), common.HexToAddress(c.Token))
 		if err != nil {
 			logx.Severe(err)
 			return err

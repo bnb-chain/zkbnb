@@ -35,6 +35,13 @@ func NewChangePubKeyExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}, nil
 }
 
+func NewChangePubKeyExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &ChangePubKeyExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.ChangePubKeyInfo),
+	}, nil
+}
+
 func (e *ChangePubKeyExecutor) Prepare() error {
 	txInfo := e.TxInfo
 

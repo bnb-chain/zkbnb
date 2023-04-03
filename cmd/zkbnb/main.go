@@ -188,8 +188,8 @@ func main() {
 				},
 			},
 			{
-				Name:  "desertexit",
-				Usage: "Run desertexit service",
+				Name:  "generateproof",
+				Usage: "Run generateproof service",
 				Flags: []cli.Flag{
 					flags.CommandFlag,
 					flags.ConfigFlag,
@@ -227,8 +227,8 @@ func main() {
 					flags.CommandFlag,
 					flags.ConfigFlag,
 					flags.AmountFlag,
-					flags.NftIndexFlag,
-					flags.OwnerFlag,
+					flags.NftIndexListFlag,
+					flags.AddressFlag,
 					flags.PrivateKeyFlag,
 					flags.ProofFlag,
 					flags.TokenFlag,
@@ -241,8 +241,8 @@ func main() {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
 					return desertexit.Perform(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.CommandFlag.Name),
-						cCtx.String(flags.AmountFlag.Name), cCtx.String(flags.NftIndexFlag.Name),
-						cCtx.String(flags.OwnerFlag.Name), cCtx.String(flags.PrivateKeyFlag.Name),
+						cCtx.String(flags.AmountFlag.Name), cCtx.String(flags.NftIndexListFlag.Name),
+						cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.PrivateKeyFlag.Name),
 						cCtx.String(flags.ProofFlag.Name), cCtx.String(flags.TokenFlag.Name))
 				},
 			},

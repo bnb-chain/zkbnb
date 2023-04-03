@@ -33,6 +33,13 @@ func NewCancelOfferExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}, nil
 }
 
+func NewCancelOfferExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &CancelOfferExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.CancelOfferTxInfo),
+	}, nil
+}
+
 func (e *CancelOfferExecutor) Prepare() error {
 	txInfo := e.TxInfo
 

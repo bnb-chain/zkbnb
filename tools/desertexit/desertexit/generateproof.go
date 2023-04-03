@@ -5,12 +5,9 @@ import (
 	"fmt"
 	types2 "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
-	"github.com/bnb-chain/zkbnb-crypto/util"
-	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/prove"
-	"github.com/bnb-chain/zkbnb/core/executor"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/desertexit"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
@@ -19,8 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/panjf2000/ants/v2"
 	"io/ioutil"
-	"math/big"
-	"strconv"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -136,7 +131,7 @@ func (c *GenerateProof) Run() error {
 			return err
 		}
 
-		err = c.getMerkleProofs(executedTxMaxHeight, account.AccountIndex, c.config.NftIndexList, c.config.Token)
+		err = c.generateProof(executedTxMaxHeight, account.AccountIndex, c.config.NftIndexList, c.config.Token)
 		if err != nil {
 			return err
 		}
@@ -145,98 +140,17 @@ func (c *GenerateProof) Run() error {
 }
 
 func (c *GenerateProof) executeBlockFunc(desertExitBlock *desertexit.DesertExitBlock) error {
-	pubData := common.FromHex(desertExitBlock.PubData)
-	sizePerTx := types2.PubDataBitsSizePerTx / 8
 	c.bc.Statedb.PurgeCache("")
 	err := c.bc.Statedb.MarkGasAccountAsPending()
 	if err != nil {
 		return err
 	}
-	for i := 0; i < int(desertExitBlock.BlockSize); i++ {
-		subPubData := pubData[i*sizePerTx : (i+1)*sizePerTx]
-		offset := 0
-		offset, txType := common2.ReadUint8(subPubData, offset)
-		switch txType {
-		case types.TxTypeAtomicMatch:
-			err := c.executeAtomicMatch(subPubData)
-			if err != nil {
-				return err
-			}
-			break
-		case types.TxTypeCancelOffer:
-			err := c.executeCancelOffer(subPubData)
-			if err != nil {
-				return err
-			}
-			break
-		case types.TxTypeCreateCollection:
-			err := c.executeCollection(subPubData)
-			if err != nil {
-				return err
-			}
-			break
-		case types.TxTypeDeposit:
-			err := c.executeDeposit(subPubData)
-			if err != nil {
-				return err
-			}
-			break
-		case types.TxTypeDepositNft:
-			err := c.executeDepositNft(subPubData)
-			if err != nil {
-				return err
-			}
-			break
-		case types.TxTypeFullExit:
-			err := c.executeFullExit(subPubData)
-			if err != nil {
-				return err
-			}
-			break
-		case types.TxTypeFullExitNft:
-			err := c.executeFullExitNft(subPubData)
-			if err != nil {
-				return err
-			}
-			break
-		case types.TxTypeMintNft:
-			err := c.executeMintNft(subPubData)
-			if err != nil {
-				return err
-			}
-			break
-		case types.TxTypeChangePubKey:
-			err := c.executeChangePubKey(subPubData)
-			if err != nil {
-				return err
-			}
-			break
-		case types.TxTypeTransfer:
-			err := c.executeTransfer(subPubData)
-			if err != nil {
-				return err
-			}
-			break
-		case types.TxTypeTransferNft:
-			err := c.executeTransferNft(subPubData)
-			if err != nil {
-				return err
-			}
-			break
-		case types.TxTypeWithdraw:
-			err := c.executeWithdraw(subPubData)
-			if err != nil {
-				return err
-			}
-			break
-		case types.TxTypeWithdrawNft:
-			err := c.executeWithdrawNft(subPubData)
-			if err != nil {
-				return err
-			}
-			break
-		case types.TxTypeEmpty:
-			break
+
+	txInfos, err := chain.ParsePubDataForDesert(desertExitBlock.PubData)
+	for _, txInfo := range txInfos {
+		err := core.NewDesertProcessor(c.bc).Process(txInfo)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -296,6 +210,7 @@ func (c *GenerateProof) executeBlockFunc(desertExitBlock *desertexit.DesertExitB
 			c.bc.Statedb.SetPendingNft(nftIndex, nftInfo)
 		}
 	}
+
 	return nil
 }
 
@@ -469,624 +384,8 @@ func (c *GenerateProof) loadAllNfts() error {
 	return nil
 }
 
-func (c *GenerateProof) Shutdown() {
-	c.running = false
-	c.bc.Statedb.Close()
-	c.bc.ChainDB.Close()
-}
-
-func (c *GenerateProof) executeAtomicMatch(pubData []byte) error {
-	bc := c.bc
-	offset := 1
-	offset, accountIndex := common2.ReadUint32(pubData, offset)
-	offset, buyOfferAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, buyOfferOfferId := common2.ReadUint24(pubData, offset)
-	offset, sellOfferAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, sellOfferOfferId := common2.ReadUint24(pubData, offset)
-	offset, buyOfferNftIndex := common2.ReadUint40(pubData, offset)
-	offset, sellOfferAssetId := common2.ReadUint16(pubData, offset)
-	offset, buyOfferAssetPackedAmount := common2.ReadUint40(pubData, offset)
-	buyOfferAssetAmount, err := util.UnpackAmount(big.NewInt(buyOfferAssetPackedAmount))
-	if err != nil {
-		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
-		return err
-	}
-
-	offset, royaltyPackedAmount := common2.ReadUint40(pubData, offset)
-	royaltyAmount, err := util.UnpackAmount(big.NewInt(royaltyPackedAmount))
-	if err != nil {
-		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
-		return err
-	}
-
-	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
-
-	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, err := util.UnpackFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
-	if err != nil {
-		return err
-	}
-
-	offset, buyProtocolPackedAmount := common2.ReadUint40(pubData, offset)
-	buyProtocolAmount, err := util.UnpackAmount(big.NewInt(buyProtocolPackedAmount))
-	if err != nil {
-		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
-		return err
-	}
-	offset, buyChanelAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, buyChanelPackedAmount := common2.ReadUint40(pubData, offset)
-	buyChanelAmount, err := util.UnpackAmount(big.NewInt(buyChanelPackedAmount))
-	if err != nil {
-		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
-		return err
-	}
-	offset, sellChannelAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, sellChannelPackedAmount := common2.ReadUint40(pubData, offset)
-	sellChanelAmount, err := util.UnpackAmount(big.NewInt(sellChannelPackedAmount))
-	if err != nil {
-		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
-		return err
-	}
-
-	txInfo := &txtypes.AtomicMatchTxInfo{
-		AccountIndex: int64(accountIndex),
-		BuyOffer: &txtypes.OfferTxInfo{
-			AccountIndex:        int64(buyOfferAccountIndex),
-			OfferId:             int64(buyOfferOfferId),
-			NftIndex:            buyOfferNftIndex,
-			AssetAmount:         buyOfferAssetAmount,
-			ChannelAccountIndex: int64(buyChanelAccountIndex),
-			ProtocolAmount:      buyProtocolAmount,
-		},
-		SellOffer: &txtypes.OfferTxInfo{
-			AccountIndex:        int64(sellOfferAccountIndex),
-			OfferId:             int64(sellOfferOfferId),
-			AssetId:             int64(sellOfferAssetId),
-			ChannelAccountIndex: int64(sellChannelAccountIndex),
-		},
-		SellChannelAmount: sellChanelAmount,
-		BuyChannelAmount:  buyChanelAmount,
-		RoyaltyAmount:     royaltyAmount,
-		GasAccountIndex:   types.GasAccount,
-		GasFeeAssetAmount: gasFeeAssetAmount,
-		GasFeeAssetId:     int64(gasFeeAssetId),
-	}
-
-	executor := &executor.AtomicMatchExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
-		TxInfo:       txInfo,
-	}
-	err = executor.Prepare()
-	if err != nil {
-		return err
-	}
-	err = executor.ApplyTransaction()
-	if err != nil {
-		return err
-	}
-	err = executor.Finalize()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *GenerateProof) executeCancelOffer(pubData []byte) error {
-	bc := c.bc
-	offset := 1
-	offset, accountIndex := common2.ReadUint32(pubData, offset)
-	offset, offerId := common2.ReadUint24(pubData, offset)
-	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
-	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, _ := util.UnpackFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
-
-	txInfo := &txtypes.CancelOfferTxInfo{
-		AccountIndex:      int64(accountIndex),
-		GasAccountIndex:   types.GasAccount,
-		GasFeeAssetId:     int64(gasFeeAssetId),
-		GasFeeAssetAmount: gasFeeAssetAmount,
-		OfferId:           int64(offerId),
-	}
-
-	executor := &executor.CancelOfferExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
-		TxInfo:       txInfo,
-	}
-	err := executor.Prepare()
-	if err != nil {
-		return err
-	}
-	err = executor.ApplyTransaction()
-	if err != nil {
-		return err
-	}
-	err = executor.Finalize()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *GenerateProof) executeCollection(pubData []byte) error {
-	bc := c.bc
-	offset := 1
-	offset, accountIndex := common2.ReadUint32(pubData, offset)
-	offset, collectionId := common2.ReadUint16(pubData, offset)
-	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
-	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, _ := util.UnpackFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
-
-	txInfo := &txtypes.CreateCollectionTxInfo{
-		AccountIndex:      int64(accountIndex),
-		GasAccountIndex:   types.GasAccount,
-		GasFeeAssetId:     int64(gasFeeAssetId),
-		GasFeeAssetAmount: gasFeeAssetAmount,
-		CollectionId:      int64(collectionId),
-	}
-
-	executor := &executor.CreateCollectionExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
-		TxInfo:       txInfo,
-	}
-	err := executor.Prepare()
-	if err != nil {
-		return err
-	}
-	err = executor.ApplyTransaction()
-	if err != nil {
-		return err
-	}
-	err = executor.Finalize()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *GenerateProof) executeDeposit(pubData []byte) error {
-	bc := c.bc
-	offset := 1
-	offset, accountIndex := common2.ReadUint32(pubData, offset)
-	offset, l1Address := common2.ReadAddress(pubData, offset)
-	offset, assetId := common2.ReadUint16(pubData, offset)
-	offset, assetAmount := common2.ReadUint128(pubData, offset)
-
-	txInfo := &txtypes.DepositTxInfo{
-		AccountIndex: int64(accountIndex),
-		AssetId:      int64(assetId),
-		AssetAmount:  assetAmount,
-		L1Address:    l1Address,
-	}
-
-	executor := &executor.DepositExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
-		TxInfo:       txInfo,
-	}
-	err := executor.Prepare()
-	if err != nil {
-		return err
-	}
-	err = executor.ApplyTransaction()
-	if err != nil {
-		return err
-	}
-	err = executor.Finalize()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *GenerateProof) executeDepositNft(pubData []byte) error {
-	bc := c.bc
-	offset := 1
-	offset, accountIndex := common2.ReadUint32(pubData, offset)
-	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, royaltyRate := common2.ReadUint16(pubData, offset)
-	offset, nftIndex := common2.ReadUint40(pubData, offset)
-	offset, collectionId := common2.ReadUint16(pubData, offset)
-	offset, l1Address := common2.ReadAddress(pubData, offset)
-	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
-	offset, nftContentType := common2.ReadUint8(pubData, offset)
-
-	txInfo := &txtypes.DepositNftTxInfo{
-		AccountIndex:        int64(accountIndex),
-		NftIndex:            nftIndex,
-		CreatorAccountIndex: int64(creatorAccountIndex),
-		CollectionId:        int64(collectionId),
-		RoyaltyRate:         int64(royaltyRate),
-		NftContentHash:      nftContentHash,
-		L1Address:           l1Address,
-		NftContentType:      int64(nftContentType),
-	}
-	executor := &executor.DepositNftExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
-		TxInfo:       txInfo,
-	}
-	err := executor.Prepare()
-	if err != nil {
-		return err
-	}
-	err = executor.ApplyTransaction()
-	if err != nil {
-		return err
-	}
-	err = executor.Finalize()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *GenerateProof) executeFullExit(pubData []byte) error {
-	bc := c.bc
-	offset := 1
-	offset, accountIndex := common2.ReadUint32(pubData, offset)
-	offset, assetId := common2.ReadUint16(pubData, offset)
-	offset, assetAmount := common2.ReadUint128(pubData, offset)
-	offset, l1Address := common2.ReadAddress(pubData, offset)
-	var txInfo = &txtypes.FullExitTxInfo{
-		AccountIndex: int64(accountIndex),
-		AssetId:      int64(assetId),
-		AssetAmount:  assetAmount,
-		L1Address:    l1Address,
-	}
-	executor := &executor.FullExitExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
-		TxInfo:       txInfo,
-	}
-	err := executor.Prepare()
-	if err != nil {
-		return err
-	}
-	err = executor.ApplyTransaction()
-	if err != nil {
-		return err
-	}
-	err = executor.Finalize()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *GenerateProof) executeFullExitNft(pubData []byte) error {
-	bc := c.bc
-	offset := 1
-	offset, accountIndex := common2.ReadUint32(pubData, offset)
-	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, royaltyRate := common2.ReadUint16(pubData, offset)
-	offset, nftIndex := common2.ReadUint40(pubData, offset)
-	offset, collectionId := common2.ReadUint16(pubData, offset)
-	offset, l1Address := common2.ReadAddress(pubData, offset)
-	offset, creatorL1Address := common2.ReadAddress(pubData, offset)
-	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
-	offset, nftContentType := common2.ReadUint8(pubData, offset)
-
-	var txInfo = &txtypes.FullExitNftTxInfo{
-		AccountIndex:        int64(accountIndex),
-		CreatorAccountIndex: int64(creatorAccountIndex),
-		RoyaltyRate:         int64(royaltyRate),
-		NftIndex:            nftIndex,
-		CollectionId:        int64(collectionId),
-		L1Address:           l1Address,
-		CreatorL1Address:    creatorL1Address,
-		NftContentHash:      nftContentHash,
-		NftContentType:      int64(nftContentType),
-	}
-	executor := &executor.FullExitNftExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
-		TxInfo:       txInfo,
-	}
-	err := executor.Prepare()
-	if err != nil {
-		return err
-	}
-	err = executor.ApplyTransaction()
-	if err != nil {
-		return err
-	}
-	err = executor.Finalize()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *GenerateProof) executeMintNft(pubData []byte) error {
-	bc := c.bc
-	offset := 1
-	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, toAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, nftIndex := common2.ReadUint40(pubData, offset)
-	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
-
-	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, err := util.UnpackFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
-	if err != nil {
-		return err
-	}
-	offset, royaltyRate := common2.ReadUint16(pubData, offset)
-	offset, collectionId := common2.ReadUint16(pubData, offset)
-	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
-
-	var txInfo = &txtypes.MintNftTxInfo{
-		CreatorAccountIndex: int64(creatorAccountIndex),
-		ToAccountIndex:      int64(toAccountIndex),
-		NftIndex:            nftIndex,
-		GasAccountIndex:     types.GasAccount,
-		GasFeeAssetId:       int64(gasFeeAssetId),
-		GasFeeAssetAmount:   gasFeeAssetAmount,
-		NftCollectionId:     int64(collectionId),
-		NftContentHash:      common.Bytes2Hex(nftContentHash),
-		RoyaltyRate:         int64(royaltyRate),
-	}
-	executor := &executor.MintNftExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
-		TxInfo:       txInfo,
-	}
-	err = executor.Prepare()
-	if err != nil {
-		return err
-	}
-	err = executor.ApplyTransaction()
-	if err != nil {
-		return err
-	}
-	err = executor.Finalize()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *GenerateProof) executeChangePubKey(pubData []byte) error {
-	bc := c.bc
-	offset := 1
-
-	offset, accountIndex := common2.ReadUint32(pubData, offset)
-	offset, pubKeyX := common2.ReadBytes32(pubData, offset)
-	offset, pubKeyY := common2.ReadBytes32(pubData, offset)
-	offset, l1Address := common2.ReadAddress(pubData, offset)
-	offset, nonce := common2.ReadUint32(pubData, offset)
-	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
-	offset, packedFee := common2.ReadUint16(pubData, offset)
-	packedFeeInt, success := new(big.Int).SetString(strconv.Itoa(int(packedFee)), 10)
-	if success != true {
-		//
-	}
-	gasFeeAssetAmount, err := util.UnpackFee(packedFeeInt)
-	if err != nil {
-		return err
-	}
-
-	var txInfo = &txtypes.ChangePubKeyInfo{
-		AccountIndex:      int64(accountIndex),
-		PubKeyX:           pubKeyX,
-		PubKeyY:           pubKeyY,
-		L1Address:         l1Address,
-		Nonce:             int64(nonce),
-		GasAccountIndex:   types.GasAccount,
-		GasFeeAssetId:     int64(gasFeeAssetId),
-		GasFeeAssetAmount: gasFeeAssetAmount,
-	}
-	executor := &executor.ChangePubKeyExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
-		TxInfo:       txInfo,
-	}
-	err = executor.Prepare()
-	if err != nil {
-		return err
-	}
-	err = executor.ApplyTransaction()
-	if err != nil {
-		return err
-	}
-	err = executor.Finalize()
-	if err != nil {
-		return err
-	}
-	return nil
-
-}
-
-func (c *GenerateProof) executeTransfer(pubData []byte) error {
-	bc := c.bc
-	offset := 1
-	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, toAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, toAddress := common2.ReadAddress(pubData, offset)
-	offset, assetId := common2.ReadUint16(pubData, offset)
-	offset, packedAmount := common2.ReadUint40(pubData, offset)
-	assetAmount, err := util.UnpackAmount(big.NewInt(packedAmount))
-	if err != nil {
-		return err
-	}
-	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
-	offset, packedFee := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, err := util.UnpackFee(big.NewInt(int64(packedFee)))
-	if err != nil {
-		return err
-	}
-
-	txInfo := &txtypes.TransferTxInfo{
-		FromAccountIndex:  int64(fromAccountIndex),
-		ToL1Address:       toAddress,
-		ToAccountIndex:    int64(toAccountIndex),
-		GasAccountIndex:   types.GasAccount,
-		AssetId:           int64(assetId),
-		AssetAmount:       assetAmount,
-		GasFeeAssetId:     int64(gasFeeAssetId),
-		GasFeeAssetAmount: gasFeeAssetAmount,
-	}
-	executor := &executor.TransferExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
-		TxInfo:       txInfo,
-	}
-	err = executor.Prepare()
-	if err != nil {
-		return err
-	}
-	err = executor.ApplyTransaction()
-	if err != nil {
-		return err
-	}
-	err = executor.Finalize()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *GenerateProof) executeTransferNft(pubData []byte) error {
-	bc := c.bc
-	offset := 1
-	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, toAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, toAddress := common2.ReadAddress(pubData, offset)
-	offset, nftIndex := common2.ReadUint40(pubData, offset)
-	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
-	offset, packedFee := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, err := util.UnpackFee(big.NewInt(int64(packedFee)))
-	if err != nil {
-		return err
-	}
-	offset, callDataHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
-	txInfo := &txtypes.TransferNftTxInfo{
-		FromAccountIndex:  int64(fromAccountIndex),
-		ToAccountIndex:    int64(toAccountIndex),
-		ToL1Address:       toAddress,
-		NftIndex:          nftIndex,
-		GasAccountIndex:   types.GasAccount,
-		GasFeeAssetId:     int64(gasFeeAssetId),
-		GasFeeAssetAmount: gasFeeAssetAmount,
-		CallDataHash:      callDataHash,
-	}
-	executor := &executor.TransferNftExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
-		TxInfo:       txInfo,
-	}
-	err = executor.Prepare()
-	if err != nil {
-		return err
-	}
-	err = executor.ApplyTransaction()
-	if err != nil {
-		return err
-	}
-	err = executor.Finalize()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *GenerateProof) executeWithdraw(pubData []byte) error {
-	bc := c.bc
-	offset := 1
-	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, toAddress := common2.ReadAddress(pubData, offset)
-	offset, assetId := common2.ReadUint16(pubData, offset)
-	offset, assetAmount := common2.ReadUint128(pubData, offset)
-	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
-	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, err := util.UnpackFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
-	if err != nil {
-		return err
-	}
-	txInfo := &txtypes.WithdrawTxInfo{
-		FromAccountIndex:  int64(fromAccountIndex),
-		ToAddress:         toAddress,
-		GasAccountIndex:   types.GasAccount,
-		AssetId:           int64(assetId),
-		AssetAmount:       assetAmount,
-		GasFeeAssetId:     int64(gasFeeAssetId),
-		GasFeeAssetAmount: gasFeeAssetAmount,
-	}
-	executor := &executor.WithdrawExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
-		TxInfo:       txInfo,
-	}
-	err = executor.Prepare()
-	if err != nil {
-		return err
-	}
-	err = executor.ApplyTransaction()
-	if err != nil {
-		return err
-	}
-	err = executor.Finalize()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *GenerateProof) executeWithdrawNft(pubData []byte) error {
-	bc := c.bc
-	offset := 1
-	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, royaltyRate := common2.ReadUint16(pubData, offset)
-	offset, nftIndex := common2.ReadUint40(pubData, offset)
-	offset, collectionId := common2.ReadUint16(pubData, offset)
-	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
-	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, err := util.UnpackFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
-	if err != nil {
-		return err
-	}
-	offset, toAddress := common2.ReadAddress(pubData, offset)
-	offset, creatorL1Address := common2.ReadAddress(pubData, offset)
-	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
-	offset, nftContentType := common2.ReadUint8(pubData, offset)
-	txInfo := &txtypes.WithdrawNftTxInfo{
-		AccountIndex:        int64(fromAccountIndex),
-		CreatorAccountIndex: int64(creatorAccountIndex),
-		RoyaltyRate:         int64(royaltyRate),
-		NftIndex:            nftIndex,
-		ToAddress:           toAddress,
-		CollectionId:        int64(collectionId),
-		NftContentHash:      nftContentHash,
-		CreatorL1Address:    creatorL1Address,
-		GasAccountIndex:     types.GasAccount,
-		GasFeeAssetId:       int64(gasFeeAssetId),
-		GasFeeAssetAmount:   gasFeeAssetAmount,
-		NftContentType:      int64(nftContentType),
-	}
-	executor := &executor.WithdrawNftExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
-		TxInfo:       txInfo,
-	}
-	err = executor.Prepare()
-	if err != nil {
-		return err
-	}
-	err = executor.ApplyTransaction()
-	if err != nil {
-		return err
-	}
-	err = executor.Finalize()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, nftIndexList []int64, assetTokenAddress string) error {
-	treeCtx, err := tree.NewContext("desertexit", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption)
-	if err != nil {
-		logx.Errorf("init tree database failed: %s", err)
-		return err
-	}
-
-	treeCtx.SetOptions(bsmt.InitializeVersion(0))
-	treeCtx.SetBatchReloadSize(1000)
-	err = tree.SetupTreeDB(treeCtx)
-	if err != nil {
-		logx.Errorf("init tree database failed: %s", err)
-		return err
-	}
+func (c *GenerateProof) generateProof(blockHeight int64, accountIndex int64, nftIndexList []int64, assetTokenAddress string) error {
+	accountTree, accountAssetTrees, nftTree, err := c.initSmtTree(blockHeight)
 
 	accountInfo, err := c.bc.DB().AccountModel.GetAccountByIndex(accountIndex)
 	if err != nil {
@@ -1098,38 +397,6 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 		return err
 	}
 
-	// dbinitializer accountTree and accountStateTrees
-	accountTree, accountAssetTrees, err := tree.InitAccountTree(
-		c.bc.AccountModel,
-		c.bc.AccountHistoryModel,
-		make([]int64, 0),
-		blockHeight,
-		treeCtx,
-		c.config.TreeDB.AssetTreeCacheSize,
-		false,
-	)
-	if err != nil {
-		logx.Error("init merkle tree error:", err)
-		return err
-	}
-
-	accountStateRoot := common.Bytes2Hex(accountTree.Root())
-	logx.Infof("account tree accountStateRoot=%s", accountStateRoot)
-	// dbinitializer nftTree
-	nftTree, err := tree.InitNftTree(
-		c.bc.L2NftModel,
-		c.bc.L2NftHistoryModel,
-		blockHeight,
-		treeCtx, false)
-	if err != nil {
-		logx.Errorf("init nft tree error: %s", err.Error())
-		return err
-	}
-
-	nftStateRoot := common.Bytes2Hex(nftTree.Root())
-	logx.Infof("nft tree nftStateRoot=%s", nftStateRoot)
-	stateRoot := tree.ComputeStateRootHash(accountTree.Root(), nftTree.Root())
-	logx.Infof("smt tree StateRoot=%s", common.Bytes2Hex(stateRoot))
 	// get account before
 	accountMerkleProofs, err := accountTree.GetProof(uint64(accountIndex))
 	if err != nil {
@@ -1141,6 +408,7 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 	if err != nil {
 		return err
 	}
+
 	// Marshal formatted proof.
 	merkleProofsAccountBytes, err := json.Marshal(merkleProofsAccount)
 	if err != nil {
@@ -1148,31 +416,12 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 	}
 	logx.Infof("accountIndex=%d, merkleProofsAccount=%s", accountIndex, string(merkleProofsAccountBytes))
 
-	m, err := NewDesertExit(c.config)
+	storedBlockInfo, err := c.getStoredBlockInfo()
 	if err != nil {
-		return err
-	}
-	desertExitBlock, err := c.bc.DB().DesertExitBlockModel.GetLatestExecutedBlock()
-	if err != nil {
-		logx.Errorf("get desert exit block failed: %s", err)
+		logx.Errorf("get stored block info: %s", err.Error())
 		return err
 	}
 
-	lastStoredBlockInfo, err := m.getLastStoredBlockInfo(desertExitBlock.VerifiedTxHash, desertExitBlock.BlockHeight)
-	if err != nil {
-		logx.Errorf("get last stored block info failed: %s", err)
-		return err
-	}
-
-	storedBlockInfo := StoredBlockInfo{
-		BlockSize:                    lastStoredBlockInfo.BlockSize,
-		BlockNumber:                  lastStoredBlockInfo.BlockNumber,
-		PriorityOperations:           lastStoredBlockInfo.PriorityOperations,
-		PendingOnchainOperationsHash: common.Bytes2Hex(lastStoredBlockInfo.PendingOnchainOperationsHash[:]),
-		Timestamp:                    lastStoredBlockInfo.Timestamp.Int64(),
-		StateRoot:                    common.Bytes2Hex(lastStoredBlockInfo.StateRoot[:]),
-		Commitment:                   common.Bytes2Hex(lastStoredBlockInfo.Commitment[:]),
-	}
 	pk, err := common2.ParsePubKey(accountInfo.PublicKey)
 	if err != nil {
 		logx.Errorf("unable to parse pub key: %s", err.Error())
@@ -1191,8 +440,9 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 	for i, _ := range merkleProofsAccount {
 		accountMerkleProof[i] = common.Bytes2Hex(merkleProofsAccount[i])
 	}
+
 	if assetTokenAddress != "" {
-		monitor, err := NewDesertExit(m.Config)
+		monitor, err := NewDesertExit(c.config)
 		if err != nil {
 			logx.Severe(err)
 			return err
@@ -1237,8 +487,8 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 		performDesertData.AccountExitData = accountExitData
 		performDesertData.AssetExitData = DesertVerifierAssetExitData{
 			AssetId:                  assetId,
-			Amount:                   formatAccountInfo.AssetInfo[int64(assetId)].Balance.Int64(),
-			OfferCanceledOrFinalized: formatAccountInfo.AssetInfo[int64(assetId)].OfferCanceledOrFinalized.Int64(),
+			Amount:                   formatAccountInfo.AssetInfo[int64(assetId)].Balance.String(),
+			OfferCanceledOrFinalized: formatAccountInfo.AssetInfo[int64(assetId)].OfferCanceledOrFinalized.String(),
 		}
 		performDesertData.StoredBlockInfo = storedBlockInfo
 
@@ -1246,7 +496,7 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 		if err != nil {
 			return err
 		}
-		err = ioutil.WriteFile(m.Config.ProofFolder+"performDesertAsset.json", data, 0777)
+		err = ioutil.WriteFile(c.config.ProofFolder+"performDesertAsset.json", data, 0777)
 		if err != nil {
 			return err
 		}
@@ -1308,10 +558,96 @@ func (c *GenerateProof) getMerkleProofs(blockHeight int64, accountIndex int64, n
 		performDesertNftData.AccountMerkleProof = accountMerkleProof
 
 		data, err := json.Marshal(performDesertNftData)
-		err = ioutil.WriteFile(m.Config.ProofFolder+"performDesertNft.json", data, 0777)
+		err = ioutil.WriteFile(c.config.ProofFolder+"performDesertNft.json", data, 0777)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (c *GenerateProof) initSmtTree(blockHeight int64) (accountTree bsmt.SparseMerkleTree, accountAssetTrees *tree.AssetTreeCache, nftTree bsmt.SparseMerkleTree, err error) {
+	treeCtx, err := tree.NewContext("desertexit", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption)
+	if err != nil {
+		logx.Errorf("init tree database failed: %s", err)
+		return nil, nil, nil, err
+	}
+
+	treeCtx.SetOptions(bsmt.InitializeVersion(0))
+	treeCtx.SetBatchReloadSize(1000)
+	err = tree.SetupTreeDB(treeCtx)
+	if err != nil {
+		logx.Errorf("init tree database failed: %s", err)
+		return nil, nil, nil, err
+	}
+
+	// dbinitializer accountTree and accountStateTrees
+	accountTree, accountAssetTrees, err = tree.InitAccountTree(
+		c.bc.AccountModel,
+		c.bc.AccountHistoryModel,
+		make([]int64, 0),
+		blockHeight,
+		treeCtx,
+		c.config.TreeDB.AssetTreeCacheSize,
+		false,
+	)
+	if err != nil {
+		logx.Error("init merkle tree error:", err)
+		return nil, nil, nil, err
+	}
+	accountStateRoot := common.Bytes2Hex(accountTree.Root())
+	logx.Infof("account tree accountStateRoot=%s", accountStateRoot)
+
+	// dbinitializer nftTree
+	nftTree, err = tree.InitNftTree(
+		c.bc.L2NftModel,
+		c.bc.L2NftHistoryModel,
+		blockHeight,
+		treeCtx, false)
+	if err != nil {
+		logx.Errorf("init nft tree error: %s", err.Error())
+		return nil, nil, nil, err
+	}
+	nftStateRoot := common.Bytes2Hex(nftTree.Root())
+	logx.Infof("nft tree nftStateRoot=%s", nftStateRoot)
+
+	stateRoot := tree.ComputeStateRootHash(accountTree.Root(), nftTree.Root())
+	logx.Infof("smt tree StateRoot=%s", common.Bytes2Hex(stateRoot))
+
+	return accountTree, accountAssetTrees, nftTree, nil
+}
+
+func (c *GenerateProof) getStoredBlockInfo() (*StoredBlockInfo, error) {
+	m, err := NewDesertExit(c.config)
+	if err != nil {
+		return nil, err
+	}
+	desertExitBlock, err := c.bc.DB().DesertExitBlockModel.GetLatestExecutedBlock()
+	if err != nil {
+		logx.Errorf("get desert exit block failed: %s", err)
+		return nil, err
+	}
+
+	lastStoredBlockInfo, err := m.getLastStoredBlockInfo(desertExitBlock.VerifiedTxHash, desertExitBlock.BlockHeight)
+	if err != nil {
+		logx.Errorf("get last stored block info failed: %s", err)
+		return nil, err
+	}
+
+	storedBlockInfo := &StoredBlockInfo{
+		BlockSize:                    lastStoredBlockInfo.BlockSize,
+		BlockNumber:                  lastStoredBlockInfo.BlockNumber,
+		PriorityOperations:           lastStoredBlockInfo.PriorityOperations,
+		PendingOnchainOperationsHash: common.Bytes2Hex(lastStoredBlockInfo.PendingOnchainOperationsHash[:]),
+		Timestamp:                    lastStoredBlockInfo.Timestamp.Int64(),
+		StateRoot:                    common.Bytes2Hex(lastStoredBlockInfo.StateRoot[:]),
+		Commitment:                   common.Bytes2Hex(lastStoredBlockInfo.Commitment[:]),
+	}
+	return storedBlockInfo, nil
+}
+
+func (c *GenerateProof) Shutdown() {
+	c.running = false
+	c.bc.Statedb.Close()
+	c.bc.ChainDB.Close()
 }

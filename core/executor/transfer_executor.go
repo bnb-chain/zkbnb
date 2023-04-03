@@ -32,6 +32,13 @@ func NewTransferExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}, nil
 }
 
+func NewTransferExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &TransferExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.TransferTxInfo),
+	}, nil
+}
+
 func (e *TransferExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo
