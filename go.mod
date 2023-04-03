@@ -197,4 +197,4 @@ replace github.com/bnb-chain/zkbnb-eth-rpc => github.com/15000785133/zkbnb-eth-r
 
 replace github.com/bnb-chain/zkbnb-go-sdk => github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230403103820-4062c22def5d
 
-replace github.com/bnb-chain/zkbnb-crypto => github.com/15000785133/zkbnb-crypto v0.0.8-0.20230402105413-677aa6c44f49
+replace github.com/bnb-chain/zkbnb-crypto => github.com/15000785133/zkbnb-crypto v0.0.8-0.20230403144529-4e2e8ffac4bd

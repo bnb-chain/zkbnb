@@ -99,11 +99,6 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 		return types.AppErrInvalidPlatformRate
 	}
 
-	protocolAmount := ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.BuyOffer.ProtocolRate)), big.NewInt(TenThousand))
-	if protocolAmount.Cmp(txInfo.BuyOffer.ProtocolAmount) != 0 {
-		return types.AppErrInvalidPlatformAmount
-	}
-
 	if txInfo.BuyOffer.Type != types.BuyOfferType ||
 		txInfo.SellOffer.Type != types.SellOfferType {
 		return types.AppErrInvalidOfferType
