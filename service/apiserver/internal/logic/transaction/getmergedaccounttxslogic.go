@@ -28,8 +28,16 @@ func NewGetMergedAccountTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *GetMergedAccountTxsLogic) GetMergedAccountTxs(req *types.ReqGetAccountTxs) (resp *types.Txs, err error) {
+
+	resp = &types.Txs{
+		Txs: make([]*types.Tx, 0, req.Limit),
+	}
+
 	accountIndex, err := l.fetchAccountIndexFromReq(req)
-	if err != nil && err != types2.DbErrNotFound {
+	if err != nil {
+		if err == types2.DbErrNotFound {
+			return resp, nil
+		}
 		return nil, err
 	}
 
@@ -39,15 +47,15 @@ func (l *GetMergedAccountTxsLogic) GetMergedAccountTxs(req *types.ReqGetAccountT
 	}
 
 	poolTxCount, err := l.svcCtx.TxPoolModel.GetTxsCountByAccountIndex(accountIndex, options...)
-	if err != nil && err != types2.DbErrNotFound {
+	if err != nil {
 		return nil, types2.DbErrSqlOperation
 	}
 	txCount, err := l.svcCtx.TxModel.GetTxsCountByAccountIndex(accountIndex, options...)
-	if err != nil && err != types2.DbErrNotFound {
+	if err != nil {
 		return nil, types2.DbErrSqlOperation
 	}
 	replicateTxCount, err := l.svcCtx.TxModel.GetReplicateTxsCountByAccountIndex(accountIndex, options...)
-	if err != nil && err != types2.DbErrNotFound {
+	if err != nil {
 		return nil, types2.DbErrSqlOperation
 	}
 
