@@ -42,10 +42,10 @@ cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RX
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 collectd.org v0.3.0/go.mod h1:A/8DzQBkF6abtvrT2j/AU/4tiBgJWYyh0y/oB/4MlWE=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/15000785133/zkbnb-crypto v0.0.8-0.20230402105413-677aa6c44f49 h1:5eP0YAkxPNomZUuQDVKzKdxhIAGWz+t3YGK7XfQHnPw=
-github.com/15000785133/zkbnb-crypto v0.0.8-0.20230402105413-677aa6c44f49/go.mod h1:WJL/OlRL4+8sU+O85btdCC2DQlMfKJE9UxuBTf/8DlE=
-github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230403132636-19df150524f3 h1:jPQMq5ni7fEOxw22zNQDmPUWmK01rxuShxh4ESGhC7w=
-github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230403132636-19df150524f3/go.mod h1:zZ9uTj1GJOc5OxgojQbA8TZjEQhESUnp4MEWOYk/OVs=
+github.com/15000785133/zkbnb-crypto v0.0.8-0.20230403144529-4e2e8ffac4bd h1:fwXH41Tuf/vKrBMNjE9VHxPgMl57r8//0kfVn24T3TE=
+github.com/15000785133/zkbnb-crypto v0.0.8-0.20230403144529-4e2e8ffac4bd/go.mod h1:WJL/OlRL4+8sU+O85btdCC2DQlMfKJE9UxuBTf/8DlE=
+github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230403150601-c8670add4511 h1:4s09XMNiuLKgj6SfjmHfat4cjiQMDtcVilY0vAf/6HI=
+github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230403150601-c8670add4511/go.mod h1:zZ9uTj1GJOc5OxgojQbA8TZjEQhESUnp4MEWOYk/OVs=
 github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230403103820-4062c22def5d h1:JJUywW5hqIs2q9OIG1BLslg964onrx/bGLkXzc4nX00=
 github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230403103820-4062c22def5d/go.mod h1:YZgzOhVeFRiaETT6dMywzuvfR8Hvvrhfxyt6YYvRP2s=
 github.com/AndreasBriese/bbloom v0.0.0-20190306092124-e2d15f34fcf9/go.mod h1:bOvUY6CB00SOBii9/FifXqc0awNKxLFCL/+pkDPuyl8=
