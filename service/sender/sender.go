@@ -1,9 +1,9 @@
 package sender
 
 import (
+	"github.com/robfig/cron/v3"
 	"time"
 
-	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
@@ -19,6 +19,11 @@ func Run(configFile string) error {
 	conf.MustLoad(configFile, &c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
+
+	//Initiate the apollo configuration
+	config.InitApolloConfiguration(c)
+	//Initiate the Prometheus Monitor Facility
+	sender.InitPrometheusFacility()
 
 	s := sender.NewSender(c)
 	// new cron
