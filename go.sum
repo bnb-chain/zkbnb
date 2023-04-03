@@ -916,8 +916,10 @@ github.com/prometheus/procfs v0.8.0 h1:ODq8ZFEaYeCaZOJlZZdJA2AbQR98dSHSM1KW/You5
 github.com/prometheus/procfs v0.8.0/go.mod h1:z7EfXMXOkbkqb9IINtpCn86r/to3BnA0uaxHdg830/4=
 github.com/prometheus/tsdb v0.7.1 h1:YZcsG11NqnK4czYLrWd9mpEuAJIHVQLwdrleYfszMAA=
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
-github.com/qct/zkbnb-crypto v0.0.0-20230331121703-13bfa3880cc8 h1:dbA8FNNthRPaao50/cmCeDz5wUHiMRPZhgyhKlw/QTg=
-github.com/qct/zkbnb-crypto v0.0.0-20230331121703-13bfa3880cc8/go.mod h1:v3bUVZM188uSHk4iKSRq63JLUGDPfoUeoCKTduNbbcI=
+github.com/qct/gnark v0.0.0-20230403181049-8acf9676c09c h1:LaQ/NLJfYJO+zGZdzKK1OIiA0zMXLWQtGWMJieVwE38=
+github.com/qct/gnark v0.0.0-20230403181049-8acf9676c09c/go.mod h1:Ly1OhPZb5XUGnW37K138OgG8Z7ZXmEI+JriZ7IBLu48=
+github.com/qct/zkbnb-crypto v0.0.0-20230403182608-e56df5393036 h1:dN+SqXwTHKl4CKyjdCyblqX0Q4L7f2UqfQCnlN1CO7Q=
+github.com/qct/zkbnb-crypto v0.0.0-20230403182608-e56df5393036/go.mod h1:D5q0+2E4BTAvj9IIIyJ6JYOD3ahabY1oj+RdBamoB/s=
 github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1 h1:eOCPSifBBQiQD0aGLlAoWoYUdI9aOJLC0zzo8RWAgek=
 github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1/go.mod h1:CHVooyzRRzTqcSUcUKJZlJ5QsOyyS3JPVyML7xU9/uQ=
 github.com/rabbitmq/amqp091-go v1.1.0/go.mod h1:ogQDLSOACsLPsIq0NpbtiifNZi2YOz0VTJ0kHRghqbM=
