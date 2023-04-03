@@ -13,6 +13,7 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/permctrl"
 	"gorm.io/gorm"
+	"net/http"
 	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -29,15 +30,17 @@ type SendTxLogic struct {
 	ctx               context.Context
 	svcCtx            *svc.ServiceContext
 	permissionControl *permctrl.PermissionControl
+	header            http.Header
 }
 
-func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogic {
+func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext, header http.Header) *SendTxLogic {
 	permissionControl := permctrl.NewPermissionControl(ctx, svcCtx)
 	return &SendTxLogic{
 		Logger:            logx.WithContext(ctx),
 		ctx:               ctx,
 		svcCtx:            svcCtx,
 		permissionControl: permissionControl,
+		header:            header,
 	}
 }
 
@@ -80,6 +83,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		TxAmount:      types2.NilAssetAmount,
 		NativeAddress: types2.EmptyL1Address,
 
+		ChannelName: s.header.Get("Channel-Name"),
 		BlockHeight: types2.NilBlockHeight,
 		TxStatus:    tx.StatusPending,
 	}
