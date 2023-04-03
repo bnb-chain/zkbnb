@@ -29,7 +29,7 @@ func NewGetMergedAccountTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 
 func (l *GetMergedAccountTxsLogic) GetMergedAccountTxs(req *types.ReqGetAccountTxs) (resp *types.Txs, err error) {
 	accountIndex, err := l.fetchAccountIndexFromReq(req)
-	if err != nil {
+	if err != nil && err != types2.DbErrNotFound {
 		return nil, err
 	}
 
@@ -39,16 +39,16 @@ func (l *GetMergedAccountTxsLogic) GetMergedAccountTxs(req *types.ReqGetAccountT
 	}
 
 	poolTxCount, err := l.svcCtx.TxPoolModel.GetTxsCountByAccountIndex(accountIndex, options...)
-	if err != nil {
-		return nil, err
+	if err != nil && err != types2.DbErrNotFound {
+		return nil, types2.DbErrSqlOperation
 	}
 	txCount, err := l.svcCtx.TxModel.GetTxsCountByAccountIndex(accountIndex, options...)
-	if err != nil {
-		return nil, err
+	if err != nil && err != types2.DbErrNotFound {
+		return nil, types2.DbErrSqlOperation
 	}
 	replicateTxCount, err := l.svcCtx.TxModel.GetReplicateTxsCountByAccountIndex(accountIndex, options...)
-	if err != nil {
-		return nil, err
+	if err != nil && err != types2.DbErrNotFound {
+		return nil, types2.DbErrSqlOperation
 	}
 
 	totalTxCount := poolTxCount + txCount - replicateTxCount
@@ -61,29 +61,29 @@ func (l *GetMergedAccountTxsLogic) GetMergedAccountTxs(req *types.ReqGetAccountT
 	if (poolTxCount - replicateTxCount) < int64(req.Offset) {
 		txOffset := int64(req.Offset) - poolTxCount + replicateTxCount
 		txs, err := l.svcCtx.TxModel.GetTxsByAccountIndex(accountIndex, int64(req.Limit), txOffset, options...)
-		if err != nil {
-			return nil, types2.AppErrInternal
+		if err != nil && err != types2.DbErrNotFound {
+			return nil, types2.DbErrSqlOperation
 		}
 		txsList = l.appendTxsList(txsList, txs)
 	} else {
 		poolTxLimit := poolTxCount - int64(req.Offset) - replicateTxCount
 		if poolTxLimit > int64(req.Limit) {
 			poolTxs, err := l.svcCtx.TxPoolModel.GetTxsByAccountIndex(accountIndex, int64(req.Limit), int64(req.Offset), options...)
-			if err != nil {
-				return nil, types2.AppErrInternal
+			if err != nil && err != types2.DbErrNotFound {
+				return nil, types2.DbErrSqlOperation
 			}
 			txsList = l.appendTxsList(txsList, poolTxs)
 		} else {
 			poolTxs, err := l.svcCtx.TxPoolModel.GetTxsByAccountIndex(accountIndex, poolTxLimit, int64(req.Offset), options...)
 			if err != nil && err != types2.DbErrNotFound {
-				return nil, types2.AppErrInternal
+				return nil, types2.DbErrSqlOperation
 			}
 			txsList = l.appendTxsList(txsList, poolTxs)
 			txLimit := int64(req.Limit) - poolTxLimit
 			if txLimit > 0 {
 				txs, err := l.svcCtx.TxModel.GetTxsByAccountIndex(accountIndex, txLimit, 0, options...)
 				if err != nil && err != types2.DbErrNotFound {
-					return nil, types2.AppErrInternal
+					return nil, types2.DbErrSqlOperation
 				}
 				txsList = l.appendTxsList(txsList, txs)
 			}
