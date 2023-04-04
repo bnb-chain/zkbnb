@@ -76,6 +76,7 @@ var (
 	AppErrAccountNameAlreadyRegistered = NewBusinessError(21106, "invalid account name, already registered")
 	AppErrAccountInvalidToAccount      = NewBusinessError(21107, "invalid ToAccount")
 	AppErrInvalidAccount               = NewBusinessError(21108, "invalid account")
+	AppErrInvalidPublicKey             = NewBusinessError(21108, "invalid PublicKey,please run changePubKey")
 
 	// Asset
 	AppErrAssetNotFound               = NewBusinessError(21200, "asset not found")
@@ -129,7 +130,7 @@ var (
 
 	// Nft
 	AppErrNftAlreadyExist          = NewBusinessError(21600, "invalid nft index, already exist")
-	AppErrInvalidNftContenthash    = NewBusinessError(21601, "invalid nft content hash")
+	AppErrInvalidNftContenthash    = NewBusinessError(21601, "invalid nft content hash,mint nft again")
 	AppErrNotNftOwner              = NewBusinessError(21602, "account is not owner of the nft")
 	AppErrInvalidNftIndex          = NewBusinessError(21603, "invalid nft index")
 	AppErrNftNotFound              = NewBusinessError(21604, "nft not found")

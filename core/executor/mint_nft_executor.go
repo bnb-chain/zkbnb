@@ -81,6 +81,13 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 		return types.AppErrInvalidNftContentType
 	}
 
+	if !e.bc.StateDB().IsFromApi {
+		nftContentHashLen := len(common.FromHex(txInfo.NftContentHash))
+		if nftContentHashLen < 1 || nftContentHashLen > 32 {
+			return types.AppErrInvalidNftContenthash
+		}
+	}
+
 	creatorAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.CreatorAccountIndex)
 	if err != nil {
 		return err
