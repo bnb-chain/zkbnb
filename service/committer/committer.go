@@ -87,6 +87,10 @@ func Run(configFile string) error {
 	})
 
 	logx.Info("committer is starting......")
-	committer.Run()
+	err = committer.Run()
+	if err != nil {
+		logx.Severef("failed to committer.run, %v", err)
+		panic("failed to committer.run, err:" + err.Error())
+	}
 	return nil
 }
