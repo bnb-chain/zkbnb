@@ -75,7 +75,12 @@ func NewPerformDesert(c config.Config) (*PerformDesert, error) {
 		logx.Severe(err)
 		return nil, err
 	}
+	newPerformDesert.zkBNBCli.ActivateConstructor = newPerformDesert.authCli
+	newPerformDesert.zkBNBCli.RevertConstructor = newPerformDesert.authCli
 	newPerformDesert.zkBNBCli.PerformConstructor = newPerformDesert.authCli
+	newPerformDesert.zkBNBCli.WithdrawConstructor = newPerformDesert.authCli
+	newPerformDesert.zkBNBCli.CancelDepositConstructor = newPerformDesert.authCli
+
 	return newPerformDesert, nil
 }
 
