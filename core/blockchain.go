@@ -257,6 +257,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 		return nil, nil, nil, fmt.Errorf("get current block height failed: %s", err.Error())
 	}
 	logx.Infof("get current block height: %d", curHeight)
+
 	blocks, err := bc.BlockModel.GetBlockByStatus([]int{block.StatusProposing, block.StatusPacked})
 	if err != nil && err != types.DbErrNotFound {
 		return nil, nil, nil, fmt.Errorf("get blocks by status (StatusProposing,StatusPacked) failed: %s", err.Error())
@@ -264,6 +265,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 	if blocks == nil {
 		return accountIndexList, nftIndexList, heights, nil
 	}
+
 	accountIndexMap := make(map[int64]bool, 0)
 	nftIndexMap := make(map[int64]bool, 0)
 
@@ -278,6 +280,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 				accountIndexMap[accountIndex] = true
 			}
 		}
+
 		if blockInfo.NftIndexes != "[]" && blockInfo.NftIndexes != "" {
 			var nftIndexes []int64
 			err = json.Unmarshal([]byte(blockInfo.NftIndexes), &nftIndexes)
@@ -288,6 +291,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 				nftIndexMap[nftIndex] = true
 			}
 		}
+
 		heights = append(heights, blockInfo.BlockHeight)
 	}
 	if len(heights) == 0 {
@@ -301,6 +305,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 	for k := range nftIndexMap {
 		nftIndexList = append(nftIndexList, k)
 	}
+
 	for _, accountIndex := range accountIndexList {
 		err := redisCache.Delete(context.Background(), dbcache.AccountKeyByIndex(accountIndex))
 		if err != nil {
@@ -308,6 +313,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 			continue
 		}
 	}
+
 	for _, nftIndex := range nftIndexList {
 		err := redisCache.Delete(context.Background(), dbcache.NftKeyByIndex(nftIndex))
 		if err != nil {
@@ -315,6 +321,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 			continue
 		}
 	}
+
 	return accountIndexList, nftIndexList, heights, nil
 }
 
@@ -337,6 +344,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 			accountIndexSlice = make([]int64, 0)
 		}
 	}
+
 	deleteAccountIndexMap := make(map[int64]bool, 0)
 	for _, accountIndex := range accountIndexList {
 		findAccountIndex := false
@@ -368,6 +376,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 			nftIndexSlice = make([]int64, 0)
 		}
 	}
+
 	deleteNftIndexMap := make(map[int64]bool, 0)
 	for _, nftIndex := range nftIndexList {
 		findNftIndex := false
@@ -381,10 +390,12 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 			deleteNftIndexMap[nftIndex] = true
 		}
 	}
+
 	txs, err := bc.TxPoolModel.GetTxsUnscopedByHeights(heights)
 	if err != nil && err != types.DbErrNotFound {
 		return fmt.Errorf("get pool txs by heights failed: %s", err.Error())
 	}
+
 	err = bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
 		logx.Info("roll back account start")
 		for _, accountHistory := range accountHistories {
@@ -406,6 +417,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 				return fmt.Errorf("roll back account failed: %s", err.Error())
 			}
 		}
+
 		logx.Info("roll back account,delete account start")
 		if len(deleteAccountIndexMap) > 0 {
 			deleteAccountIndexList := make([]int64, 0)
@@ -438,6 +450,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 				return fmt.Errorf("roll back nft failed: %s", err.Error())
 			}
 		}
+
 		logx.Info("roll back nft,delete nft start")
 		if len(deleteNftIndexMap) > 0 {
 			deleteNftIndexList := make([]int64, 0)
@@ -449,6 +462,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 				return fmt.Errorf("roll back nft,delete nft failed: %s", err.Error())
 			}
 		}
+
 		logx.Info("roll back account history,delete account start")
 		err := bc.AccountHistoryModel.DeleteByHeightsInTransact(dbTx, heights)
 		if err != nil {
@@ -466,6 +480,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 		if err != nil {
 			return fmt.Errorf("roll back tx detail failed: %s", err.Error())
 		}
+
 		logx.Info("roll back tx start")
 		err = bc.TxModel.DeleteByHeightsInTransact(dbTx, heights)
 		if err != nil {
@@ -489,6 +504,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 		if err != nil {
 			return fmt.Errorf("roll back pool tx step 2 failed: %s", err.Error())
 		}
+
 		heightsJson, err := json.Marshal(heights)
 		if err != nil {
 			return fmt.Errorf("unmarshal heights failed: %s", err.Error())
