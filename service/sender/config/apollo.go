@@ -8,7 +8,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-const SenderConfigKey = "SenderConfigKey"
+const SenderConfigKey = "SenderConfig"
 
 var senderConfig *SenderConfig = &SenderConfig{}
 
