@@ -271,12 +271,22 @@ ChainConfig:
   NetworkRPCSysConfigName: "${NETWORK_RPC_SYS_CONFIG_NAME}"
   #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   ConfirmBlocksCount: 0
+  SendSignatureMode: "PrivateKeySignMode"
   MaxWaitingTime: 120
   MaxBlockCount: 4
-  CommitBlockSk: "${COMMIT_BLOCK_PRIVATE_KEY}"
-  VerifyBlockSk: "${VERIFY_BLOCK_PRIVATE_KEY}"
   GasLimit: 5000000
   GasPrice: 0
+
+Apollo:
+  AppID:             zkbnb-cloud
+  Cluster:           prod
+  ApolloIp:          http://internal-tf-cm-test-apollo-config-alb-2119591301.ap-northeast-1.elb.amazonaws.com:9028
+  Namespace:         applicationDev
+  IsBackupConfig:    true
+
+AuthConfig:
+  CommitBlockSk: "${COMMIT_BLOCK_PRIVATE_KEY}"
+  VerifyBlockSk: "${VERIFY_BLOCK_PRIVATE_KEY}"
 
 TreeDB:
   Driver: memorydb
