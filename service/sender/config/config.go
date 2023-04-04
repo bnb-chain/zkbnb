@@ -32,12 +32,12 @@ type Config struct {
 		IsBackupConfig bool
 	}
 	AuthConfig struct {
-		CommitBlockSk string
-		VerifyBlockSk string
+		CommitBlockSk string `json:",optional"`
+		VerifyBlockSk string `json:",optional"`
 	}
 	KMSConfig struct {
-		CommitKeyId string
-		VerifyKeyId string
+		CommitKeyId string `json:",optional"`
+		VerifyKeyId string `json:",optional"`
 	}
 	LogConf logx.LogConf
 }
