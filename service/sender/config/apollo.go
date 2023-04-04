@@ -86,13 +86,13 @@ func (u *SenderUpdater) OnChange(event *storage.ChangeEvent) {
 		err := json.Unmarshal([]byte(newSenderConfigObjectJson), newSenderConfig)
 		if err != nil {
 			logx.Errorf("Fail to update SenderConfig from the apollo server, Reason:%s", err.Error())
-			panic("Fail to update SenderConfig from the apollo server!")
+			return
 		}
 
 		// Validate the Sender Configuration from the apollo server side
 		if err = newSenderConfig.ValidateSenderConfig(); err != nil {
 			logx.Severef("Fail to validate SenderConfig from the apollo server, Reason:%s", err.Error())
-			panic("Fail to validate SenderConfig from the apollo server!")
+			return
 		}
 		senderConfig = newSenderConfig
 		logx.Info("Update SenderConfig Successfully!")

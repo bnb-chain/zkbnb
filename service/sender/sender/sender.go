@@ -372,6 +372,15 @@ func (s *Sender) CommitBlocks() (err error) {
 		gasPrice = standByGasPrice.RoundUp(0).BigInt()
 		logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 	}
+
+	// Judge whether the blocks should be committed to the chain for better gas consumption
+	shouldCommit := s.ShouldCommitBlocks(lastStoredBlockInfo, pendingCommitBlocks,
+		blocks, gasPrice, s.config.ChainConfig.GasLimit, nonce)
+	if !shouldCommit {
+		logx.Errorf("abandon commit block to l1, EstimateGas value is greater than MaxUnitGas!")
+		return nil
+	}
+
 	retry := false
 	for {
 		if retry {
@@ -389,52 +398,44 @@ func (s *Sender) CommitBlocks() (err error) {
 			}
 			gasPrice = standByGasPrice.RoundUp(0).BigInt()
 			logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
-
-			// Judge whether the blocks should be committed to the chain for better gas consumption
-			shouldCommit := s.ShouldCommitBlocks(lastStoredBlockInfo, pendingCommitBlocks,
-				blocks, gasPrice, s.config.ChainConfig.GasLimit, nonce)
-			if !shouldCommit {
-				logx.Errorf("abandon commit block to l1, EstimateGas value is greater than MaxUnitGas!")
-				return nil
-			}
-
-			// commit blocks on-chain
-			txHash, err = s.zkbnbClient.CommitBlocksWithNonce(
-				lastStoredBlockInfo,
-				pendingCommitBlocks,
-				gasPrice,
-				s.config.ChainConfig.GasLimit, nonce)
-			if err != nil {
-				commitExceptionHeightMetric.Set(float64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber))
-				if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
-					logx.Errorf("failed to send commit tx,try again: errL %v:%s", err, txHash)
-					retry = true
-					continue
-				}
-				break
-			}
-
-			commitExceptionHeightMetric.Set(float64(0))
-			for _, pendingCommitBlock := range pendingCommitBlocks {
-				l2BlockCommitToChainHeightMetric.Set(float64(pendingCommitBlock.BlockNumber))
-			}
-			newRollupTx := &l1rolluptx.L1RollupTx{
-				L1TxHash:      txHash,
-				TxStatus:      l1rolluptx.StatusPending,
-				TxType:        l1rolluptx.TxTypeCommit,
-				L2BlockHeight: int64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber),
-				L1Nonce:       int64(nonce),
-				GasPrice:      gasPrice.Int64(),
-			}
-			err = s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)
-			if err != nil {
-				return fmt.Errorf("failed to create tx in database, err: %v", err)
-			}
-			l2BlockCommitToChainHeightMetric.Set(float64(newRollupTx.L2BlockHeight))
-			logx.Infof("new blocks have been committed(height): %v:%s", newRollupTx.L2BlockHeight, newRollupTx.L1TxHash)
-			return nil
 		}
+
+		// commit blocks on-chain
+		txHash, err = s.zkbnbClient.CommitBlocksWithNonce(
+			lastStoredBlockInfo,
+			pendingCommitBlocks,
+			gasPrice,
+			s.config.ChainConfig.GasLimit, nonce)
+		if err != nil {
+			commitExceptionHeightMetric.Set(float64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber))
+			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
+				logx.Errorf("failed to send commit tx,try again: errL %v:%s", err, txHash)
+				retry = true
+				continue
+			}
+			return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
+		}
+		break
 	}
+
+	commitExceptionHeightMetric.Set(float64(0))
+	for _, pendingCommitBlock := range pendingCommitBlocks {
+		l2BlockCommitToChainHeightMetric.Set(float64(pendingCommitBlock.BlockNumber))
+	}
+	newRollupTx := &l1rolluptx.L1RollupTx{
+		L1TxHash:      txHash,
+		TxStatus:      l1rolluptx.StatusPending,
+		TxType:        l1rolluptx.TxTypeCommit,
+		L2BlockHeight: int64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber),
+		L1Nonce:       int64(nonce),
+		GasPrice:      gasPrice.Int64(),
+	}
+	err = s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)
+	if err != nil {
+		return fmt.Errorf("failed to create tx in database, err: %v", err)
+	}
+	l2BlockCommitToChainHeightMetric.Set(float64(newRollupTx.L2BlockHeight))
+	logx.Infof("new blocks have been committed(height): %v:%s", newRollupTx.L2BlockHeight, newRollupTx.L1TxHash)
 	return nil
 }
 
@@ -629,6 +630,15 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		gasPrice = standByGasPrice.RoundUp(0).BigInt()
 		logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 	}
+
+	// Judge whether the blocks should be verified and executed to the chain for better gas consumption
+	shouldVerifyAndExecute := s.ShouldVerifyAndExecuteBlocks(blocks, pendingVerifyAndExecuteBlocks, proofs,
+		gasPrice, s.config.ChainConfig.GasLimit, nonce)
+	if !shouldVerifyAndExecute {
+		logx.Errorf("abandon verify and execute block to l1, EstimateGas value is greater than MaxUnitGas!")
+		return nil
+	}
+
 	retry := false
 	for {
 		if retry {
@@ -647,15 +657,6 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			gasPrice = standByGasPrice.RoundUp(0).BigInt()
 			logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 		}
-
-		// Judge whether the blocks should be verified and executed to the chain for better gas consumption
-		shouldVerifyAndExecute := s.ShouldVerifyAndExecuteBlocks(blocks, pendingVerifyAndExecuteBlocks, proofs,
-			gasPrice, s.config.ChainConfig.GasLimit, nonce)
-		if !shouldVerifyAndExecute {
-			logx.Errorf("abandon verify and execute block to l1, EstimateGas value is greater than MaxUnitGas!")
-			return nil
-		}
-
 		// Verify blocks on-chain
 		txHash, err = s.zkbnbClient.VerifyAndExecuteBlocksWithNonce(
 			pendingVerifyAndExecuteBlocks,
