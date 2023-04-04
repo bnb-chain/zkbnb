@@ -20,6 +20,7 @@ package common
 import (
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/util"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 	"strconv"
@@ -108,4 +109,17 @@ func TestMaxPackedAmount(t *testing.T) {
 	logx.Info(nAmount.String())
 
 	assert.Equal(t, amount, nAmount)
+}
+
+func TestMaxPackedAmount1(t *testing.T) {
+	var subPendingTxs []*tx.Tx
+	subPendingTxs = nil
+	count := len(subPendingTxs)
+	logx.Infof("eeeee-%d", count)
+
+	subPendingTxs = append(subPendingTxs, &tx.Tx{})
+	for _, subPendingTx := range subPendingTxs {
+		logx.Error(subPendingTx)
+	}
+	logx.Infof("1")
 }

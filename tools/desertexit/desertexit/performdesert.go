@@ -136,12 +136,12 @@ func (m *PerformDesert) PerformDesertNft(performDesertNftData PerformDesertNftDa
 		exitNfts = append(exitNfts, zkbnb.DesertVerifierNftExitData{
 			NftIndex:            new(big.Int).SetInt64(int64(nftExitData.NftIndex)),
 			OwnerAccountIndex:   new(big.Int).SetInt64(nftExitData.OwnerAccountIndex),
-			CreatorAccountIndex: new(big.Int).SetInt64(nftExitData.CreatorAccountIndex),
+			CreatorAccountIndex: uint32(nftExitData.CreatorAccountIndex),
 			NftContentHash1:     nftContentHash1,
 			NftContentHash2:     nftContentHash2,
 			NftContentType:      nftExitData.NftContentType,
-			CreatorTreasuryRate: new(big.Int).SetInt64(nftExitData.CreatorTreasuryRate),
-			CollectionId:        new(big.Int).SetInt64(nftExitData.CollectionId),
+			CreatorTreasuryRate: uint16(nftExitData.CreatorTreasuryRate),
+			CollectionId:        uint16(nftExitData.CollectionId),
 		})
 	}
 
@@ -266,7 +266,7 @@ func (m *PerformDesert) WithdrawPendingNFTBalance(nftIndexes []int64) error {
 	return nil
 }
 
-func (m *PerformDesert) CancelOutstandingDeposit(address string) error {
+func (m *PerformDesert) CancelOutstandingDeposit() error {
 	newDesertExit, err := NewDesertExit(&m.Config)
 	if err != nil {
 		return err
@@ -285,7 +285,7 @@ func (m *PerformDesert) CancelOutstandingDeposit(address string) error {
 	}
 
 	for true {
-		priorityRequests, err := newDesertExit.PriorityRequestModel.GetPriorityRequestsByTxTypes(address, int64(requestId), []int64{monitor2.TxTypeDeposit, monitor2.TxTypeDepositNft})
+		priorityRequests, err := newDesertExit.PriorityRequestModel.GetPriorityRequestsByTxTypes(int64(requestId), []int64{monitor2.TxTypeDeposit, monitor2.TxTypeDepositNft})
 		if err != nil && err != types.DbErrNotFound {
 			return err
 		}
