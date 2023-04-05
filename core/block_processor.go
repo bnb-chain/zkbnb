@@ -84,27 +84,23 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	err = executor.ApplyTransaction()
 	metrics.ExecuteTxApplyTransactionMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
-		logx.Severef("failed to apply transaction, %v", err)
-		panic("failed to apply transaction, err:" + err.Error())
+		return fmt.Errorf("failed to apply transaction, %v", err)
 	}
 	start = time.Now()
 	err = executor.GeneratePubData()
 	metrics.ExecuteTxGeneratePubDataMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
-		logx.Severef("failed to generate PubData, %v", err)
-		panic("failed to generate PubData, err:" + err.Error())
+		return fmt.Errorf("failed to generate PubData, %v", err)
 	}
 	start = time.Now()
 	tx, err = executor.GetExecutedTx(false)
 	metrics.ExecuteTxGetExecutedTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		return err
 	}
 	err = executor.Finalize()
 	if err != nil {
-		logx.Severef("failed to get executed transaction, %v", err)
-		panic("failed to get executed transaction, err:" + err.Error())
+		return fmt.Errorf("failed to get executed transaction, %v", err)
 	}
 	tx.CreatedAt = time.Now()
 	p.bc.Statedb.Txs = append(p.bc.Statedb.Txs, tx)

@@ -133,7 +133,7 @@ func (c *Fullnode) Run() {
 				}
 			}
 
-			err = c.bc.Statedb.UpdateAssetTree(true, nil)
+			err = c.bc.Statedb.UpdateAssetTree(nil)
 			if err != nil {
 				logx.Severef("calculate state root failed, err: %v", err)
 				panic(fmt.Sprint("calculate state root failed, err", err))

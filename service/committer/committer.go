@@ -21,6 +21,8 @@ func Run(configFile string) error {
 	committer, err := committer.NewCommitter(&c)
 	if err != nil {
 		logx.Severef("failed to create committer instance, %v", err)
+		// If the rollback fails, wait 1 minute
+		time.Sleep(1 * time.Minute)
 		panic("failed to create committer instance, err:" + err.Error())
 	}
 	cronJob := cron.New(cron.WithChain(
@@ -87,6 +89,10 @@ func Run(configFile string) error {
 	})
 
 	logx.Info("committer is starting......")
-	committer.Run()
+	err = committer.Run()
+	if err != nil {
+		logx.Severef("failed to committer.run, %v", err)
+		panic("failed to committer.run, err:" + err.Error())
+	}
 	return nil
 }

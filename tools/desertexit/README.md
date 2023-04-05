@@ -20,7 +20,7 @@ performdesert --m activateDesert  --privateKey c6182407eedcee00478ac16f6f2504663
 performdesert --m performAsset  --proof ./tools/desertexit/proofdata/performDesertAsset.json  --privateKey 3f242374e0d7580e8c52a75790493539e514268ebc2e441e61cb5b86d5077698  --config ./tools/desertexit/etc/config.yaml
 
 
-performdesert --m activateDesert  --privateKey c6182407eedcee00478ac16f6f25046633c91dcc8e664d9964adb26322839049   --config ./tools/desertexit/etc/config.yaml
+performdesert --m activateDesert  --privateKey 7f9294e5f4e6e7015434b89de498b096c761101d448695b28e632b581d6eb887   --config ./tools/desertexit/etc/config.yaml
 performdesert --m performAsset  --proof ./tools/desertexit/proofdata/performDesertAsset.json  --privateKey 7f9294e5f4e6e7015434b89de498b096c761101d448695b28e632b581d6eb887  --config ./tools/desertexit/etc/config.yaml
 performdesert --m performNft    --proof  ./tools/desertexit/proofdata/performDesertNft.json  --privateKey 7f9294e5f4e6e7015434b89de498b096c761101d448695b28e632b581d6eb887  --config ./tools/desertexit/etc/config.yaml
 

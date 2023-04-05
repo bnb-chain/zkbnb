@@ -42,7 +42,6 @@ type (
 		GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
 		GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
 		GetTxsByStatusAndMaxId(status int, maxId uint, limit int64) (txs []*Tx, err error)
-		GetTxsByStatusAndIdRange(status int, fromId uint, toId uint) (txs []*Tx, err error)
 		GetTxsByStatusAndCreateTime(status int, fromCreatedAt time.Time, toId uint) (txs []*Tx, err error)
 		CreateTxs(txs []*PoolTx) error
 		GetPendingTxsByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
@@ -193,18 +192,6 @@ func (m *defaultTxPoolModel) GetTxsPageByStatus(status int, limit int64) (txs []
 func (m *defaultTxPoolModel) GetTxsByStatusAndMaxId(status int, maxId uint, limit int64) (txs []*Tx, err error) {
 	var poolTxs []*PoolTx
 	dbTx := m.DB.Table(m.table).Limit(int(limit)).Where("tx_status = ? and id > ?", status, maxId).Order("id asc").Find(&poolTxs)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	}
-	for _, poolTx := range poolTxs {
-		txs = append(txs, &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback, L1RequestId: poolTx.L1RequestId})
-	}
-	return txs, nil
-}
-
-func (m *defaultTxPoolModel) GetTxsByStatusAndIdRange(status int, fromId uint, toId uint) (txs []*Tx, err error) {
-	var poolTxs []*PoolTx
-	dbTx := m.DB.Table(m.table).Where("tx_status = ? and id >= ? and id <= ?", status, fromId, toId).Order("id asc").Find(&poolTxs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	}

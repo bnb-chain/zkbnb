@@ -18,6 +18,7 @@
 package tree
 
 import (
+	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/panjf2000/ants/v2"
 	"hash"
@@ -131,16 +132,14 @@ func InitAccountTree(
 				})
 			}(int64(i), toAccountIndex)
 			if err != nil {
-				logx.Severef("reloadAccountTreeFromRDB failed:%s", err.Error())
-				panic("reloadAccountTreeFromRDB failed: " + err.Error())
+				return nil, nil, fmt.Errorf("reloadAccountTreeFromRDB failed: %s", err.Error())
 			}
 		}
 		pendingAccountItem := make([]bsmt.Item, 0)
 		for i := 0; i < totalTask; i++ {
 			result := <-resultChan
 			if result.err != nil {
-				logx.Severef("reloadAccountTree failed:%s", result.err.Error())
-				panic("reloadAccountTree failed: " + result.err.Error())
+				return nil, nil, fmt.Errorf("reloadAccountTree failed: %s", err.Error())
 			}
 			pendingAccountItem = append(pendingAccountItem, result.pendingAccountItem...)
 		}
@@ -310,7 +309,7 @@ func AssetToNode(balance string, offerCanceledOrFinalized string, accountIndex i
 }
 
 func AccountToNode(
-	accountNameHash string,
+	l1Address string,
 	publicKey string,
 	nonce int64,
 	collectionNonce int64,
@@ -319,7 +318,7 @@ func AccountToNode(
 	blockHeight int64,
 ) (hashVal []byte, err error) {
 	hashVal, err = ComputeAccountLeafHash(
-		accountNameHash,
+		l1Address,
 		publicKey,
 		nonce,
 		collectionNonce,
