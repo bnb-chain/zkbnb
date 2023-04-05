@@ -307,10 +307,19 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 	}
 
 	for _, accountIndex := range accountIndexList {
-		err := redisCache.Delete(context.Background(), dbcache.AccountKeyByIndex(accountIndex))
+		var redisAccount interface{}
+		accountInfo := &account.Account{}
+		redisAccount, err := redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), accountInfo)
+		if err == nil && redisAccount != nil {
+			err := redisCache.Delete(context.Background(), dbcache.AccountKeyByL1Address(accountInfo.L1Address))
+			if err != nil {
+				logx.Severef("delete redis failed: %v,accountIndex=%v", err, accountIndex)
+			}
+		}
+
+		err = redisCache.Delete(context.Background(), dbcache.AccountKeyByIndex(accountIndex))
 		if err != nil {
-			logx.Severef("cache to redis failed: %v,accountIndex=%v", err, accountIndex)
-			continue
+			logx.Severef("delete redis failed: %v,accountIndex=%v", err, accountIndex)
 		}
 	}
 
@@ -318,7 +327,6 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 		err := redisCache.Delete(context.Background(), dbcache.NftKeyByIndex(nftIndex))
 		if err != nil {
 			logx.Severef("cache to redis failed: %v,nftIndex=%v", err, nftIndex)
-			continue
 		}
 	}
 

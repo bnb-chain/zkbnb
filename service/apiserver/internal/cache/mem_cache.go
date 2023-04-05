@@ -161,23 +161,23 @@ func (m *MemCache) GetL1AddressByIndex(accountIndex int64) (string, error) {
 	if found {
 		return name.(string), nil
 	}
-	account, err := m.accountModel.GetAccountByIndex(accountIndex)
+	accountInfo, err := m.accountModel.GetAccountByIndex(accountIndex)
 	if err != nil && err != types.DbErrNotFound {
 		return "", err
 	}
 	if err == types.DbErrNotFound {
-		var l1Address interface{}
 		var redisAccount interface{}
-		redisAccount, err = m.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), &l1Address)
+		accountInfo := &accdao.Account{}
+		redisAccount, err := m.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), accountInfo)
 		if err == nil && redisAccount != nil {
-			m.setAccount(accountIndex, l1Address.(string))
-			return l1Address.(string), nil
+			m.setAccount(accountIndex, accountInfo.L1Address)
+			return accountInfo.L1Address, nil
 		} else {
 			return "", types.DbErrNotFound
 		}
 	} else {
-		m.setAccount(account.AccountIndex, account.L1Address)
-		return account.L1Address, nil
+		m.setAccount(accountInfo.AccountIndex, accountInfo.L1Address)
+		return accountInfo.L1Address, nil
 	}
 }
 
