@@ -122,6 +122,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	if err != nil {
 		return nil, fmt.Errorf("pre rollBack func failed: %v,curHeight=%d", err.Error(), curHeight)
 	}
+
 	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, config.TreeDB.AssetTreeCacheSize, bc.currentBlock.StateRoot, accountIndexList, curHeight)
 	if err != nil {
 		return nil, err
@@ -307,10 +308,19 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 	}
 
 	for _, accountIndex := range accountIndexList {
-		err := redisCache.Delete(context.Background(), dbcache.AccountKeyByIndex(accountIndex))
+		var redisAccount interface{}
+		accountInfo := &account.Account{}
+		redisAccount, err := redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), accountInfo)
+		if err == nil && redisAccount != nil {
+			err := redisCache.Delete(context.Background(), dbcache.AccountKeyByL1Address(accountInfo.L1Address))
+			if err != nil {
+				logx.Severef("delete redis failed: %v,accountIndex=%v", err, accountIndex)
+			}
+		}
+
+		err = redisCache.Delete(context.Background(), dbcache.AccountKeyByIndex(accountIndex))
 		if err != nil {
-			logx.Severef("cache to redis failed: %v,accountIndex=%v", err, accountIndex)
-			continue
+			logx.Severef("delete redis failed: %v,accountIndex=%v", err, accountIndex)
 		}
 	}
 
@@ -318,7 +328,6 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 		err := redisCache.Delete(context.Background(), dbcache.NftKeyByIndex(nftIndex))
 		if err != nil {
 			logx.Severef("cache to redis failed: %v,nftIndex=%v", err, nftIndex)
-			continue
 		}
 	}
 

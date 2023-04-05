@@ -502,7 +502,7 @@ func (m *defaultTxPoolModel) GetLatestMintNft() (tx *Tx, err error) {
 }
 
 func (m *defaultTxPoolModel) GetLatestAccountIndex() (tx *Tx, err error) {
-	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type in ?", []int{types.TxTypeDeposit, types.TxTypeDepositNft, types.TxTypeTransfer, types.TxTypeTransferNft}).Order("to_account_index DESC").Limit(1).Find(&tx)
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type in ? and is_create_account= ? ", []int{types.TxTypeDeposit, types.TxTypeDepositNft, types.TxTypeTransfer, types.TxTypeTransferNft}, true).Order("to_account_index DESC").Limit(1).Find(&tx)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
