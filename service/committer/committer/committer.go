@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	MaxCommitterInterval = 60 * 1
+	MaxPackedInterval = 60 * 1
 )
 
 type Config struct {
@@ -36,7 +36,7 @@ type Config struct {
 	BlockConfig struct {
 		OptionalBlockSizes []int
 		//second
-		MaxCommitterInterval  int  `json:",optional"`
+		MaxPackedInterval     int  `json:",optional"`
 		SaveBlockDataPoolSize int  `json:",optional"`
 		RollbackOnly          bool `json:",optional"`
 	}
@@ -94,8 +94,8 @@ func NewCommitter(config *Config) (*Committer, error) {
 	if saveBlockDataPoolSize == 0 {
 		saveBlockDataPoolSize = 100
 	}
-	if config.BlockConfig.MaxCommitterInterval == 0 {
-		config.BlockConfig.MaxCommitterInterval = MaxCommitterInterval
+	if config.BlockConfig.MaxPackedInterval == 0 {
+		config.BlockConfig.MaxPackedInterval = MaxPackedInterval
 	}
 	pool, err := ants.NewPool(saveBlockDataPoolSize, ants.WithPanicHandler(func(p interface{}) {
 		//sets up panic handler.
@@ -106,7 +106,7 @@ func NewCommitter(config *Config) (*Committer, error) {
 		running:              true,
 		config:               config,
 		maxTxsPerBlock:       config.BlockConfig.OptionalBlockSizes[len(config.BlockConfig.OptionalBlockSizes)-1],
-		maxCommitterInterval: config.BlockConfig.MaxCommitterInterval,
+		maxCommitterInterval: config.BlockConfig.MaxPackedInterval,
 		optionalBlockSizes:   config.BlockConfig.OptionalBlockSizes,
 		bc:                   bc,
 		pool:                 pool,
@@ -1245,7 +1245,7 @@ func (c *Committer) PendingTxNum() {
 }
 
 func (c *Committer) CompensatePendingPoolTx() {
-	fromCreatAt := time.Now().Add(time.Duration(-10) * time.Minute).UnixMilli()
+	fromCreatAt := time.Now().Add(time.Duration(-10*c.maxCommitterInterval) * time.Second).UnixMilli()
 	pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatusAndCreateTime(tx.StatusPending, time.UnixMilli(fromCreatAt), c.bc.Statedb.GetMaxPoolTxIdFinished())
 	if err != nil {
 		logx.Errorf("get pending transactions from tx pool for compensation failed:%s", err.Error())
@@ -1259,7 +1259,7 @@ func (c *Committer) CompensatePendingPoolTx() {
 			logx.Infof("add pool tx to the queue repeatedly in the compensation task id:%s", poolTx.ID)
 			continue
 		}
-		c.bc.Statedb.MemCache.SetWithTTL(dbcache.PendingPoolTxKeyByPoolTxId(poolTx.ID), poolTx.ID, 0, time.Duration(1)*time.Hour)
+		c.bc.Statedb.MemCache.SetWithTTL(dbcache.PendingPoolTxKeyByPoolTxId(poolTx.ID), poolTx.ID, 0, time.Duration(c.maxCommitterInterval*50)*time.Second)
 		c.executeTxWorker.Enqueue(poolTx)
 	}
 }

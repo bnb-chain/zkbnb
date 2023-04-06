@@ -196,7 +196,7 @@ func (m *defaultTxPoolModel) GetTxsByStatusAndMaxId(status int, maxId uint, limi
 		return nil, types.DbErrSqlOperation
 	}
 	for _, poolTx := range poolTxs {
-		txs = append(txs, &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback, L1RequestId: poolTx.L1RequestId})
+		txs = append(txs, convertToTx(poolTx))
 	}
 	return txs, nil
 }
@@ -208,7 +208,7 @@ func (m *defaultTxPoolModel) GetTxsByStatusAndCreateTime(status int, fromCreated
 		return nil, types.DbErrSqlOperation
 	}
 	for _, poolTx := range poolTxs {
-		txs = append(txs, &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback})
+		txs = append(txs, convertToTx(poolTx))
 	}
 	return txs, nil
 }
@@ -485,7 +485,7 @@ func (m *defaultTxPoolModel) GetLatestTx(txTypes []int64, statuses []int) (tx *T
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
 	}
-	tx = &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback, L1RequestId: poolTx.L1RequestId}
+	tx = convertToTx(poolTx)
 	return tx, nil
 }
 
@@ -565,4 +565,8 @@ func (m *defaultTxPoolModel) GetCountByGreaterHeight(blockHeight int64) (count i
 		return 0, nil
 	}
 	return count, nil
+}
+
+func convertToTx(poolTx *PoolTx) *Tx {
+	return &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback, L1RequestId: poolTx.L1RequestId}
 }
