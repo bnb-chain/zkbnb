@@ -28,6 +28,7 @@ const (
 
 	TypeGeneric    int = 0
 	TypeGovernance int = 1
+	TypeDesert     int = 2
 )
 
 type (

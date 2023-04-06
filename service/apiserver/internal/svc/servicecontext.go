@@ -4,6 +4,7 @@ import (
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/rollback"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/plugin/dbresolver"
 	"time"
 
@@ -41,6 +42,7 @@ var (
 type ServiceContext struct {
 	Config     config.Config
 	RedisCache dbcache.Cache
+	RedisConn  *redis.Redis
 	MemCache   *cache.MemCache
 
 	DB                      *gorm.DB
@@ -55,8 +57,10 @@ type ServiceContext struct {
 	SysConfigModel          sysconfig.SysConfigModel
 	RollbackModel           rollback.RollbackModel
 
-	PriceFetcher price.Fetcher
-	StateFetcher state.Fetcher
+	CMCPriceFetcher price.Fetcher
+	BOPriceFetcher  price.Fetcher
+	PriceFetcher    price.Fetcher
+	StateFetcher    state.Fetcher
 
 	SendTxTotalMetrics prometheus.Counter
 	SendTxMetrics      prometheus.Counter
@@ -85,6 +89,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
 
+	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
+
 	txPoolModel := tx.NewTxPoolModel(db)
 	accountModel := account.NewAccountModel(db)
 	nftModel := nft.NewL2NftModel(db)
@@ -94,7 +100,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		c.MemCache.TxPendingExpiration = 60000
 	}
 	memCache := cache.MustNewMemCache(accountModel, assetModel, c.MemCache.AccountExpiration, c.MemCache.BlockExpiration,
-		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.TxPendingExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum)
+		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.TxPendingExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum, redisCache)
 
 	if err := prometheus.Register(sendTxMetrics); err != nil {
 		logx.Error("prometheus.Register sendTxHandlerMetrics error: %v", err)
@@ -106,9 +112,12 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		return nil
 	}
 	common.NewIPFS(c.IpfsUrl)
+	CMCPriceFetcher := price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token)
+	BOPriceFetcher := price.NewBOFetcher(memCache, assetModel, c.BinanceOracle.Url, c.BinanceOracle.Apikey, c.BinanceOracle.ApiSecret)
 	return &ServiceContext{
 		Config:                  c,
 		RedisCache:              redisCache,
+		RedisConn:               redisConn,
 		MemCache:                memCache,
 		DB:                      db,
 		TxPoolModel:             txPoolModel,
@@ -121,12 +130,20 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		AssetModel:              assetModel,
 		SysConfigModel:          sysconfig.NewSysConfigModel(db),
 		RollbackModel:           rollback.NewRollbackModel(db),
-
-		PriceFetcher: price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
-		StateFetcher: state.NewFetcher(redisCache, accountModel, nftModel),
+		CMCPriceFetcher:         CMCPriceFetcher,
+		BOPriceFetcher:          BOPriceFetcher,
+		PriceFetcher:            price.NewPriceFetcher(CMCPriceFetcher, BOPriceFetcher),
+		StateFetcher:            state.NewFetcher(redisCache, accountModel, nftModel),
 
 		SendTxTotalMetrics: sendTxTotalMetrics,
 		SendTxMetrics:      sendTxMetrics,
+	}
+}
+
+func WithRedis(redisType string, redisPass string) redis.Option {
+	return func(p *redis.Redis) {
+		p.Type = redisType
+		p.Pass = redisPass
 	}
 }
 
@@ -136,5 +153,6 @@ func (s *ServiceContext) Shutdown() {
 		_ = sqlDB.Close()
 	}
 	_ = s.RedisCache.Close()
-	s.PriceFetcher.Stop()
+	s.CMCPriceFetcher.Stop()
+	s.BOPriceFetcher.Stop()
 }

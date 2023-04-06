@@ -24,7 +24,7 @@ import (
 
 const (
 	TxTypeEmpty = iota
-	TxTypeRegisterZns
+	TxTypeChangePubKey
 	TxTypeDeposit
 	TxTypeDepositNft
 	TxTypeTransfer
@@ -38,10 +38,12 @@ const (
 	TxTypeFullExit
 	TxTypeFullExitNft
 	TxTypeOffer
+	TxTypeUpdateNFT
 )
 
 func IsL2Tx(txType int64) bool {
-	if txType == TxTypeTransfer ||
+	if txType == TxTypeChangePubKey ||
+		txType == TxTypeTransfer ||
 		txType == TxTypeWithdraw ||
 		txType == TxTypeCreateCollection ||
 		txType == TxTypeMintNft ||
@@ -55,7 +57,7 @@ func IsL2Tx(txType int64) bool {
 }
 
 func GetL2TxTypes() []int64 {
-	return []int64{TxTypeTransfer,
+	return []int64{TxTypeChangePubKey, TxTypeTransfer,
 		TxTypeWithdraw,
 		TxTypeCreateCollection,
 		TxTypeMintNft,
@@ -66,8 +68,7 @@ func GetL2TxTypes() []int64 {
 }
 
 func IsPriorityOperationTx(txType int64) bool {
-	if txType == TxTypeRegisterZns ||
-		txType == TxTypeDeposit ||
+	if txType == TxTypeDeposit ||
 		txType == TxTypeDepositNft ||
 		txType == TxTypeFullExit ||
 		txType == TxTypeFullExitNft {
@@ -77,41 +78,47 @@ func IsPriorityOperationTx(txType int64) bool {
 }
 
 func GetL1TxTypes() []int64 {
-	return []int64{TxTypeRegisterZns,
+	return []int64{
 		TxTypeDeposit,
 		TxTypeDepositNft,
 		TxTypeFullExit,
 		TxTypeFullExitNft}
 }
 
-const (
-	TxTypeBytesSize          = 1
-	AddressBytesSize         = 20
-	AccountIndexBytesSize    = 4
-	AccountNameBytesSize     = 20
-	AccountNameHashBytesSize = 32
-	PubkeyBytesSize          = 32
-	AssetIdBytesSize         = 2
-	StateAmountBytesSize     = 16
-	NftIndexBytesSize        = 5
-	NftTokenIdBytesSize      = 32
-	NftContentHashBytesSize  = 32
-	FeeRateBytesSize         = 2
-	CollectionIdBytesSize    = 2
+func GetOnChainTypes() []int64 {
+	return []int64{TxTypeChangePubKey,
+		TxTypeWithdraw,
+		TxTypeWithdrawNft,
+		TxTypeDeposit,
+		TxTypeDepositNft,
+		TxTypeFullExit,
+		TxTypeFullExitNft,
+	}
+}
 
-	RegisterZnsPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + AccountNameBytesSize +
-		AccountNameHashBytesSize + PubkeyBytesSize + PubkeyBytesSize
+const (
+	TxTypeBytesSize         = 1
+	AddressBytesSize        = 20
+	AccountIndexBytesSize   = 4
+	AssetIdBytesSize        = 2
+	StateAmountBytesSize    = 16
+	NftIndexBytesSize       = 5
+	NftContentHashBytesSize = 32
+	FeeRateBytesSize        = 2
+	CollectionIdBytesSize   = 2
+	NftContentTypeBytesSize = 1
+
 	DepositPubDataSize = TxTypeBytesSize + AccountIndexBytesSize +
-		AccountNameHashBytesSize + AssetIdBytesSize + StateAmountBytesSize
-	DepositNftPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + NftIndexBytesSize +
-		AccountIndexBytesSize + FeeRateBytesSize + NftContentHashBytesSize +
-		AccountNameHashBytesSize + CollectionIdBytesSize
+		AddressBytesSize + AssetIdBytesSize + StateAmountBytesSize
+	DepositNftPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + AccountIndexBytesSize + NftIndexBytesSize +
+		+FeeRateBytesSize + NftContentHashBytesSize +
+		AddressBytesSize + CollectionIdBytesSize + NftContentTypeBytesSize
 	FullExitPubDataSize = TxTypeBytesSize + AccountIndexBytesSize +
-		AccountNameHashBytesSize + AssetIdBytesSize + StateAmountBytesSize
+		AddressBytesSize + AssetIdBytesSize + StateAmountBytesSize
 	FullExitNftPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + AccountIndexBytesSize + FeeRateBytesSize +
 		NftIndexBytesSize + CollectionIdBytesSize +
-		AccountNameHashBytesSize + AccountNameHashBytesSize +
-		NftContentHashBytesSize
+		AddressBytesSize + AddressBytesSize +
+		NftContentHashBytesSize + NftContentTypeBytesSize
 )
 
 const (
@@ -136,14 +143,7 @@ const (
 	EmptyStringKeccak = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
 )
 
-type UpdateNftReq struct {
-	NftIndex          int64
-	MutableAttributes string
-	AccountIndex      int64
-	Nonce             int64
-}
-
-func ParseRegisterZnsTxInfo(txInfoStr string) (txInfo *txtypes.RegisterZnsTxInfo, err error) {
+func ParseChangePubKeyTxInfo(txInfoStr string) (txInfo *txtypes.ChangePubKeyInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		return nil, err
@@ -223,6 +223,14 @@ func ParseAtomicMatchTxInfo(txInfoStr string) (txInfo *txtypes.AtomicMatchTxInfo
 	return txInfo, nil
 }
 
+func ParseOfferTxInfo(txInfoStr string) (txInfo *txtypes.OfferTxInfo, err error) {
+	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
+	if err != nil {
+		return nil, err
+	}
+	return txInfo, nil
+}
+
 func ParseCancelOfferTxInfo(txInfoStr string) (txInfo *txtypes.CancelOfferTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
@@ -247,7 +255,7 @@ func ParseWithdrawNftTxInfo(txInfoStr string) (txInfo *txtypes.WithdrawNftTxInfo
 	return txInfo, nil
 }
 
-func ParseUpdateNftTxInfo(txInfoStr string) (txInfo *UpdateNftReq, err error) {
+func ParseUpdateNftTxInfo(txInfoStr string) (txInfo *txtypes.UpdateNFTTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		return nil, err

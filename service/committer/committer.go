@@ -20,8 +20,10 @@ func Run(configFile string) error {
 	logx.DisableStat()
 	committer, err := committer.NewCommitter(&c)
 	if err != nil {
-		logx.Severef("new committer failed: %v", err)
-		return err
+		logx.Severef("failed to create committer instance, %v", err)
+		// If the rollback fails, wait 1 minute
+		time.Sleep(1 * time.Minute)
+		panic("failed to create committer instance, err:" + err.Error())
 	}
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
@@ -30,15 +32,15 @@ func Run(configFile string) error {
 		committer.PendingTxNum()
 	})
 	if err != nil {
-		logx.Severef("add PendingTxNum cron job failed: %v", err)
-		return err
+		logx.Severef("failed to add PendingTxNum cron job, %v", err)
+		panic("failed to add PendingTxNum cron job, err:" + err.Error())
 	}
 
 	if _, err := cronJob.AddFunc("@every 300s", func() {
 		committer.CompensatePendingPoolTx()
 	}); err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to start the compensate pending pool transaction task, %v", err)
+		panic("failed to start the compensate pending pool transaction task, err:" + err.Error())
 	}
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
@@ -49,8 +51,8 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severe("failed to start the sync nft index server task, %v", err)
+		panic("failed to start the sync nft index server task, err:" + err.Error())
 	}
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
@@ -61,8 +63,8 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to start send ipfs server task, %v", err)
+		panic("failed to start send ipfs server task, err:" + err.Error())
 	}
 
 	_, err = cronJob.AddFunc("@every 6h", func() {
@@ -73,8 +75,8 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to start the refresh server task, %v", err)
+		panic("failed to start the refresh server task, err:" + err.Error())
 	}
 
 	cronJob.Start()
@@ -87,6 +89,10 @@ func Run(configFile string) error {
 	})
 
 	logx.Info("committer is starting......")
-	committer.Run()
+	err = committer.Run()
+	if err != nil {
+		logx.Severef("failed to committer.run, %v", err)
+		panic("failed to committer.run, err:" + err.Error())
+	}
 	return nil
 }

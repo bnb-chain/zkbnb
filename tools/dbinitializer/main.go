@@ -19,8 +19,9 @@ package dbinitializer
 
 import (
 	"encoding/json"
+	"github.com/bnb-chain/zkbnb/dao/desertexit"
 	"github.com/bnb-chain/zkbnb/dao/rollback"
-
+	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/zeromicro/go-zero/core/conf"
@@ -79,6 +80,7 @@ type dao struct {
 	nftHistoryModel         nft.L2NftHistoryModel
 	rollbackModel           rollback.RollbackModel
 	nftMetadataHistoryModel nft.L2NftMetadataHistoryModel
+	desertExitBlockModel    desertexit.DesertExitBlockModel
 }
 
 func Initialize(
@@ -125,10 +127,36 @@ func Initialize(
 	return nil
 }
 
+func InitializeDesertExit(
+	configFile string,
+) error {
+	var c config.Config
+	conf.MustLoad(configFile, &c)
+	db, err := gorm.Open(postgres.Open(c.Postgres.MasterDataSource), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
+	if err != nil {
+		return err
+	}
+	dao := &dao{
+		accountModel:         account.NewAccountModel(db),
+		nftModel:             nft.NewL2NftModel(db),
+		l1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),
+		desertExitBlockModel: desertexit.NewDesertExitBlockModel(db),
+		priorityRequestModel: priorityrequest.NewPriorityRequestModel(db),
+	}
+
+	dropTablesDesertExit(dao)
+	initTableDesertExit(dao)
+
+	return nil
+}
+
 func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC string) []*sysconfig.SysConfig {
 
 	// to config gas for different transaction types, need to be evaluated and tune these values
 	bnbGasFee := make(map[int]int64)
+	bnbGasFee[types.TxTypeChangePubKey] = 10000000000000
 	bnbGasFee[types.TxTypeTransfer] = 10000000000000
 	bnbGasFee[types.TxTypeWithdraw] = 20000000000000
 	bnbGasFee[types.TxTypeCreateCollection] = 10000000000000
@@ -139,6 +167,7 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 	bnbGasFee[types.TxTypeWithdrawNft] = 20000000000000
 
 	busdGasFee := make(map[int]int64)
+	busdGasFee[types.TxTypeChangePubKey] = 10000000000000
 	busdGasFee[types.TxTypeTransfer] = 10000000000000
 	busdGasFee[types.TxTypeWithdraw] = 20000000000000
 	busdGasFee[types.TxTypeCreateCollection] = 10000000000000
@@ -166,10 +195,16 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 			Comment:   "based on BNB",
 		},
 		{
-			Name:      types.TreasuryAccountIndex,
+			Name:      types.ProtocolRate,
+			Value:     "200",
+			ValueType: "int",
+			Comment:   "protocol rate",
+		},
+		{
+			Name:      types.ProtocolAccountIndex,
 			Value:     "0",
 			ValueType: "int",
-			Comment:   "treasury index",
+			Comment:   "protocol index",
 		},
 		{
 			Name:      types.GasAccountIndex,
@@ -222,7 +257,7 @@ func initAssetsInfo(busdAddress string) []*asset.Asset {
 	return []*asset.Asset{
 		{
 			AssetId:     types.BNBAssetId,
-			L1Address:   "0x00",
+			L1Address:   types.BNBAddress,
 			AssetName:   "BNB",
 			AssetSymbol: "BNB",
 			Decimals:    18,
@@ -263,6 +298,15 @@ func dropTables(dao *dao) {
 
 }
 
+func dropTablesDesertExit(dao *dao) {
+	assert.Nil(nil, dao.accountModel.DropAccountTable())
+	assert.Nil(nil, dao.nftModel.DropL2NftTable())
+	assert.Nil(nil, dao.l1SyncedBlockModel.DropL1SyncedBlockTable())
+	assert.Nil(nil, dao.desertExitBlockModel.DropDesertExitBlockTable())
+	assert.Nil(nil, dao.priorityRequestModel.DropPriorityRequestTable())
+
+}
+
 func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC string) {
 	assert.Nil(nil, dao.sysConfigModel.CreateSysConfigTable())
 	assert.Nil(nil, dao.accountModel.CreateAccountTable())
@@ -284,14 +328,14 @@ func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetw
 	assert.Nil(nil, dao.nftMetadataHistoryModel.CreateL2NftMetadataHistoryTable())
 	rowsAffected, err := dao.assetModel.CreateAssets(initAssetsInfo(svrConf.BUSDToken))
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to initialize assets data, %v", err)
+		panic("failed to initialize assets data, err:" + err.Error())
 	}
 	logx.Infof("l2 assets info rows affected: %d", rowsAffected)
 	rowsAffected, err = dao.sysConfigModel.CreateSysConfigs(initSysConfig(svrConf, bscTestNetworkRPC, localTestNetworkRPC))
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to initialize system configuration data, %v", err)
+		panic("failed to initialize system configuration data, err:" + err.Error())
 	}
 	logx.Infof("sys config rows affected: %d", rowsAffected)
 	err = dao.blockModel.CreateGenesisBlock(&block.Block{
@@ -307,7 +351,15 @@ func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetw
 		BlockStatus:                  block.StatusVerifiedAndExecuted,
 	})
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to create the genesis block data, %v", err)
+		panic("failed to create the genesis block data, err:" + err.Error())
 	}
+}
+
+func initTableDesertExit(dao *dao) {
+	assert.Nil(nil, dao.accountModel.CreateAccountTable())
+	assert.Nil(nil, dao.nftModel.CreateL2NftTable())
+	assert.Nil(nil, dao.l1SyncedBlockModel.CreateL1SyncedBlockTable())
+	assert.Nil(nil, dao.desertExitBlockModel.CreateDesertExitBlockTable())
+	assert.Nil(nil, dao.priorityRequestModel.CreatePriorityRequestTable())
 }

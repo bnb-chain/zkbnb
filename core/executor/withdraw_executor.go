@@ -3,8 +3,6 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-
-	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
@@ -17,24 +15,31 @@ import (
 type WithdrawExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.WithdrawTxInfo
+	TxInfo *txtypes.WithdrawTxInfo
 }
 
 func NewWithdrawExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	txInfo, err := types.ParseWithdrawTxInfo(tx.TxInfo)
 	if err != nil {
 		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return nil, errors.New("invalid tx info")
+		return nil, types.AppErrInvalidTxInfo
 	}
 
 	return &WithdrawExecutor{
-		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo, false),
+		TxInfo:       txInfo,
+	}, nil
+}
+
+func NewWithdrawExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &WithdrawExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.WithdrawTxInfo),
 	}, nil
 }
 
 func (e *WithdrawExecutor) Prepare() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetId})
@@ -43,7 +48,7 @@ func (e *WithdrawExecutor) Prepare() error {
 }
 
 func (e *WithdrawExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
@@ -54,12 +59,13 @@ func (e *WithdrawExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	if err != nil {
 		return err
 	}
+
 	if txInfo.GasFeeAssetId != txInfo.AssetId {
 		if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(txInfo.AssetAmount) < 0 {
-			return types.AppErrInvalidGasFeeAccount
+			return types.AppErrInvalidAssetAmount
 		}
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-			return types.AppErrInvalidAssetAmount
+			return types.AppErrInvalidGasFeeAccount
 		}
 	} else {
 		deltaBalance := ffmath.Add(txInfo.AssetAmount, txInfo.GasFeeAssetAmount)
@@ -73,7 +79,7 @@ func (e *WithdrawExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 
 func (e *WithdrawExecutor) ApplyTransaction() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
 	if err != nil {
@@ -92,7 +98,7 @@ func (e *WithdrawExecutor) ApplyTransaction() error {
 }
 
 func (e *WithdrawExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeWithdraw))
@@ -119,22 +125,22 @@ func (e *WithdrawExecutor) GeneratePubData() error {
 }
 
 func (e *WithdrawExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return nil, errors.New("unmarshal tx failed")
+		return nil, types.AppErrMarshalTxFailed
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
-	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
-	e.tx.AssetId = e.txInfo.AssetId
-	e.tx.TxAmount = e.txInfo.AssetAmount.String()
+	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
+	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
+	e.tx.AssetId = e.TxInfo.AssetId
+	e.tx.TxAmount = e.TxInfo.AssetAmount.String()
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex})
 	if err != nil {
@@ -151,7 +157,7 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.AssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  fromAccount.AccountName,
+		L1Address:    fromAccount.L1Address,
 		Balance:      fromAccount.AssetInfo[txInfo.AssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.AssetId, ffmath.Neg(txInfo.AssetAmount), types.ZeroBigInt).String(),
@@ -159,10 +165,11 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder:    accountOrder,
 		Nonce:           fromAccount.Nonce,
 		CollectionNonce: fromAccount.CollectionNonce,
+		PublicKey:       fromAccount.PublicKey,
 	})
 	fromAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 	if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(types.ZeroBigInt) < 0 {
-		return nil, errors.New("insufficient asset a balance")
+		return nil, types.AppErrInsufficientAssetBalance
 	}
 
 	order++
@@ -171,7 +178,7 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  fromAccount.AccountName,
+		L1Address:    fromAccount.L1Address,
 		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), types.ZeroBigInt).String(),
@@ -179,10 +186,11 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder:    accountOrder,
 		Nonce:           fromAccount.Nonce,
 		CollectionNonce: fromAccount.CollectionNonce,
+		PublicKey:       fromAccount.PublicKey,
 	})
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(types.ZeroBigInt) < 0 {
-		return nil, errors.New("insufficient gas balance")
+		return nil, types.AppErrInsufficientGasFeeBalance
 	}
 
 	// gas account asset gas
@@ -192,7 +200,7 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  gasAccount.AccountName,
+		L1Address:    gasAccount.L1Address,
 		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, types.ZeroBigInt).String(),
@@ -201,6 +209,7 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           gasAccount.Nonce,
 		CollectionNonce: gasAccount.CollectionNonce,
 		IsGas:           true,
+		PublicKey:       gasAccount.PublicKey,
 	})
 	return txDetails, nil
 }
