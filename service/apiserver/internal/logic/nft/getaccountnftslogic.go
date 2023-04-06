@@ -14,8 +14,7 @@ import (
 
 const (
 	queryByAccountIndex = "account_index"
-	queryByAccountName  = "account_name"
-	queryByAccountPk    = "account_pk"
+	queryByL1Address    = "l1_address"
 )
 
 type GetAccountNftsLogic struct {
@@ -44,12 +43,10 @@ func (l *GetAccountNftsLogic) GetAccountNfts(req *types.ReqGetAccountNfts) (resp
 		if err != nil || accountIndex < 0 {
 			return nil, types2.AppErrInvalidAccountIndex
 		}
-	case queryByAccountName:
-		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
-	case queryByAccountPk:
-		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
+	case queryByL1Address:
+		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByL1Address(req.Value)
 	default:
-		return nil, types2.AppErrInvalidParam.RefineError("param by should be account_index|account_name|account_pk")
+		return nil, types2.AppErrInvalidParam.RefineError("param by should be account_index|l1_address")
 	}
 
 	if err != nil {
@@ -77,16 +74,16 @@ func (l *GetAccountNftsLogic) GetAccountNfts(req *types.ReqGetAccountNfts) (resp
 	}
 
 	for _, nft := range nfts {
-		creatorName, _ := l.svcCtx.MemCache.GetAccountNameByIndex(nft.CreatorAccountIndex)
-		ownerName, _ := l.svcCtx.MemCache.GetAccountNameByIndex(nft.OwnerAccountIndex)
+		creatorL1Address, _ := l.svcCtx.MemCache.GetL1AddressByIndex(nft.CreatorAccountIndex)
+		ownerL1Address, _ := l.svcCtx.MemCache.GetL1AddressByIndex(nft.OwnerAccountIndex)
 		resp.Nfts = append(resp.Nfts, &types.Nft{
 			Index:               nft.NftIndex,
 			CreatorAccountIndex: nft.CreatorAccountIndex,
-			CreatorAccountName:  creatorName,
+			CreatorL1Address:    creatorL1Address,
 			OwnerAccountIndex:   nft.OwnerAccountIndex,
-			OwnerAccountName:    ownerName,
+			OwnerL1Address:      ownerL1Address,
 			ContentHash:         nft.NftContentHash,
-			CreatorTreasuryRate: nft.CreatorTreasuryRate,
+			RoyaltyRate:         nft.RoyaltyRate,
 			CollectionId:        nft.CollectionId,
 			IpfsId:              common.GenerateCid(nft.NftContentHash),
 		})

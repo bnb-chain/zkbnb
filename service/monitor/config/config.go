@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/cache"
 )
 
 type Config struct {
@@ -16,7 +17,9 @@ type Config struct {
 		MaxHandledBlocksCount   int64
 		KeptHistoryBlocksCount  int64 // KeptHistoryBlocksCount define the count of blocks to keep in table, old blocks will be cleaned
 	}
-	LogConf logx.LogConf
+	CacheRedis       cache.CacheConf
+	AccountCacheSize int
+	LogConf          logx.LogConf
 }
 
 func (c Config) Validate() {

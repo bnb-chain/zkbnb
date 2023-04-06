@@ -50,6 +50,7 @@ type (
 		PublicData        string
 		Timestamp         int64
 		PublicDataOffsets string
+		RealBlockSize     uint16
 	}
 )
 

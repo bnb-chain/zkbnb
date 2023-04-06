@@ -42,7 +42,6 @@ type (
 		GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
 		GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
 		GetTxsByStatusAndMaxId(status int, maxId uint, limit int64) (txs []*Tx, err error)
-		GetTxsByStatusAndIdRange(status int, fromId uint, toId uint) (txs []*Tx, err error)
 		GetTxsByStatusAndCreateTime(status int, fromCreatedAt time.Time, toId uint) (txs []*Tx, err error)
 		CreateTxs(txs []*PoolTx) error
 		GetPendingTxsByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
@@ -63,6 +62,7 @@ type (
 		UpdateTxsToPendingByMaxId(tx *gorm.DB, maxPoolTxId uint) error
 		BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (err error)
 		GetLatestMintNft() (tx *Tx, err error)
+		GetLatestAccountIndex() (tx *Tx, err error)
 		GetTxsUnscopedByHeights(blockHeights []int64) (txs []*Tx, err error)
 		GetLatestRollback(status int, rollback bool) (tx *PoolTx, err error)
 		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
@@ -84,25 +84,29 @@ type (
 		gorm.Model
 
 		// Assigned when created in the tx pool.
-		TxHash       string `gorm:"uniqueIndex"`
-		TxType       int64
-		TxInfo       string
-		AccountIndex int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:1"`
-		Nonce        int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:2"`
-		ExpiredAt    int64
+		TxHash           string `gorm:"uniqueIndex"`
+		TxType           int64
+		TxInfo           string
+		AccountIndex     int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:1"`
+		Nonce            int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:2"`
+		FromAccountIndex int64 `gorm:"index"`
+		ToAccountIndex   int64 `gorm:"index"`
+		ExpiredAt        int64
 
 		// Assigned after executed.
-		GasFee        string
-		GasFeeAssetId int64
-		NftIndex      int64
-		CollectionId  int64
-		AssetId       int64
-		TxAmount      string
-		Memo          string
-		ExtraInfo     string
-		NativeAddress string // a. Priority tx, assigned when created b. Other tx, assigned after executed.
+		GasFee          string
+		GasFeeAssetId   int64
+		NftIndex        int64
+		CollectionId    int64
+		AssetId         int64
+		TxAmount        string
+		Memo            string
+		ExtraInfo       string
+		NativeAddress   string // a. Priority tx, assigned when created b. Other tx, assigned after executed. Is
+		IsCreateAccount bool
 
 		TxIndex     int64
+		ChannelName string
 		BlockHeight int64 `gorm:"index"`
 		BlockId     uint  `gorm:"index"`
 		TxStatus    int   `gorm:"index"`
@@ -192,19 +196,7 @@ func (m *defaultTxPoolModel) GetTxsByStatusAndMaxId(status int, maxId uint, limi
 		return nil, types.DbErrSqlOperation
 	}
 	for _, poolTx := range poolTxs {
-		txs = append(txs, &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback, L1RequestId: poolTx.L1RequestId})
-	}
-	return txs, nil
-}
-
-func (m *defaultTxPoolModel) GetTxsByStatusAndIdRange(status int, fromId uint, toId uint) (txs []*Tx, err error) {
-	var poolTxs []*PoolTx
-	dbTx := m.DB.Table(m.table).Where("tx_status = ? and id >= ? and id <= ?", status, fromId, toId).Order("id asc").Find(&poolTxs)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	}
-	for _, poolTx := range poolTxs {
-		txs = append(txs, &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback, L1RequestId: poolTx.L1RequestId})
+		txs = append(txs, convertToTx(poolTx))
 	}
 	return txs, nil
 }
@@ -216,7 +208,7 @@ func (m *defaultTxPoolModel) GetTxsByStatusAndCreateTime(status int, fromCreated
 		return nil, types.DbErrSqlOperation
 	}
 	for _, poolTx := range poolTxs {
-		txs = append(txs, &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback})
+		txs = append(txs, convertToTx(poolTx))
 	}
 	return txs, nil
 }
@@ -493,13 +485,24 @@ func (m *defaultTxPoolModel) GetLatestTx(txTypes []int64, statuses []int) (tx *T
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
 	}
-	tx = &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback, L1RequestId: poolTx.L1RequestId}
+	tx = convertToTx(poolTx)
 	return tx, nil
 }
 
 func (m *defaultTxPoolModel) GetLatestMintNft() (tx *Tx, err error) {
 
 	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type = ?", types.TxTypeMintNft).Order("nft_index DESC").Limit(1).Find(&tx)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+
+	return tx, nil
+}
+
+func (m *defaultTxPoolModel) GetLatestAccountIndex() (tx *Tx, err error) {
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type in ? and is_create_account= ? ", []int{types.TxTypeDeposit, types.TxTypeDepositNft, types.TxTypeTransfer, types.TxTypeTransferNft}, true).Order("to_account_index DESC").Limit(1).Find(&tx)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -532,7 +535,7 @@ func (m *defaultTxPoolModel) GetLatestExecutedTx() (tx *Tx, err error) {
 func (m *defaultTxPoolModel) BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (err error) {
 	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"nft_index", "collection_id"}),
+		DoUpdates: clause.AssignmentColumns([]string{"nft_index", "collection_id", "account_index", "from_account_index", "to_account_index", "is_create_account"}),
 	}).CreateInBatches(&txs, len(txs))
 	if dbTx.Error != nil {
 		return dbTx.Error
@@ -562,4 +565,8 @@ func (m *defaultTxPoolModel) GetCountByGreaterHeight(blockHeight int64) (count i
 		return 0, nil
 	}
 	return count, nil
+}
+
+func convertToTx(poolTx *PoolTx) *Tx {
+	return &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback, L1RequestId: poolTx.L1RequestId}
 }

@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/bnb-chain/zkbnb/tools/desertexit"
 	"github.com/bnb-chain/zkbnb/tools/query"
+	"github.com/bnb-chain/zkbnb/tools/revertblock"
+	"github.com/bnb-chain/zkbnb/tools/rollbackwitnesssmt"
 	"os"
 	"runtime"
 
@@ -184,6 +187,110 @@ func main() {
 					return apiserver.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
 			},
+			{
+				Name:  "generateproof",
+				Usage: "Run generateproof service",
+				Flags: []cli.Flag{
+					flags.CommandFlag,
+					flags.ConfigFlag,
+					flags.TokenFlag,
+					flags.NftIndexListFlag,
+					flags.AddressFlag,
+					flags.ProofFolderFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.CommandFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if cCtx.String(flags.CommandFlag.Name) == desertexit.CommandRunGenerateProof {
+						err := dbinitializer.InitializeDesertExit(
+							cCtx.String(flags.ConfigFlag.Name),
+						)
+						if err != nil {
+							return err
+						}
+						return desertexit.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.TokenFlag.Name), cCtx.String(flags.NftIndexListFlag.Name), cCtx.String(flags.ProofFolderFlag.Name))
+					}
+					if cCtx.String(flags.CommandFlag.Name) == desertexit.CommandContinueGenerateProof {
+						return desertexit.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.TokenFlag.Name), cCtx.String(flags.NftIndexListFlag.Name), cCtx.String(flags.ProofFolderFlag.Name))
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "performdesert",
+				Usage: "Run performdesert service",
+				Flags: []cli.Flag{
+					flags.CommandFlag,
+					flags.ConfigFlag,
+					flags.AmountFlag,
+					flags.NftIndexListFlag,
+					flags.AddressFlag,
+					flags.PrivateKeyFlag,
+					flags.ProofFlag,
+					flags.TokenFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.CommandFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					return desertexit.Perform(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.CommandFlag.Name),
+						cCtx.String(flags.AmountFlag.Name), cCtx.String(flags.NftIndexListFlag.Name),
+						cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.PrivateKeyFlag.Name),
+						cCtx.String(flags.ProofFlag.Name), cCtx.String(flags.TokenFlag.Name))
+				},
+			},
+			{
+				Name:  "revertblock",
+				Usage: "Run revertblock service",
+				Flags: []cli.Flag{
+					flags.ConfigFlag,
+					flags.RevertBlockHeightFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.RevertBlockHeightFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+
+					err := revertblock.RevertCommittedBlocks(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RevertBlockHeightFlag.Name))
+					if err != nil {
+						logx.Severe(err)
+						return err
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "rollbackwitnesssmt",
+				Usage: "Run rollbackwitnesssmt service",
+				Flags: []cli.Flag{
+					flags.ConfigFlag,
+					flags.RevertBlockHeightFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.RevertBlockHeightFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					err := rollbackwitnesssmt.RollbackWitnessSmt(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RevertBlockHeightFlag.Name))
+					if err != nil {
+						logx.Severe(err)
+						return err
+					}
+					return nil
+				},
+			},
 			// tools
 			{
 				Name:  "db",
@@ -226,6 +333,7 @@ func main() {
 							flags.BlockHeightFlag,
 							flags.ServiceNameFlag,
 							flags.BatchSizeFlag,
+							flags.RecoveryFromHistoryFlag,
 						},
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ServiceNameFlag.Name) ||
@@ -238,6 +346,7 @@ func main() {
 								cCtx.Int64(flags.BlockHeightFlag.Name),
 								cCtx.String(flags.ServiceNameFlag.Name),
 								cCtx.Int(flags.BatchSizeFlag.Name),
+								cCtx.Bool(flags.RecoveryFromHistoryFlag.Name),
 							)
 							return nil
 						},
@@ -256,6 +365,7 @@ func main() {
 							flags.BlockHeightFlag,
 							flags.ServiceNameFlag,
 							flags.BatchSizeFlag,
+							flags.RecoveryFromHistoryFlag,
 						},
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ServiceNameFlag.Name) ||
@@ -268,6 +378,7 @@ func main() {
 								cCtx.Int64(flags.BlockHeightFlag.Name),
 								cCtx.String(flags.ServiceNameFlag.Name),
 								cCtx.Int(flags.BatchSizeFlag.Name),
+								cCtx.Bool(flags.RecoveryFromHistoryFlag.Name),
 							)
 							return nil
 						},

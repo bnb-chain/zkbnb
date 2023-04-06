@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
@@ -18,24 +17,31 @@ import (
 type CreateCollectionExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.CreateCollectionTxInfo
+	TxInfo *txtypes.CreateCollectionTxInfo
 }
 
 func NewCreateCollectionExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	txInfo, err := types.ParseCreateCollectionTxInfo(tx.TxInfo)
 	if err != nil {
 		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return nil, errors.New("invalid tx info")
+		return nil, types.AppErrInvalidTxInfo
 	}
 
 	return &CreateCollectionExecutor{
-		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo, false),
+		TxInfo:       txInfo,
+	}, nil
+}
+
+func NewCreateCollectionExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &CreateCollectionExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.CreateCollectionTxInfo),
 	}, nil
 }
 
 func (e *CreateCollectionExecutor) Prepare() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId})
@@ -55,7 +61,7 @@ func (e *CreateCollectionExecutor) Prepare() error {
 }
 
 func (e *CreateCollectionExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
 		return err
@@ -74,7 +80,7 @@ func (e *CreateCollectionExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) 
 
 func (e *CreateCollectionExecutor) ApplyTransaction() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
 	if err != nil {
@@ -93,7 +99,7 @@ func (e *CreateCollectionExecutor) ApplyTransaction() error {
 }
 
 func (e *CreateCollectionExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeCreateCollection))
@@ -114,21 +120,22 @@ func (e *CreateCollectionExecutor) GeneratePubData() error {
 }
 
 func (e *CreateCollectionExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return nil, errors.New("unmarshal tx failed")
+		return nil, types.AppErrMarshalTxFailed
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
-	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
-	e.tx.CollectionId = e.txInfo.CollectionId
+	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
+	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
+	e.tx.CollectionId = e.TxInfo.CollectionId
+	e.tx.IsPartialUpdate = true
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex})
 	if err != nil {
@@ -147,13 +154,14 @@ func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:         types.NilAssetId,
 		AssetType:       types.CollectionNonceAssetType,
 		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     fromAccount.AccountName,
+		L1Address:       fromAccount.L1Address,
 		Balance:         strconv.FormatInt(fromAccount.CollectionNonce, 10),
 		BalanceDelta:    strconv.FormatInt(fromAccount.CollectionNonce+1, 10),
 		Order:           order,
 		Nonce:           fromAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
+		PublicKey:       fromAccount.PublicKey,
 	})
 	fromAccount.CollectionNonce = fromAccount.CollectionNonce + 1
 
@@ -163,7 +171,7 @@ func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.AccountIndex,
-		AccountName:  fromAccount.AccountName,
+		L1Address:    fromAccount.L1Address,
 		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
@@ -174,10 +182,11 @@ func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
+		PublicKey:       fromAccount.PublicKey,
 	})
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(types.ZeroBigInt) < 0 {
-		return nil, errors.New("insufficient gas fee balance")
+		return nil, types.AppErrInsufficientGasFeeBalance
 	}
 
 	// gas account gas asset
@@ -187,7 +196,7 @@ func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  gasAccount.AccountName,
+		L1Address:    gasAccount.L1Address,
 		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
@@ -198,6 +207,7 @@ func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:        gasAccount.Nonce,
 		AccountOrder: accountOrder,
 		IsGas:        true,
+		PublicKey:    gasAccount.PublicKey,
 	})
 	return txDetails, nil
 }

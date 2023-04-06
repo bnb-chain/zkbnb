@@ -28,19 +28,17 @@ func (s *ApiServerSuite) TestGetAccountPoolTxs() {
 
 	tests := []testcase{
 		{"not found by index", args{"account_index", "9999999", nil}, 200},
-		{"not found by name", args{"account_name", "notexists.legend", nil}, 200},
-		{"not found by pk", args{"account_pk", "notexists", nil}, 200},
+		{"not found by name", args{"l1_address", "notexists.legend", nil}, 200},
 		{"invalidby", args{"invalidby", "", nil}, 400},
 	}
 
 	statusCode, txs := GetPendingTxs(s, 0, 100)
 	if statusCode == http.StatusOK && len(txs.Txs) > 0 {
 		tx := txs.Txs[len(txs.Txs)-1]
-		_, account := GetAccount(s, "name", tx.AccountName)
+		_, account := GetAccount(s, "l1_address", tx.ToL1Address)
 		tests = append(tests, []testcase{
 			{"found by index", args{"account_index", strconv.Itoa(int(account.Index)), nil}, 200},
-			{"found by name", args{"account_name", account.Name, nil}, 200},
-			{"found by pk", args{"account_pk", account.Pk, nil}, 200},
+			{"found by l1_address", args{"l1_address", account.L1Address, nil}, 200},
 			{"found by index and type", args{"account_index", strconv.Itoa(int(account.Index)), []int64{tx.Type}}, 200},
 			{"not found by index and type", args{"account_index", strconv.Itoa(int(account.Index)), []int64{10000}}, 200},
 		}...)

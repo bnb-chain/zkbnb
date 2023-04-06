@@ -18,6 +18,7 @@ func QueryTreeDB(
 	blockHeight int64,
 	serviceName string,
 	batchSize int,
+	fromHistory bool,
 ) {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
@@ -50,6 +51,7 @@ func QueryTreeDB(
 		blockHeight,
 		treeCtx,
 		c.TreeDB.AssetTreeCacheSize,
+		fromHistory,
 	)
 	if err != nil {
 		logx.Error("InitMerkleTree error:", err)
@@ -74,9 +76,10 @@ func QueryTreeDB(
 	logx.Infof("account tree accountRoot=%s,versions=%s,,latestVersion=%s", stateRoot, formatVersion(accountTree.Versions()), strconv.FormatUint(uint64(accountTree.LatestVersion()), 10))
 	// dbinitializer nftTree
 	nftTree, err := tree.InitNftTree(
+		ctx.NftModel,
 		ctx.NftHistoryModel,
 		blockHeight,
-		treeCtx)
+		treeCtx, fromHistory)
 	if err != nil {
 		logx.Errorf("InitNftTree error: %s", err.Error())
 		return

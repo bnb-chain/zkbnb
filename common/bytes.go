@@ -37,6 +37,11 @@ func ReadUint16(buf []byte, offset int) (newOffset int, res uint16) {
 	return offset + 2, res
 }
 
+func ReadUint24(buf []byte, offset int) (newOffset int, res uint64) {
+	res = binary.BigEndian.Uint64(buf[offset : offset+3])
+	return offset + 3, res
+}
+
 func ReadUint32(buf []byte, offset int) (newOffset int, res uint32) {
 	res = binary.BigEndian.Uint32(buf[offset : offset+4])
 	return offset + 4, res
@@ -60,14 +65,34 @@ func ReadBytes32(buf []byte, offset int) (newOffset int, res []byte) {
 	return offset + 32, res
 }
 
+func ReadPubKey(buf []byte, offset int) (newOffset int, res []byte) {
+	res = make([]byte, 64)
+	copy(res[:], buf[offset:offset+64])
+	return offset + 64, res
+}
+
 func ReadBytes20(buf []byte, offset int) (newOffset int, res []byte) {
 	res = make([]byte, 20)
 	copy(res[:], buf[offset:offset+20])
 	return offset + 20, res
 }
-
+func ReadBytes65(buf []byte, offset int) (newOffset int, res []byte) {
+	res = make([]byte, 65)
+	copy(res[:], buf[offset:offset+65])
+	return offset + 65, res
+}
 func ReadAddress(buf []byte, offset int) (newOffset int, res string) {
 	res = common.BytesToAddress(buf[offset : offset+20]).Hex()
+	return offset + 20, res
+}
+
+func ReadPrefixPaddingBufToChunkSize(buf []byte, offset int) (newOffset int, res []byte) {
+	return offset + 32, new(big.Int).SetBytes(buf[offset : offset+32]).Bytes()
+}
+
+func ReadAccountNameFromBytes20(buf []byte, offset int) (newOffset int, res []byte) {
+	res = make([]byte, 20)
+	copy(res[:], buf[offset:offset+20])
 	return offset + 20, res
 }
 
@@ -95,7 +120,18 @@ func AccountNameToBytes20(accountName string) []byte {
 }
 
 func AddressStrToBytes(addr string) []byte {
+	if addr == "" {
+		return []byte{}
+	}
 	return new(big.Int).SetBytes(common.FromHex(addr)).FillBytes(make([]byte, 20))
+}
+
+func PubKeyStrToBytes(pubKey string) []byte {
+	return new(big.Int).SetBytes(common.FromHex(pubKey)).FillBytes(make([]byte, 64))
+}
+
+func SignatureStrToBytes(signature []byte) []byte {
+	return new(big.Int).SetBytes(signature).FillBytes(make([]byte, 65))
 }
 
 func Uint16ToBytes(a uint16) []byte {

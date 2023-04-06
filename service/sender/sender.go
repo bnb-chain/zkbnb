@@ -1,9 +1,9 @@
 package sender
 
 import (
+	"github.com/robfig/cron/v3"
 	"time"
 
-	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
@@ -20,6 +20,11 @@ func Run(configFile string) error {
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
+	//Initiate the apollo configuration
+	config.InitApolloConfiguration(c)
+	//Initiate the Prometheus Monitor Facility
+	sender.InitPrometheusFacility()
+
 	s := sender.NewSender(c)
 	// new cron
 	cronJob := cron.New(cron.WithChain(
@@ -34,8 +39,8 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to start the commit block task, %v", err)
+		panic("failed to start the commit block task, err:" + err.Error())
 	}
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
@@ -46,8 +51,8 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to start the verify and execute block task, %v", err)
+		panic("failed to start the verify and execute block task, err:" + err.Error())
 	}
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
@@ -58,8 +63,8 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to start the update send transaction task, %v", err)
+		panic("failed to start the update send transaction task, err:" + err.Error())
 	}
 
 	cronJob.Start()

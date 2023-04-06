@@ -21,7 +21,11 @@ func Run(configFile string) error {
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
-	m := monitor.NewMonitor(c)
+	m, err := monitor.NewMonitor(c)
+	if err != nil {
+		logx.Severe(err)
+		panic("failed to start monitor service " + err.Error())
+	}
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
@@ -33,8 +37,8 @@ func Run(configFile string) error {
 			logx.Severef("monitor blocks error, %v", err)
 		}
 	}); err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to start the monitor generic block task, %v", err)
+		panic("failed to start the monitor generic block task, err:" + err.Error())
 	}
 
 	// monitor priority requests
@@ -44,8 +48,8 @@ func Run(configFile string) error {
 			logx.Severef("monitor priority requests error, %v", err)
 		}
 	}); err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to start monitor priority request task, %v", err)
+		panic("failed to start monitor priority request task, err:" + err.Error())
 	}
 
 	// monitor governance blocks
@@ -56,8 +60,8 @@ func Run(configFile string) error {
 		}
 
 	}); err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severe("failed to start monitor governance block task, %v", err)
+		panic("failed to start monitor governance block task, err:" + err.Error())
 	}
 
 	// prune historical blocks
@@ -67,8 +71,8 @@ func Run(configFile string) error {
 			logx.Severef("clean history blocks error, %v", err)
 		}
 	}); err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severe("failed to start clean history blocks, %v", err)
+		panic("failed to start clean history blocks, err:" + err.Error())
 	}
 
 	cronJob.Start()

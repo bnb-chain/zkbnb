@@ -6,11 +6,15 @@ import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/common/redislock"
+	"github.com/bnb-chain/zkbnb/core/executor"
 	nftModels "github.com/bnb-chain/zkbnb/core/model"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"github.com/bnb-chain/zkbnb/dao/nft"
-	"github.com/bnb-chain/zkbnb/service/apiserver/internal/signature"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/permctrl"
 	"gorm.io/gorm"
+	"net/http"
+	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -23,18 +27,20 @@ import (
 
 type SendTxLogic struct {
 	logx.Logger
-	ctx             context.Context
-	svcCtx          *svc.ServiceContext
-	verifySignature *signature.VerifySignature
+	ctx               context.Context
+	svcCtx            *svc.ServiceContext
+	permissionControl *permctrl.PermissionControl
+	header            http.Header
 }
 
-func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogic {
-	verifySignature := signature.NewVerifySignature(ctx, svcCtx)
+func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext, header http.Header) *SendTxLogic {
+	permissionControl := permctrl.NewPermissionControl(ctx, svcCtx)
 	return &SendTxLogic{
-		Logger:          logx.WithContext(ctx),
-		ctx:             ctx,
-		svcCtx:          svcCtx,
-		verifySignature: verifySignature,
+		Logger:            logx.WithContext(ctx),
+		ctx:               ctx,
+		svcCtx:            svcCtx,
+		permissionControl: permissionControl,
+		header:            header,
 	}
 }
 
@@ -51,7 +57,8 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		return nil, types2.AppErrTooManyTxs
 	}
 
-	err = s.verifySignature.VerifySignatureInfo(req.TxType, req.TxInfo, req.TxSignature)
+	// Control the permission list with the whitelist or blacklist
+	err = s.permissionControl.Control(req.TxType, req.TxInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -76,10 +83,28 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		TxAmount:      types2.NilAssetAmount,
 		NativeAddress: types2.EmptyL1Address,
 
+		ChannelName: s.header.Get("Channel-Name"),
 		BlockHeight: types2.NilBlockHeight,
 		TxStatus:    tx.StatusPending,
 	}
 	newTx := &tx.Tx{BaseTx: newPoolTx}
+	executor, err := executor.NewTxExecutor(bc, newTx)
+	if err != nil {
+		return resp, err
+	}
+	accountIndex := executor.GetTxInfo().GetAccountIndex()
+	nonce := executor.GetTxInfo().GetNonce()
+	lock := redislock.GetRedisLock(s.svcCtx.RedisConn, "apiserver:senttx:"+strconv.FormatInt(accountIndex, 10)+"_"+strconv.FormatInt(nonce, 10), 30)
+	ok, err := lock.Acquire()
+	if err != nil {
+		return resp, err
+	}
+	if !ok {
+		logx.Infof(" the apiserversenttx lock has been used, re-try later, accountIndex=%d,nonce=%d", accountIndex, nonce)
+		return resp, types2.AppErrInvalidNonce
+	}
+	defer lock.Release()
+
 	err = bc.ApplyTransaction(newTx)
 	if err != nil {
 		return resp, err

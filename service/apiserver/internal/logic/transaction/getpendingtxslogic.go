@@ -51,10 +51,10 @@ func (l *GetPendingTxsLogic) GetPendingTxs(req *types.ReqGetRange) (*types.Txs, 
 	}
 	for _, pendingTx := range pendingTxs {
 		tx := utils.ConvertTx(pendingTx)
-		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
+		tx.L1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.AccountIndex)
 		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 		if tx.ToAccountIndex >= 0 {
-			tx.ToAccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.ToAccountIndex)
+			tx.ToL1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.ToAccountIndex)
 		}
 		resp.Txs = append(resp.Txs, tx)
 	}

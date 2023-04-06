@@ -18,11 +18,22 @@
 package common
 
 import (
+	curve "github.com/bnb-chain/zkbnb-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 func ParsePubKey(pkStr string) (pk *eddsa.PublicKey, err error) {
+	if pkStr == "0000000000000000000000000000000000000000000000000000000000000000" {
+		pk := &eddsa.PublicKey{
+			A: curve.Point{
+				X: fr.NewElement(0),
+				Y: fr.NewElement(0),
+			},
+		}
+		return pk, nil
+	}
 	pkBytes := common.FromHex(pkStr)
 	pk = new(eddsa.PublicKey)
 	_, err = pk.A.SetBytes(pkBytes)
@@ -30,4 +41,14 @@ func ParsePubKey(pkStr string) (pk *eddsa.PublicKey, err error) {
 		return nil, err
 	}
 	return pk, nil
+}
+
+func EmptyPubKey() string {
+	pk := &eddsa.PublicKey{
+		A: curve.Point{
+			X: fr.NewElement(0),
+			Y: fr.NewElement(0),
+		},
+	}
+	return common.Bytes2Hex(pk.Bytes())
 }
