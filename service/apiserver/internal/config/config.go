@@ -23,6 +23,11 @@ type Config struct {
 		Url   string
 		Token string
 	}
+	BinanceOracle struct{
+		Url string
+		Apikey string
+		ApiSecret string
+	}
 	IpfsUrl  string
 	MemCache struct {
 		AccountExpiration   int

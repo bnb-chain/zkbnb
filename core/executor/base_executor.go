@@ -1,7 +1,9 @@
 package executor
 
 import (
+	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/common/metrics"
+	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -25,9 +27,12 @@ type BaseExecutor struct {
 	// Affected states.
 	dirtyAccountsAndAssetsMap map[int64]map[int64]bool
 	dirtyNftMap               map[int64]bool
+	creatingAccountInfo       *types.AccountInfo
+	emptyAccountInfo          *types.AccountInfo
+	isDesertExit              bool
 }
 
-func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo txtypes.TxInfo) BaseExecutor {
+func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo txtypes.TxInfo, isDesertExit bool) BaseExecutor {
 	return BaseExecutor{
 		bc:      bc,
 		tx:      tx,
@@ -35,25 +40,30 @@ func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo txtypes.TxInfo) BaseExecu
 
 		dirtyAccountsAndAssetsMap: make(map[int64]map[int64]bool, 0),
 		dirtyNftMap:               make(map[int64]bool, 0),
+		isDesertExit:              isDesertExit,
 	}
 }
 
 func (e *BaseExecutor) Prepare() error {
 	// Assign tx related fields for layer2 transaction from the API.
-	from := e.iTxInfo.GetFromAccountIndex()
-	if from != types.NilAccountIndex && e.tx.TxHash == types.EmptyTxHash {
+	from := e.iTxInfo.GetAccountIndex()
+	if !e.isDesertExit && from != types.NilAccountIndex && e.tx.TxHash == types.EmptyTxHash {
 		// Compute tx hash for layer2 transactions.
 		hash, err := e.iTxInfo.Hash(mimc.NewMiMC())
 		if err != nil {
 			return err
 		}
 		e.tx.TxHash = common.Bytes2Hex(hash)
-		e.tx.AccountIndex = e.iTxInfo.GetFromAccountIndex()
+		e.tx.AccountIndex = e.iTxInfo.GetAccountIndex()
 		e.tx.Nonce = e.iTxInfo.GetNonce()
 		e.tx.ExpiredAt = e.iTxInfo.GetExpiredAt()
 	}
-
-	err := e.bc.StateDB().PrepareAccountsAndAssets(e.dirtyAccountsAndAssetsMap)
+	creatingAccountInfo := e.GetCreatingAccount()
+	creatingAccountIndex := int64(-1)
+	if creatingAccountInfo != nil {
+		creatingAccountIndex = creatingAccountInfo.AccountIndex
+	}
+	err := e.bc.StateDB().PrepareAccountsAndAssets(e.dirtyAccountsAndAssetsMap, creatingAccountIndex)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
 		return err
@@ -73,7 +83,7 @@ func (e *BaseExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 		return err
 	}
 
-	from := txInfo.GetFromAccountIndex()
+	from := txInfo.GetAccountIndex()
 	if from != types.NilAccountIndex {
 		err = e.bc.VerifyNonce(from, txInfo.GetNonce())
 		if err != nil {
@@ -98,7 +108,20 @@ func (e *BaseExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 				return err
 			}
 			start = time.Now()
-			err = txInfo.VerifySignature(fromAccount.PublicKey)
+
+			// Verify l1 signature.
+			if txInfo.GetTxType() != txtypes.TxTypeAtomicMatch {
+				if txInfo.GetL1AddressBySignature() != common.HexToAddress(fromAccount.L1Address) {
+					return types.AppErrFailToL1Signature
+				}
+			}
+			var pubKey string
+			if txInfo.GetTxType() == txtypes.TxTypeChangePubKey {
+				pubKey = txInfo.GetPubKey()
+			} else {
+				pubKey = fromAccount.PublicKey
+			}
+			err = txInfo.VerifySignature(pubKey)
 			if metrics.VerifySignature != nil {
 				metrics.VerifySignature.Set(float64(time.Since(start).Milliseconds()))
 			}
@@ -129,6 +152,9 @@ func (e *BaseExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.TxStatus = tx.StatusExecuted
 	e.tx.PoolTxId = e.tx.ID
 	e.tx.BlockId = e.bc.CurrentBlock().ID
+	e.tx.AccountIndex = e.iTxInfo.GetAccountIndex()
+	e.tx.FromAccountIndex = e.iTxInfo.GetFromAccountIndex()
+	e.tx.ToAccountIndex = e.iTxInfo.GetToAccountIndex()
 	return e.tx, nil
 }
 
@@ -159,6 +185,25 @@ func (e *BaseExecutor) MarkNftDirty(nftIndex int64) {
 	e.dirtyNftMap[nftIndex] = true
 }
 
+func (e *BaseExecutor) CreateEmptyAccount(accountIndex int64, l1Address string, assets []int64) error {
+	accountInfo, err := chain.EmptyAccountFormat(accountIndex, assets, l1Address, tree.NilAccountAssetRoot)
+	if err != nil {
+		return err
+	}
+	e.creatingAccountInfo = accountInfo
+	e.emptyAccountInfo = accountInfo.DeepCopy()
+	e.emptyAccountInfo.L1Address = types.NilL1Address
+	return nil
+}
+
+func (e *BaseExecutor) GetCreatingAccount() *types.AccountInfo {
+	return e.creatingAccountInfo
+}
+
+func (e *BaseExecutor) GetEmptyAccount() *types.AccountInfo {
+	return e.emptyAccountInfo
+}
+
 func (e *BaseExecutor) SyncDirtyToStateCache() {
 	for accountIndex, assetsMap := range e.dirtyAccountsAndAssetsMap {
 		assets := make([]int64, 0, len(assetsMap))
@@ -175,4 +220,8 @@ func (e *BaseExecutor) SyncDirtyToStateCache() {
 
 func (e *BaseExecutor) GetTxInfo() txtypes.TxInfo {
 	return e.iTxInfo
+}
+
+func (e *BaseExecutor) Finalize() error {
+	return nil
 }

@@ -37,3 +37,16 @@ type currencyPrice struct {
 	Status status      `json:"status"`
 	Data   interface{} `json:"data"`
 }
+
+
+
+type BinanceOracleResp struct {
+	Timestamp uint32 `json:"timestamp"`
+	Data []BinanceOraclePrice `json:"data"`
+}
+
+type BinanceOraclePrice struct {
+	Symbol string `json:"symbol"`
+	Price uint64 `json:"price"`
+	Scale int `json:"scale"`
+}

@@ -43,6 +43,7 @@ var (
 	accountModel        account.AccountModel
 	accountHistoryModel account.AccountHistoryModel
 	nftHistoryModel     nft.L2NftHistoryModel
+	nftModel            nft.L2NftModel
 	assetTreeCacheSize  = 512000
 )
 
@@ -82,11 +83,11 @@ func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
 	if err != nil {
 		return nil, err
 	}
-	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, make([]int64, 0), blockHeight, ctx, assetTreeCacheSize)
+	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, make([]int64, 0), blockHeight, ctx, assetTreeCacheSize, true)
 	if err != nil {
 		return nil, err
 	}
-	nftTree, err := tree.InitNftTree(nftHistoryModel, blockHeight, ctx)
+	nftTree, err := tree.InitNftTree(nftModel, nftHistoryModel, blockHeight, ctx, true)
 	if err != nil {
 		return nil, err
 	}
@@ -114,6 +115,7 @@ func testDBSetup() {
 	accountModel = account.NewAccountModel(db)
 	accountHistoryModel = account.NewAccountHistoryModel(db)
 	nftHistoryModel = nft.NewL2NftHistoryModel(db)
+	nftModel = nft.NewL2NftModel(db)
 }
 
 func testDBShutdown() {

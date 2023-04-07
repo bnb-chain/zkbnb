@@ -28,8 +28,16 @@ func NewGetMergedAccountTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *GetMergedAccountTxsLogic) GetMergedAccountTxs(req *types.ReqGetAccountTxs) (resp *types.Txs, err error) {
+
+	resp = &types.Txs{
+		Txs: make([]*types.Tx, 0, req.Limit),
+	}
+
 	accountIndex, err := l.fetchAccountIndexFromReq(req)
 	if err != nil {
+		if err == types2.DbErrNotFound {
+			return resp, nil
+		}
 		return nil, err
 	}
 
@@ -40,15 +48,15 @@ func (l *GetMergedAccountTxsLogic) GetMergedAccountTxs(req *types.ReqGetAccountT
 
 	poolTxCount, err := l.svcCtx.TxPoolModel.GetTxsCountByAccountIndex(accountIndex, options...)
 	if err != nil {
-		return nil, err
+		return nil, types2.DbErrSqlOperation
 	}
 	txCount, err := l.svcCtx.TxModel.GetTxsCountByAccountIndex(accountIndex, options...)
 	if err != nil {
-		return nil, err
+		return nil, types2.DbErrSqlOperation
 	}
 	replicateTxCount, err := l.svcCtx.TxModel.GetReplicateTxsCountByAccountIndex(accountIndex, options...)
 	if err != nil {
-		return nil, err
+		return nil, types2.DbErrSqlOperation
 	}
 
 	totalTxCount := poolTxCount + txCount - replicateTxCount
@@ -61,29 +69,29 @@ func (l *GetMergedAccountTxsLogic) GetMergedAccountTxs(req *types.ReqGetAccountT
 	if (poolTxCount - replicateTxCount) < int64(req.Offset) {
 		txOffset := int64(req.Offset) - poolTxCount + replicateTxCount
 		txs, err := l.svcCtx.TxModel.GetTxsByAccountIndex(accountIndex, int64(req.Limit), txOffset, options...)
-		if err != nil {
-			return nil, types2.AppErrInternal
+		if err != nil && err != types2.DbErrNotFound {
+			return nil, types2.DbErrSqlOperation
 		}
 		txsList = l.appendTxsList(txsList, txs)
 	} else {
 		poolTxLimit := poolTxCount - int64(req.Offset) - replicateTxCount
 		if poolTxLimit > int64(req.Limit) {
 			poolTxs, err := l.svcCtx.TxPoolModel.GetTxsByAccountIndex(accountIndex, int64(req.Limit), int64(req.Offset), options...)
-			if err != nil {
-				return nil, types2.AppErrInternal
+			if err != nil && err != types2.DbErrNotFound {
+				return nil, types2.DbErrSqlOperation
 			}
 			txsList = l.appendTxsList(txsList, poolTxs)
 		} else {
 			poolTxs, err := l.svcCtx.TxPoolModel.GetTxsByAccountIndex(accountIndex, poolTxLimit, int64(req.Offset), options...)
 			if err != nil && err != types2.DbErrNotFound {
-				return nil, types2.AppErrInternal
+				return nil, types2.DbErrSqlOperation
 			}
 			txsList = l.appendTxsList(txsList, poolTxs)
 			txLimit := int64(req.Limit) - poolTxLimit
 			if txLimit > 0 {
 				txs, err := l.svcCtx.TxModel.GetTxsByAccountIndex(accountIndex, txLimit, 0, options...)
 				if err != nil && err != types2.DbErrNotFound {
-					return nil, types2.AppErrInternal
+					return nil, types2.DbErrSqlOperation
 				}
 				txsList = l.appendTxsList(txsList, txs)
 			}
@@ -105,24 +113,21 @@ func (l *GetMergedAccountTxsLogic) fetchAccountIndexFromReq(req *types.ReqGetAcc
 			return accountIndex, types2.AppErrInvalidAccountIndex
 		}
 		return accountIndex, err
-	case queryByAccountName:
-		accountIndex, err := l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
-		return accountIndex, err
-	case queryByAccountPk:
-		accountIndex, err := l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
+	case queryByL1Address:
+		accountIndex, err := l.svcCtx.MemCache.GetAccountIndexByL1Address(req.Value)
 		return accountIndex, err
 	}
-	return 0, types2.AppErrInvalidParam.RefineError("param by should be account_index|account_name|account_pk")
+	return 0, types2.AppErrInvalidParam.RefineError("param by should be account_index|l1_address")
 }
 
 func (l *GetMergedAccountTxsLogic) appendTxsList(txsResultList []*types.Tx, txList []*tx.Tx) []*types.Tx {
 
 	for _, dbTx := range txList {
 		tx := utils.ConvertTx(dbTx)
-		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
+		tx.L1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.AccountIndex)
 		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 		if tx.ToAccountIndex >= 0 {
-			tx.ToAccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.ToAccountIndex)
+			tx.ToL1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.ToAccountIndex)
 		}
 		txsResultList = append(txsResultList, tx)
 	}

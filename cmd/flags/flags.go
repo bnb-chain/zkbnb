@@ -71,4 +71,54 @@ var (
 		Usage: "Metrics HTTP server listening port",
 		Value: 6060,
 	}
+	CommandFlag = &cli.StringFlag{
+		Name:    "command",
+		Aliases: []string{"m"},
+		Usage:   "command",
+	}
+	RecoveryFromHistoryFlag = &cli.BoolFlag{
+		Name:  "recoveryFromHistory",
+		Value: true,
+		Usage: "read account and nft history record from the database, or read account and nft from the database",
+	}
+	PrivateKeyFlag = &cli.StringFlag{
+		Name:  "privateKey",
+		Usage: "private key",
+		Value: "",
+	}
+	TokenFlag = &cli.StringFlag{
+		Name:  "token",
+		Usage: "token",
+		Value: "",
+	}
+	AmountFlag = &cli.StringFlag{
+		Name:  "amount",
+		Usage: "amount",
+		Value: "",
+	}
+	ProofFlag = &cli.StringFlag{
+		Name:  "proof",
+		Usage: "proof",
+		Value: "",
+	}
+	NftIndexListFlag = &cli.StringFlag{
+		Name:  "nftIndexList",
+		Usage: "nftIndexList",
+		Value: "",
+	}
+	AddressFlag = &cli.StringFlag{
+		Name:  "address",
+		Usage: "address",
+		Value: "",
+	}
+	ProofFolderFlag = &cli.StringFlag{
+		Name:  "proofFolder",
+		Usage: "proofFolder",
+		Value: "",
+	}
+	RevertBlockHeightFlag = &cli.Int64Flag{
+		Name:  "height",
+		Usage: "height",
+		Value: 0,
+	}
 )

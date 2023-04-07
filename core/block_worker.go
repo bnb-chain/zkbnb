@@ -1,65 +1,67 @@
 package core
 
+import "github.com/zeromicro/go-zero/core/logx"
+
 type Worker struct {
 	jobQueue chan interface{}
-	jobFunc  func(interface{})
+	jobFunc  func(interface{}) error
 }
 
 type TxWorker struct {
 	jobQueue chan interface{}
-	jobFunc  func()
+	jobFunc  func() error
 }
 
-func ExecuteTxWorker(queueSize int, workFunc func()) *TxWorker {
+func ExecuteTxWorker(queueSize int, workFunc func() error) *TxWorker {
 	return &TxWorker{
 		jobQueue: make(chan interface{}, queueSize),
 		jobFunc:  workFunc,
 	}
 }
 
-func UpdateAssetTreeWorker(queueSize int, workFunc func(interface{})) *Worker {
+func UpdateAssetTreeWorker(queueSize int, workFunc func(interface{}) error) *Worker {
 	return &Worker{
 		jobQueue: make(chan interface{}, queueSize),
 		jobFunc:  workFunc,
 	}
 }
 
-func UpdateAccountAndNftTreeWorker(queueSize int, workFunc func(interface{})) *Worker {
+func UpdateAccountAndNftTreeWorker(queueSize int, workFunc func(interface{}) error) *Worker {
 	return &Worker{
 		jobQueue: make(chan interface{}, queueSize),
 		jobFunc:  workFunc,
 	}
 }
 
-func PreSaveBlockDataWorker(queueSize int, workFunc func(interface{})) *Worker {
+func PreSaveBlockDataWorker(queueSize int, workFunc func(interface{}) error) *Worker {
 	return &Worker{
 		jobQueue: make(chan interface{}, queueSize),
 		jobFunc:  workFunc,
 	}
 }
 
-func SaveBlockDataWorker(queueSize int, workFunc func(interface{})) *Worker {
+func SaveBlockDataWorker(queueSize int, workFunc func(interface{}) error) *Worker {
 	return &Worker{
 		jobQueue: make(chan interface{}, queueSize),
 		jobFunc:  workFunc,
 	}
 }
 
-func FinalSaveBlockDataWorker(queueSize int, workFunc func(interface{})) *Worker {
+func FinalSaveBlockDataWorker(queueSize int, workFunc func(interface{}) error) *Worker {
 	return &Worker{
 		jobQueue: make(chan interface{}, queueSize),
 		jobFunc:  workFunc,
 	}
 }
 
-func UpdatePoolTxWorker(queueSize int, workFunc func(interface{})) *Worker {
+func UpdatePoolTxWorker(queueSize int, workFunc func(interface{}) error) *Worker {
 	return &Worker{
 		jobQueue: make(chan interface{}, queueSize),
 		jobFunc:  workFunc,
 	}
 }
 
-func SyncAccountToRedisWorker(queueSize int, workFunc func(interface{})) *Worker {
+func SyncAccountToRedisWorker(queueSize int, workFunc func(interface{}) error) *Worker {
 	return &Worker{
 		jobQueue: make(chan interface{}, queueSize),
 		jobFunc:  workFunc,
@@ -93,14 +95,22 @@ func (w *TxWorker) GetQueueSize() int {
 func (w *Worker) Start() {
 	go func() {
 		for workDto := range w.jobQueue {
-			w.jobFunc(workDto)
+			err := w.jobFunc(workDto)
+			if err != nil {
+				logx.Severe(err)
+				panic("do worker error:" + err.Error())
+			}
 		}
 	}()
 }
 
 func (w *TxWorker) Start() {
 	go func() {
-		w.jobFunc()
+		err := w.jobFunc()
+		if err != nil {
+			logx.Severe(err)
+			panic("do tx worker error:" + err.Error())
+		}
 	}()
 }
 

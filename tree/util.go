@@ -21,6 +21,7 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
+	zkbnbtypes "github.com/bnb-chain/zkbnb/types"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/backend/hint"
 	"github.com/ethereum/go-ethereum/common"
@@ -279,7 +280,7 @@ func RollBackTrees(
 }
 
 func ComputeAccountLeafHash(
-	accountNameHash string,
+	l1Address string,
 	pk string,
 	nonce int64,
 	collectionNonce int64,
@@ -287,9 +288,15 @@ func ComputeAccountLeafHash(
 	accountIndex int64,
 	blockHeight int64,
 ) (hashVal []byte, err error) {
-	e0, err := txtypes.FromHexStrToFr(accountNameHash)
-	if err != nil {
-		return nil, err
+	var e0 *fr.Element
+	if l1Address == "" {
+		e0 = &fr.Element{0, 0, 0, 0}
+		e0.SetBytes([]byte{})
+	} else {
+		e0, err = txtypes.FromBytesToFr(common.FromHex(l1Address))
+		if err != nil {
+			return nil, err
+		}
 	}
 	pubKey, err := common2.ParsePubKey(pk)
 	if err != nil {
@@ -303,7 +310,7 @@ func ComputeAccountLeafHash(
 	//hash := poseidon.Poseidon(e0, e1, e2, e3, e4, e5).Bytes()
 	ele := hint.GMimcElements([]*fr.Element{e0, e1, e2, e3, e4, e5})
 	bytes := ele.Bytes()
-	logx.Infof("compute account leaf hash,blockHeight=%d,accountIndex=%d,nonce=%d,collectionNonce=%d,assetRoot=%s,hash=%s", blockHeight, accountIndex, nonce, collectionNonce, common.Bytes2Hex(assetRoot), common.Bytes2Hex(bytes[:]))
+	logx.Infof("compute account leaf hash,blockHeight=%d,accountIndex=%d,l1Address=%s,pk=%s,nonce=%d,collectionNonce=%d,assetRoot=%s,hash=%s", blockHeight, accountIndex, l1Address, pk, nonce, collectionNonce, common.Bytes2Hex(assetRoot), common.Bytes2Hex(bytes[:]))
 	return bytes[:], nil
 }
 
@@ -316,13 +323,13 @@ func ComputeAccountAssetLeafHash(
 ) (hashVal []byte, err error) {
 	balanceBigInt, isValid := new(big.Int).SetString(balance, 10)
 	if !isValid {
-		return nil, errors.New("invalid balance string")
+		return nil, zkbnbtypes.AppErrInvalidBalanceString
 	}
 	e0 := txtypes.FromBigIntToFr(balanceBigInt)
 
 	offerCanceledOrFinalizedBigInt, isValid := new(big.Int).SetString(offerCanceledOrFinalized, 10)
 	if !isValid {
-		return nil, errors.New("invalid balance string")
+		return nil, zkbnbtypes.AppErrInvalidBalanceString
 	}
 	e1 := txtypes.FromBigIntToFr(offerCanceledOrFinalizedBigInt)
 	//hash := poseidon.Poseidon(e0, e1).Bytes()

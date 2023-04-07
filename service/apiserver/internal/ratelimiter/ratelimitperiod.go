@@ -1,7 +1,7 @@
 package ratelimiter
 
 import (
-	"github.com/pkg/errors"
+	"github.com/bnb-chain/zkbnb/types"
 	"github.com/zeromicro/go-zero/core/limit"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -107,11 +107,11 @@ func (r *PeriodRateLimiter) RateLimitControl(limitKey string, periodLimit *limit
 	case limit.Allowed:
 		return nil
 	case limit.HitQuota:
-		return errors.New("Too Many Request!")
+		return types.AppErrTooManyRequest
 	case limit.OverQuota:
-		return errors.New("Too Many Request!")
+		return types.AppErrTooManyRequest
 	}
-	return errors.New("Unknown Rate Limit Status Error!")
+	return types.AppErrUnknownRatelimitStatus
 }
 
 func (r *PeriodRateLimiter) GetGlobalRateLimiter(requestPath string) *limit.PeriodLimit {

@@ -48,12 +48,16 @@ type (
 
 	AccountHistory struct {
 		gorm.Model
-		AccountIndex    int64 `gorm:"index"`
+		AccountIndex    int64  `gorm:"index"`
+		PublicKey       string `gorm:"index"`
+		L1Address       string `gorm:"index"`
 		Nonce           int64
 		CollectionNonce int64
 		AssetInfo       string
 		AssetRoot       string
 		L2BlockHeight   int64 `gorm:"index"`
+		// 0 - registered, no pk; 1 - changed pk
+		Status int
 	}
 )
 

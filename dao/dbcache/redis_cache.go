@@ -14,6 +14,7 @@ import (
 
 var (
 	redisKeyNotExist = errors.New("redis: nil")
+	RedisExpiration  = 15 * time.Minute
 )
 
 type RedisCache struct {

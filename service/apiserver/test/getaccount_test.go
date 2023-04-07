@@ -36,8 +36,7 @@ func (s *ApiServerSuite) TestGetAccount() {
 	if statusCode == http.StatusOK && len(accounts.Accounts) > 0 {
 		tests = append(tests, []testcase{
 			{"found by index", args{"index", strconv.Itoa(int(accounts.Accounts[0].Index))}, 200},
-			{"found by name", args{"name", accounts.Accounts[0].Name}, 200},
-			{"found by pk", args{"pk", accounts.Accounts[0].Pk}, 200},
+			{"found by l1 address", args{"l1_address", accounts.Accounts[0].L1Address}, 200},
 		}...)
 	}
 
@@ -47,7 +46,7 @@ func (s *ApiServerSuite) TestGetAccount() {
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.Pk)
-				assert.NotNil(t, result.Name)
+				assert.NotNil(t, result.L1Address)
 				assert.True(t, result.Nonce >= 0)
 				assert.NotNil(t, result.Assets)
 				fmt.Printf("result: %+v \n", result)

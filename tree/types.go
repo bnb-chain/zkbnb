@@ -22,8 +22,6 @@ import (
 	"github.com/consensys/gnark/backend/hint"
 
 	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/bnb-chain/zkbnb-crypto/merkleTree"
 )
 
 const (
@@ -39,7 +37,6 @@ const (
 )
 
 var (
-	NilHash                 = merkleTree.NilHash
 	NilStateRoot            []byte
 	NilAccountRoot          []byte
 	NilNftRoot              []byte

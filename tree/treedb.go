@@ -2,7 +2,7 @@ package tree
 
 import (
 	"encoding/json"
-	"errors"
+	"github.com/bnb-chain/zkbnb/types"
 	"hash"
 	"strings"
 	"time"
@@ -16,10 +16,6 @@ import (
 )
 
 const defaultBatchReloadSize = 1000
-
-var (
-	ErrUnsupportedDriver = errors.New("unsupported db driver")
-)
 
 type Driver string
 
@@ -166,7 +162,7 @@ func SetupTreeDB(
 		context.TreeDB = db
 		return nil
 	}
-	return ErrUnsupportedDriver
+	return types.TreeErrUnsupportedDriver
 }
 
 func SetNamespace(

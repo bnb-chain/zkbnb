@@ -21,7 +21,11 @@ func Run(configFile string) error {
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
-	m := monitor.NewMonitor(c)
+	m, err := monitor.NewMonitor(c)
+	if err != nil {
+		logx.Severe(err)
+		panic("failed to start monitor service " + err.Error())
+	}
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
