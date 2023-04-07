@@ -58,7 +58,11 @@ func GenerateProof(
 	session string,
 ) (proof groth16.Proof, err error) {
 	// verify CryptoBlock
-	blockWitness, err := circuit.SetBlockWitness(cBlock)
+	bN, err := circuit.ChooseBN(len(cBlock.Txs))
+	if err != nil {
+		return proof, err
+	}
+	blockWitness, err := circuit.SetBlockWitness(cBlock, bN)
 	if err != nil {
 		return proof, err
 	}

@@ -918,6 +918,8 @@ github.com/prometheus/tsdb v0.7.1 h1:YZcsG11NqnK4czYLrWd9mpEuAJIHVQLwdrleYfszMAA
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
 github.com/qct/gnark v0.0.0-20230405120044-a1ea942c0443 h1:O+RCM1mFxQ4EpSekfvhUib4ukvG8ShjNr975Y2TsiPQ=
 github.com/qct/gnark v0.0.0-20230405120044-a1ea942c0443/go.mod h1:RKQzsMKbkBJ/ColFtJsXV4ReoyMKrDdBT6qggs7uu+A=
+github.com/qct/zkbnb-crypto v0.0.0-20230407080902-783f6eb88a40 h1:MOQRprezoJUwN4QHmozFSvRGLthyPA2WhkVKQPllsL0=
+github.com/qct/zkbnb-crypto v0.0.0-20230407080902-783f6eb88a40/go.mod h1:4xkB0KYcyqH0grNhRx2b1A4GiXkFJ1Ah7iVuO5NEiNY=
 github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1 h1:eOCPSifBBQiQD0aGLlAoWoYUdI9aOJLC0zzo8RWAgek=
 github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1/go.mod h1:CHVooyzRRzTqcSUcUKJZlJ5QsOyyS3JPVyML7xU9/uQ=
 github.com/rabbitmq/amqp091-go v1.1.0/go.mod h1:ogQDLSOACsLPsIq0NpbtiifNZi2YOz0VTJ0kHRghqbM=
