@@ -64,8 +64,8 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/felixge/fgprof v0.9.3 // indirect
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.4.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
@@ -167,7 +167,8 @@ require (
 	go.opentelemetry.io/otel/sdk v1.7.0 // indirect
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/automaxprocs v1.5.1 // indirect
-	golang.org/x/crypto v0.1.0 // indirect
+	golang.org/x/crypto v0.6.0 // indirect
+	golang.org/x/exp v0.0.0-20230213192124-5e25df0256eb // indirect
 	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/net v0.6.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
@@ -185,6 +186,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools v2.2.0+incompatible // indirect
+	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
 require (
@@ -207,9 +209,13 @@ require (
 
 replace (
 	github.com/bnb-chain/zkbnb-crypto => github.com/qct/zkbnb-crypto v0.0.0-20230407080902-783f6eb88a40
-	github.com/bnb-chain/zkbnb-eth-rpc => github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230403192823-23498c95979c
-	github.com/bnb-chain/zkbnb-go-sdk => github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230403103820-4062c22def5d
 	github.com/bnb-chain/zkbnb-smt => github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1
 	github.com/consensys/gnark => github.com/qct/gnark v0.0.0-20230405120044-a1ea942c0443
 	github.com/consensys/gnark-crypto => github.com/bnb-chain/gnark-crypto v0.8.1-0.20230403113149-df3525fa8c14
 )
+
+replace github.com/bnb-chain/zkbnb-eth-rpc => github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230403192823-23498c95979c
+
+replace github.com/bnb-chain/zkbnb-go-sdk => github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230403103820-4062c22def5d
+
+//replace github.com/bnb-chain/zkbnb-crypto => github.com/15000785133/zkbnb-crypto v0.0.8-0.20230403144529-4e2e8ffac4bd
