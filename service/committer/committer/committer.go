@@ -615,6 +615,10 @@ func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) error {
 				logx.Error("update tx pool failed:", err)
 				return nil
 			}
+			jsonInfo, err := json.Marshal(updateNftIndexOrCollectionIdList)
+			if err == nil {
+				logx.Infof("update tx pool success,%s", jsonInfo)
+			}
 		}
 		err := c.bc.TxPoolModel.UpdateTxsStatusAndHeightByIds(ids, tx.StatusExecuted, updatePoolTxMap.PendingUpdatePoolTxs[0].BlockHeight)
 		if err != nil {
