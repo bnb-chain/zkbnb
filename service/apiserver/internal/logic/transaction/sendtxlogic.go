@@ -53,6 +53,10 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		return nil, types2.AppErrInternal
 	}
 
+	channelName := s.header.Get("Channel-Name")
+	if len(channelName) > 64 {
+		return nil, types2.AppErrChannelNameTooHigh.RefineError(64)
+	}
 	if s.svcCtx.Config.TxPool.MaxPendingTxCount > 0 && pendingTxCount >= int64(s.svcCtx.Config.TxPool.MaxPendingTxCount) {
 		return nil, types2.AppErrTooManyTxs
 	}
@@ -83,7 +87,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		TxAmount:      types2.NilAssetAmount,
 		NativeAddress: types2.EmptyL1Address,
 
-		ChannelName: s.header.Get("Channel-Name"),
+		ChannelName: channelName,
 		BlockHeight: types2.NilBlockHeight,
 		TxStatus:    tx.StatusPending,
 	}

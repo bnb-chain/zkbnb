@@ -121,6 +121,11 @@ func (e *BaseExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 			} else {
 				pubKey = fromAccount.PublicKey
 			}
+
+			if pubKey == "0000000000000000000000000000000000000000000000000000000000000000" {
+				return types.AppErrInvalidPublicKey
+			}
+
 			err = txInfo.VerifySignature(pubKey)
 			if metrics.VerifySignature != nil {
 				metrics.VerifySignature.Set(float64(time.Since(start).Milliseconds()))
