@@ -18,6 +18,7 @@
 package tree
 
 import (
+	"fmt"
 	"github.com/bnb-chain/zkbnb/types"
 	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -96,16 +97,14 @@ func InitNftTree(
 				})
 			}(int64(i), toNftIndex)
 			if err != nil {
-				logx.Severef("loadNftTreeFromRDB failed:%s", err.Error())
-				panic("loadNftTreeFromRDB failed: " + err.Error())
+				return nil, fmt.Errorf("loadNftTreeFromRDB failed: %s", err.Error())
 			}
 		}
 		pendingAccountItem := make([]bsmt.Item, 0)
 		for i := 0; i < totalTask; i++ {
 			result := <-resultChan
 			if result.err != nil {
-				logx.Severef("reloadNftTree failed:%s", result.err.Error())
-				panic("reloadNftTree failed: " + result.err.Error())
+				return nil, fmt.Errorf("reloadNftTree failed: %s", err.Error())
 			}
 			pendingAccountItem = append(pendingAccountItem, result.pendingAccountItem...)
 		}
@@ -199,7 +198,6 @@ func NftAssetToNode(nftAsset *nft.L2Nft) (hashVal []byte, err error) {
 		nftAsset.NftContentHash,
 		nftAsset.RoyaltyRate,
 		nftAsset.CollectionId,
-		nftAsset.NftContentType,
 		nftAsset.NftIndex,
 		nftAsset.L2BlockHeight,
 	)

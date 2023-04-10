@@ -163,7 +163,7 @@ func NewProver(c config.Config) (*Prover, error) {
 		prover.SessionNames[i] = c.KeyPath[i]
 	}
 
-	w, err := prover.BlockWitnessModel.GetLatestReceivedBlockWitness()
+	w, err := prover.BlockWitnessModel.GetLatestReceivedBlockWitness(prover.OptionalBlockSizes)
 	var wHeight int64
 	if err != nil {
 		if err == types.DbErrNotFound {
@@ -211,7 +211,7 @@ func (p *Prover) ProveBlock() error {
 		defer lock.Release()
 
 		// Fetch unproved block witness.
-		blockWitness, err := p.BlockWitnessModel.GetLatestBlockWitness()
+		blockWitness, err := p.BlockWitnessModel.GetLatestBlockWitness(p.OptionalBlockSizes)
 		if err != nil {
 			return nil, err
 		}

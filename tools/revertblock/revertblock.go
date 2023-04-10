@@ -15,6 +15,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 	"math/big"
+	"sort"
 	"time"
 )
 
@@ -61,10 +62,12 @@ func RevertCommittedBlocks(configFile string, height int64) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to create authClient error, %v", err)
 	}
-	zkbnbInstance, err := zkbnb.LoadZkBNBInstance(cli, rollupAddress.Value)
+
+	zkBNBClient, err := zkbnb.NewZkBNBClient(cli, rollupAddress.Value)
 	if err != nil {
-		return fmt.Errorf("failed to load ZkBNB instance, %v", err)
+		return fmt.Errorf("failed to initiate ZkBNBClient instance, %v", err)
 	}
+	zkBNBClient.RevertConstructor = authCliRevertBlock
 
 	storedBlockInfoList := make([]zkbnb.StorageStoredBlockInfo, 0)
 	for height <= endHeight {
@@ -80,6 +83,10 @@ func RevertCommittedBlocks(configFile string, height int64) (err error) {
 		height++
 	}
 
+	sort.Slice(storedBlockInfoList, func(i, j int) bool {
+		return storedBlockInfoList[i].BlockNumber > storedBlockInfoList[j].BlockNumber
+	})
+
 	var gasPrice *big.Int
 	if c.ChainConfig.GasPrice > 0 {
 		gasPrice = big.NewInt(int64(c.ChainConfig.GasPrice))
@@ -89,9 +96,7 @@ func RevertCommittedBlocks(configFile string, height int64) (err error) {
 			return fmt.Errorf("failed to fetch gas price: %v", err)
 		}
 	}
-	txHash, err := zkbnb.RevertBlocks(
-		cli, authCliRevertBlock,
-		zkbnbInstance,
+	txHash, err := zkBNBClient.RevertBlocks(
 		storedBlockInfoList,
 		gasPrice,
 		c.ChainConfig.GasLimit)

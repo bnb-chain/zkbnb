@@ -27,6 +27,10 @@ SECURITY_COUNCIL_MEMBERS_NUMBER_2=0x0000000000000000000000000000000000000000
 SECURITY_COUNCIL_MEMBERS_NUMBER_3=0x0000000000000000000000000000000000000000
 # validator config, split by `,` the address of COMMIT_BLOCK_PRIVATE_KEY  and the address of VERIFY_BLOCK_PRIVATE_KEY,
 VALIDATORS=
+# treasury account address, the default value is the first validator's address
+TREASURY_ACCOUNT_ADDRESS=
+# gas account address, the default value is the second validator's address
+GAS_ACCOUNT_ADDRESS=
 ZKBNB_OPTIONAL_BLOCK_SIZES=1,10
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
@@ -96,6 +100,8 @@ sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_1=.*/SECURITY_COUNCIL_MEMBERS_NUMBE
 sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_2=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_2=${SECURITY_COUNCIL_MEMBERS_NUMBER_2}/" .env
 sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_3=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_3=${SECURITY_COUNCIL_MEMBERS_NUMBER_3}/" .env
 sed -i -e "s/VALIDATORS=.*/VALIDATORS=${VALIDATORS}/" .env
+sed -i -e "s/TREASURY_ACCOUNT_ADDRESS=.*/TREASURY_ACCOUNT_ADDRESS=${TREASURY_ACCOUNT_ADDRESS}/" .env
+sed -i -e "s/GAS_ACCOUNT_ADDRESS=.*/GAS_ACCOUNT_ADDRESS=${GAS_ACCOUNT_ADDRESS}/" .env
 yarn install
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
@@ -269,14 +275,24 @@ CacheRedis:
 
 ChainConfig:
   NetworkRPCSysConfigName: "${NETWORK_RPC_SYS_CONFIG_NAME}"
-  #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
+  #NetworkRPCSysConfigName: LocalTestNetworkRpc
   ConfirmBlocksCount: 0
+  SendSignatureMode: PrivateKeySignMode
   MaxWaitingTime: 120
   MaxBlockCount: 4
-  CommitBlockSk: "${COMMIT_BLOCK_PRIVATE_KEY}"
-  VerifyBlockSk: "${VERIFY_BLOCK_PRIVATE_KEY}"
   GasLimit: 5000000
   GasPrice: 0
+
+Apollo:
+  AppID:             zkbnb-cloud
+  Cluster:           default
+  ApolloIp:          http://internal-tf-cm-test-apollo-config-alb-2119591301.ap-northeast-1.elb.amazonaws.com:9028
+  Namespace:         applicationDev
+  IsBackupConfig:    true
+
+AuthConfig:
+  CommitBlockSk: "${COMMIT_BLOCK_PRIVATE_KEY}"
+  VerifyBlockSk: "${VERIFY_BLOCK_PRIVATE_KEY}"
 
 TreeDB:
   Driver: memorydb

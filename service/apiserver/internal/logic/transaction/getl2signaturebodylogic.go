@@ -32,6 +32,11 @@ func (l *GetL2SignatureBodyLogic) GetL2SignatureBody(req *types.ReqSendTx) (resp
 		return nil, err
 	}
 
+	err = signatureBody.Validate()
+	if err != nil {
+		return nil, err
+	}
+
 	resp = &types.SignBody{
 		SignBody: signatureBody.GetL1SignatureBody(),
 	}

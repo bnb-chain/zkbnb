@@ -40,6 +40,13 @@ func NewFullExitNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}, nil
 }
 
+func NewFullExitNftExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &FullExitNftExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.FullExitNftTxInfo),
+	}, nil
+}
+
 func (e *FullExitNftExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo

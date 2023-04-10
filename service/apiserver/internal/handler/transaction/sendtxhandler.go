@@ -20,8 +20,7 @@ func SendTxHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			response.Handle(w, nil, bizErr)
 			return
 		}
-
-		l := transaction.NewSendTxLogic(r.Context(), svcCtx)
+		l := transaction.NewSendTxLogic(r.Context(), svcCtx, r.Header)
 		resp, err := l.SendTx(&req)
 		svcCtx.SendTxMetrics.Inc()
 		response.Handle(w, resp, err)

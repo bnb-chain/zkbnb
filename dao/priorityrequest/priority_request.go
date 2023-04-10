@@ -39,6 +39,7 @@ type (
 		UpdateHandledPriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error)
 		CreatePriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error)
 		GetPriorityRequestsByL2TxHash(txHash string) (tx *PriorityRequest, err error)
+		GetPriorityRequestsByTxTypes(requestId int64, txTypes []int64) (txs []*PriorityRequest, err error)
 	}
 
 	defaultPriorityRequestModel struct {
@@ -159,4 +160,15 @@ func (m *defaultPriorityRequestModel) GetPriorityRequestsByL2TxHash(txHash strin
 	}
 
 	return tx, nil
+}
+
+func (m *defaultPriorityRequestModel) GetPriorityRequestsByTxTypes(requestId int64, txTypes []int64) (txs []*PriorityRequest, err error) {
+	dbTx := m.DB.Table(m.table).Where("tx_type in ? and request_id>=?", txTypes, requestId).Limit(100).Find(&txs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return txs, nil
 }

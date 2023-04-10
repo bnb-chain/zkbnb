@@ -1,6 +1,7 @@
 package committer
 
 import (
+	"github.com/bnb-chain/zkbnb/types"
 	"github.com/robfig/cron/v3"
 	"time"
 
@@ -21,6 +22,8 @@ func Run(configFile string) error {
 	committer, err := committer.NewCommitter(&c)
 	if err != nil {
 		logx.Severef("failed to create committer instance, %v", err)
+		// If the rollback fails, wait 1 minute
+		time.Sleep(1 * time.Minute)
 		panic("failed to create committer instance, err:" + err.Error())
 	}
 	cronJob := cron.New(cron.WithChain(
@@ -45,7 +48,9 @@ func Run(configFile string) error {
 		logx.Info("========================= update NFT index =========================")
 		err = committer.SyncNftIndexServer()
 		if err != nil {
-			logx.Severef("failed to update NFT index, %v", err)
+			if err != types.DbErrNotFound {
+				logx.Severef("failed to update NFT index, %v", err)
+			}
 		}
 	})
 	if err != nil {
@@ -57,7 +62,9 @@ func Run(configFile string) error {
 		logx.Info("========================= send message to ipns =========================")
 		err = committer.SendIpfsServer()
 		if err != nil {
-			logx.Severef("failed to send message to ipns, %v", err)
+			if err != types.DbErrNotFound {
+				logx.Severef("failed to send message to ipns, %v", err)
+			}
 		}
 	})
 	if err != nil {
@@ -69,7 +76,9 @@ func Run(configFile string) error {
 		logx.Info("========================= send message to refresh ipns =========================")
 		err = committer.RefreshServer()
 		if err != nil {
-			logx.Severef("failed to send message to refresh ipns, %v", err)
+			if err != types.DbErrNotFound {
+				logx.Severef("failed to send message to refresh ipns, %v", err)
+			}
 		}
 	})
 	if err != nil {
@@ -87,6 +96,10 @@ func Run(configFile string) error {
 	})
 
 	logx.Info("committer is starting......")
-	committer.Run()
+	err = committer.Run()
+	if err != nil {
+		logx.Severef("failed to committer.run, %v", err)
+		panic("failed to committer.run, err:" + err.Error())
+	}
 	return nil
 }

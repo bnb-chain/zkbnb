@@ -18,6 +18,10 @@ type Processor interface {
 	Process(tx *tx.Tx) error
 }
 
+type ProcessorForDesert interface {
+	Process(txInfo txtypes.TxInfo) error
+}
+
 type CommitProcessor struct {
 	bc *BlockChain
 }
@@ -80,27 +84,23 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	err = executor.ApplyTransaction()
 	metrics.ExecuteTxApplyTransactionMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
-		logx.Severef("failed to apply transaction, %v", err)
-		panic("failed to apply transaction, err:" + err.Error())
+		return fmt.Errorf("failed to apply transaction, %v", err)
 	}
 	start = time.Now()
 	err = executor.GeneratePubData()
 	metrics.ExecuteTxGeneratePubDataMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
-		logx.Severef("failed to generate PubData, %v", err)
-		panic("failed to generate PubData, err:" + err.Error())
+		return fmt.Errorf("failed to generate PubData, %v", err)
 	}
 	start = time.Now()
 	tx, err = executor.GetExecutedTx(false)
 	metrics.ExecuteTxGetExecutedTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		return err
 	}
 	err = executor.Finalize()
 	if err != nil {
-		logx.Severef("failed to get executed transaction, %v", err)
-		panic("failed to get executed transaction, err:" + err.Error())
+		return fmt.Errorf("failed to get executed transaction, %v", err)
 	}
 	tx.CreatedAt = time.Now()
 	p.bc.Statedb.Txs = append(p.bc.Statedb.Txs, tx)
@@ -112,8 +112,18 @@ type APIProcessor struct {
 	bc *BlockChain
 }
 
+type DesertProcessor struct {
+	bc *BlockChain
+}
+
 func NewAPIProcessor(bc *BlockChain) Processor {
 	return &APIProcessor{
+		bc: bc,
+	}
+}
+
+func NewDesertProcessor(bc *BlockChain) ProcessorForDesert {
+	return &DesertProcessor{
 		bc: bc,
 	}
 }
@@ -137,6 +147,30 @@ func (p *APIProcessor) Process(tx *tx.Tx) error {
 	if err != nil {
 		logx.Error("fail to GetExecutedTx:", err)
 		return mappingExecutedErrors(err)
+	}
+	return nil
+}
+
+func (p *DesertProcessor) Process(txInfo txtypes.TxInfo) error {
+	executor, err := executor.NewTxExecutorForDesert(p.bc, txInfo)
+	if err != nil {
+		return fmt.Errorf("new tx executor failed")
+	}
+
+	err = executor.Prepare()
+	if err != nil {
+		logx.Error("fail to prepare:", err)
+		return mappingPrepareErrors(err)
+	}
+
+	err = executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+
+	err = executor.Finalize()
+	if err != nil {
+		return err
 	}
 	return nil
 }

@@ -11,8 +11,8 @@ const docTemplate = `{
 		"description": "Public APIs for zkbnb",
 		"version": "1.0"
 	},
+	"host": "testapi.zkbnbchain.org",
 	"schemes": [
-		"http",
 		"https"
 	],
 	"consumes": [
@@ -68,7 +68,7 @@ const docTemplate = `{
 		},
 		"/api/v1/account": {
 			"get": {
-				"summary": "Get account by account's name, index or pk",
+				"summary": "Get account by account's l1_address, index",
 				"operationId": "GetAccount",
 				"responses": {
 					"200": {
@@ -79,12 +79,12 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "by",
-						"in": "query",
-						"required": true,
-						"type": "string",
-						"description": "The query condition type to get the account data, and it could be account name, account index or account public key."
-					},
+					"name": "by",
+					"in": "query",
+					"required": true,
+					"type": "string",
+					"description": "The query condition type to get the account data, and it could be l1_address or account index."
+				},
 					{
 						"name": "value",
 						"in": "query",
@@ -112,12 +112,12 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "by",
-						"in": "query",
-						"required": true,
-						"type": "string",
-						"description": "The query condition type to get the nft account data, and it could be account name, account index or account public key."
-					},
+					"name": "by",
+					"in": "query",
+					"required": true,
+					"type": "string",
+					"description": "The query condition type to get the nft account data, and it could be l1_address or account index."
+				},
 					{
 						"name": "value",
 						"in": "query",
@@ -161,12 +161,12 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "by",
-						"in": "query",
-						"required": true,
-						"type": "string",
-						"description": "The query condition type to get the pending transactions belonging to the account, and it could be account name, account index or account public key."
-					},
+					"name": "by",
+					"in": "query",
+					"required": true,
+					"type": "string",
+					"description": "The query condition type to get the pending transactions belonging to the account, and it could be l1_address or account index"
+				},
 					{
 						"name": "value",
 						"in": "query",
@@ -202,12 +202,12 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "by",
-						"in": "query",
-						"required": true,
-						"type": "string",
-						"description": "The query condition type to get the transactions belonging to the account, and it could be account name, account index or account public key."
-					},
+					"name": "by",
+					"in": "query",
+					"required": true,
+					"type": "string",
+					"description": "The query condition type to get the transactions belonging to the account, and it could be l1_address or account index."
+				},
 					{
 						"name": "value",
 						"in": "query",
@@ -259,13 +259,13 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "offset",
-						"in": "query",
-						"required": true,
-						"type": "integer",
-						"format": "int32",
-						"description": "The query offset to get some specific range of the account list data."
-					},
+					"name": "offset",
+					"in": "query",
+					"required": true,
+					"type": "integer",
+					"format": "int32",
+					"description": "The query offset to get some specific range of the account list data."
+				},
 					{
 						"name": "limit",
 						"in": "query",
@@ -294,12 +294,12 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "by",
-						"in": "query",
-						"required": true,
-						"type": "string",
-						"description": "The query condition type to get the asset data, and it could be asset id or asset symbol."
-					},
+					"name": "by",
+					"in": "query",
+					"required": true,
+					"type": "string",
+					"description": "The query condition type to get the asset data, and it could be asset id or asset symbol."
+				},
 					{
 						"name": "value",
 						"in": "query",
@@ -327,13 +327,13 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "offset",
-						"in": "query",
-						"required": true,
-						"type": "integer",
-						"format": "int32",
-						"description": "The query offset to get some specific range of the asset list data."
-					},
+					"name": "offset",
+					"in": "query",
+					"required": true,
+					"type": "integer",
+					"format": "int32",
+					"description": "The query offset to get some specific range of the asset list data."
+				},
 					{
 						"name": "limit",
 						"in": "query",
@@ -362,12 +362,12 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "by",
-						"in": "query",
-						"required": true,
-						"type": "string",
-						"description": "The query condition type to get the block data, and it could be block height or block commitment."
-					},
+					"name": "by",
+					"in": "query",
+					"required": true,
+					"type": "string",
+					"description": "The query condition type to get the block data, and it could be block height or block commitment."
+				},
 					{
 						"name": "value",
 						"in": "query",
@@ -395,12 +395,12 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "by",
-						"in": "query",
-						"required": true,
-						"type": "string",
-						"description": "The query condition type to get the transactions in the specified block, and it could be block height or block commitment."
-					},
+					"name": "by",
+					"in": "query",
+					"required": true,
+					"type": "string",
+					"description": "The query condition type to get the transactions in the specified block, and it could be block height or block commitment."
+				},
 					{
 						"name": "value",
 						"in": "query",
@@ -428,13 +428,13 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "offset",
-						"in": "query",
-						"required": true,
-						"type": "integer",
-						"format": "int32",
-						"description": "The query offset to get some specific range of the block data."
-					},
+					"name": "offset",
+					"in": "query",
+					"required": true,
+					"type": "integer",
+					"format": "int32",
+					"description": "The query offset to get some specific range of the block data."
+				},
 					{
 						"name": "limit",
 						"in": "query",
@@ -480,13 +480,13 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "offset",
-						"in": "query",
-						"required": true,
-						"type": "integer",
-						"format": "int32",
-						"description": "The query offset to get some specific range of the executed transactions data."
-					},
+					"name": "offset",
+					"in": "query",
+					"required": true,
+					"type": "integer",
+					"format": "int32",
+					"description": "The query offset to get some specific range of the executed transactions data."
+				},
 					{
 						"name": "limit",
 						"in": "query",
@@ -540,13 +540,13 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "asset_id",
-						"in": "query",
-						"required": true,
-						"type": "integer",
-						"format": "int32",
-						"description": "The asset id query condition for querying gas fee configuration."
-					},
+					"name": "asset_id",
+					"in": "query",
+					"required": true,
+					"type": "integer",
+					"format": "int32",
+					"description": "The asset id query condition for querying gas fee configuration."
+				},
 					{
 						"name": "tx_type",
 						"in": "query",
@@ -733,12 +733,12 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "by",
-						"in": "query",
-						"required": true,
-						"type": "string",
-						"description": "The query condition type to get the transactions belonging to the account, and it could be account name, account index or account public key."
-					},
+					"name": "by",
+					"in": "query",
+					"required": true,
+					"type": "string",
+					"description": "The query condition type to get the transactions belonging to the account, and it could be l1_address or account index."
+				},
 					{
 						"name": "value",
 						"in": "query",
@@ -773,7 +773,7 @@ const docTemplate = `{
 				],
 				"requestBody": {},
 				"tags": [
-					"transaction"
+					"Transaction"
 				]
 			}
 		},
@@ -842,13 +842,13 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "offset",
-						"in": "query",
-						"required": true,
-						"type": "integer",
-						"format": "int32",
-						"description": "The query offset to get some specific range of the pending transactions data."
-					},
+					"name": "offset",
+					"in": "query",
+					"required": true,
+					"type": "integer",
+					"format": "int32",
+					"description": "The query offset to get some specific range of the pending transactions data."
+				},
 					{
 						"name": "limit",
 						"in": "query",
@@ -877,13 +877,13 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "from_block_height",
-						"in": "query",
-						"required": true,
-						"type": "integer",
-						"format": "int64",
-						"description": "The starting block height for performing the rollback operation."
-					},
+					"name": "from_block_height",
+					"in": "query",
+					"required": true,
+					"type": "integer",
+					"format": "int64",
+					"description": "The starting block height for performing the rollback operation."
+				},
 					{
 						"name": "offset",
 						"in": "query",
@@ -903,7 +903,7 @@ const docTemplate = `{
 				],
 				"requestBody": {},
 				"tags": [
-					"info"
+					"Info"
 				]
 			}
 		},
@@ -997,13 +997,13 @@ const docTemplate = `{
 					}
 				},
 				"parameters": [{
-						"name": "offset",
-						"in": "query",
-						"required": true,
-						"type": "integer",
-						"format": "int32",
-						"description": "The query offset to get some specific range of the packed transactions data."
-					},
+					"name": "offset",
+					"in": "query",
+					"required": true,
+					"type": "integer",
+					"format": "int32",
+					"description": "The query offset to get some specific range of the packed transactions data."
+				},
 					{
 						"name": "limit",
 						"in": "query",

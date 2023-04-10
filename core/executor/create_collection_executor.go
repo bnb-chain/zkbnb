@@ -33,6 +33,13 @@ func NewCreateCollectionExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) 
 	}, nil
 }
 
+func NewCreateCollectionExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &CreateCollectionExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.CreateCollectionTxInfo),
+	}, nil
+}
+
 func (e *CreateCollectionExecutor) Prepare() error {
 	txInfo := e.TxInfo
 

@@ -14,14 +14,16 @@ type Config struct {
 		LogLevel         logger.LogLevel `json:",optional"`
 	}
 	ChainConfig struct {
-		StartL1BlockHeight        int64
-		EndL2BlockHeight          int64
-		ConfirmBlocksCount        uint64
-		MaxHandledBlocksCount     int64
-		KeptHistoryBlocksCount    int64 // KeptHistoryBlocksCount define the count of blocks to keep in table, old blocks will be cleaned
-		BscTestNetRpc             string
-		ZkBnbContractAddress      string
-		GovernanceContractAddress string
+		StartL1BlockHeight               int64
+		ConfirmBlocksCount               uint64
+		MaxHandledBlocksCount            int64
+		MaxCancelOutstandingDepositCount int64
+		KeptHistoryBlocksCount           int64 // KeptHistoryBlocksCount define the count of blocks to keep in table, old blocks will be cleaned
+		BscTestNetRpc                    string
+		ZkBnbContractAddress             string
+		GovernanceContractAddress        string
+		GasLimit                         uint64
+		PrivateKey                       string `json:",optional"`
 	}
 	CacheConfig statedb.CacheConfig `json:",optional"`
 

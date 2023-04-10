@@ -33,6 +33,14 @@ func NewDepositExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 		TxInfo:       txInfo,
 	}, nil
 }
+
+func NewDepositExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &DepositExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.DepositTxInfo),
+	}, nil
+}
+
 func (e *DepositExecutor) SetTxInfo(info *txtypes.DepositTxInfo) {
 	e.TxInfo = info
 }
@@ -48,7 +56,7 @@ func (e *DepositExecutor) Prepare() error {
 		return err
 	}
 	if err == types.AppErrAccountNotFound {
-		if !e.isExodusExit {
+		if !e.isDesertExit {
 			if e.tx.Rollback == false {
 				nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
 				txInfo.AccountIndex = nextAccountIndex
@@ -199,7 +207,7 @@ func (e *DepositExecutor) Finalize() error {
 	if e.IsCreateAccount {
 		bc := e.bc
 		txInfo := e.TxInfo
-		if !e.isExodusExit {
+		if !e.isDesertExit {
 			bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
 		}
 		accountInfo := e.GetCreatingAccount()

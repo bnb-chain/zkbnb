@@ -56,7 +56,7 @@ func (c *CacheConfig) sanitize() *CacheConfig {
 }
 
 type StateDB struct {
-	DryRun bool
+	IsFromApi bool
 	// State cache
 	*StateCache
 	chainDb    *ChainDB
@@ -170,7 +170,7 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 	}, nil
 }
 
-func NewStateDBForExodusExit(redisCache dbcache.Cache, cacheConfig *CacheConfig, chainDb *ChainDB) (*StateDB, error) {
+func NewStateDBForDesertExit(redisCache dbcache.Cache, cacheConfig *CacheConfig, chainDb *ChainDB) (*StateDB, error) {
 	accountCache, err := lru.New(cacheConfig.AccountCacheSize)
 	if err != nil {
 		logx.Error("init account cache failed:", err)
@@ -204,7 +204,7 @@ func NewStateDBForExodusExit(redisCache dbcache.Cache, cacheConfig *CacheConfig,
 	}
 
 	return &StateDB{
-		DryRun:         false,
+		IsFromApi:      false,
 		redisCache:     redisCache,
 		chainDb:        chainDb,
 		AccountCache:   accountCache,
@@ -233,7 +233,7 @@ func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, cha
 	}
 
 	return &StateDB{
-		DryRun:         true,
+		IsFromApi:      true,
 		redisCache:     redisCache,
 		chainDb:        chainDb,
 		AccountCache:   accountCache,
@@ -504,7 +504,7 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 		if creatingAccountIndex == accountIndex {
 			continue
 		}
-		if s.DryRun {
+		if s.IsFromApi {
 			account := &account.Account{}
 			redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), account)
 			if err == nil && redisAccount != nil {
@@ -540,7 +540,7 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 }
 
 func (s *StateDB) PrepareNft(nftIndex int64) (*nft.L2Nft, error) {
-	if s.DryRun {
+	if s.IsFromApi {
 		n := &nft.L2Nft{}
 		redisNft, err := s.redisCache.Get(context.Background(), dbcache.NftKeyByIndex(nftIndex), n)
 		if err == nil && redisNft != nil {
@@ -563,7 +563,8 @@ type treeUpdateResp struct {
 	err   error
 }
 
-func (s *StateDB) UpdateAssetTree(cleanDirty bool, stateDataCopy *StateDataCopy) error {
+// UpdateAssetTree compute account asset hash, commit asset smt,compute account leaf hash, compute nft leaf hash
+func (s *StateDB) UpdateAssetTree(stateDataCopy *StateDataCopy) error {
 	taskNum := 0
 	resultChan := make(chan *treeUpdateResp, 1)
 	defer close(resultChan)
@@ -614,11 +615,6 @@ func (s *StateDB) UpdateAssetTree(cleanDirty bool, stateDataCopy *StateDataCopy)
 		}
 	}
 
-	if cleanDirty {
-		stateDataCopy.StateCache.dirtyAccountsAndAssetsMap = make(map[int64]map[int64]bool, 0)
-		stateDataCopy.StateCache.dirtyNftMap = make(map[int64]bool, 0)
-	}
-
 	pendingAccountItem := make([]bsmt.Item, 0, len(stateDataCopy.StateCache.dirtyAccountsAndAssetsMap))
 	pendingNftItem := make([]bsmt.Item, 0, len(stateDataCopy.StateCache.dirtyNftMap))
 	for i := 0; i < taskNum; i++ {
@@ -639,10 +635,12 @@ func (s *StateDB) UpdateAssetTree(cleanDirty bool, stateDataCopy *StateDataCopy)
 	return nil
 }
 
+// SetAccountAndNftTree multi set account tree with version,multi set nft tree with version
 func (s *StateDB) SetAccountAndNftTree(stateDataCopy *StateDataCopy) error {
 	start := time.Now()
 	resultChan := make(chan *treeUpdateResp, 1)
 	defer close(resultChan)
+
 	err := gopool.Submit(func() {
 		resultChan <- &treeUpdateResp{
 			role: accountTreeRole,
@@ -652,6 +650,7 @@ func (s *StateDB) SetAccountAndNftTree(stateDataCopy *StateDataCopy) error {
 	if err != nil {
 		return err
 	}
+
 	err = gopool.Submit(func() {
 		resultChan <- &treeUpdateResp{
 			role: nftTreeRole,
@@ -668,24 +667,27 @@ func (s *StateDB) SetAccountAndNftTree(stateDataCopy *StateDataCopy) error {
 			return fmt.Errorf("update %s tree failed, %v", result.role, result.err)
 		}
 	}
+
 	metrics.AccountTreeMultiSetGauge.Set(float64(time.Since(start).Milliseconds()))
 	accountTreeRoot := s.AccountTree.Root()
 	nftTreeRoot := s.NftTree.Root()
 	hFunc := poseidon.NewPoseidon()
 	hFunc.Write(accountTreeRoot)
 	hFunc.Write(nftTreeRoot)
-	logx.Infof("committer account tree root=%s,nft tree root=%s", common.Bytes2Hex(accountTreeRoot), common.Bytes2Hex(nftTreeRoot))
+	logx.Infof("committer smt blockHeight=%d, account tree root=%s,nft tree root=%s", stateDataCopy.CurrentBlock.BlockHeight, common.Bytes2Hex(accountTreeRoot), common.Bytes2Hex(nftTreeRoot))
 	stateDataCopy.StateCache.StateRoot = common.Bytes2Hex(hFunc.Sum(nil))
 	return nil
 }
 
+// SetAndCommitAssetTree compute account asset hash, commit asset smt,compute account leaf hash
 func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stateCopy *StateDataCopy) (int64, []byte, error) {
 	start := time.Now()
 	account, exist := stateCopy.StateCache.GetPendingAccount(accountIndex)
 	metrics.AccountTreeTimeGauge.WithLabelValues("cache_get_account").Set(float64(time.Since(start).Milliseconds()))
 	if !exist {
-		logx.Infof("update account tree failed,not exist accountIndex=%s", accountIndex)
+		return accountIndex, nil, fmt.Errorf("update account tree failed,not exist accountIndex=%d", accountIndex)
 	}
+
 	start = time.Now()
 	pendingUpdateAssetItem := make([]bsmt.Item, 0, len(assets))
 	metrics.AccountTreeTimeGauge.WithLabelValues("assets_count").Set(float64(len(assets)))
@@ -724,6 +726,7 @@ func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stat
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("unable to compute account leaf: %v", err)
 	}
+
 	asset := s.AccountAssetTrees.Get(accountIndex)
 	prunedVersion := bsmt.Version(tree.GetAssetLatestVerifiedHeight(s.GetPrunedBlockHeight(), asset.Versions()))
 	latestVersion := asset.LatestVersion()
@@ -734,22 +737,18 @@ func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stat
 	logx.Infof("asset.CommitWithNewVersion:blockHeight=%d,accountIndex=%d,prunedVersion=%d:", stateCopy.CurrentBlock.BlockHeight, accountIndex, prunedVersion)
 	ver, err := asset.CommitWithNewVersion(&prunedVersion, &newVersion)
 	if err != nil {
-		logx.Error("asset.Commit failed:", err)
 		return accountIndex, nil, fmt.Errorf("unable to commit asset tree [%d], tree ver: %d, prune ver: %d,error:%s", accountIndex, ver, prunedVersion, err.Error())
 	}
-	assetOne, err := asset.Get(0, nil)
-	if err == nil {
-		logx.Infof("asset.CommitWithNewVersion:blockHeight=%d,accountIndex=%d,assetId=0,hash=%s:", stateCopy.CurrentBlock.BlockHeight, accountIndex, common.Bytes2Hex(assetOne))
-	}
+
 	return accountIndex, nAccountLeafHash, nil
 }
 
+//compute nft leaf hash
 func (s *StateDB) computeNftLeafHash(nftIndex int64, stateCopy *StateDataCopy) (int64, []byte, error) {
 	start := time.Now()
 	nftInfo, exist := stateCopy.StateCache.GetPendingNft(nftIndex)
 	if !exist {
-		logx.Error("computeNftLeafHash failed,No NFT found in GetPendingNft nftIndex=%s", nftIndex)
-		return nftIndex, nil, fmt.Errorf("computeNftLeafHash failed,No NFT found in GetPendingNft nftIndex=%v", nftIndex)
+		return nftIndex, nil, fmt.Errorf("computeNftLeafHash failed,No NFT found in GetPendingNft nftIndex=%d", nftIndex)
 	}
 	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
 		nftInfo.CreatorAccountIndex,
@@ -757,7 +756,6 @@ func (s *StateDB) computeNftLeafHash(nftIndex int64, stateCopy *StateDataCopy) (
 		nftInfo.NftContentHash,
 		nftInfo.RoyaltyRate,
 		nftInfo.CollectionId,
-		nftInfo.NftContentType,
 		nftInfo.NftIndex,
 		stateCopy.CurrentBlock.BlockHeight,
 	)

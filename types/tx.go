@@ -97,20 +97,16 @@ func GetOnChainTypes() []int64 {
 }
 
 const (
-	TxTypeBytesSize          = 1
-	AddressBytesSize         = 20
-	AccountIndexBytesSize    = 4
-	AccountNameBytesSize     = 20
-	AccountNameHashBytesSize = 32
-	PubkeyBytesSize          = 32
-	AssetIdBytesSize         = 2
-	StateAmountBytesSize     = 16
-	NftIndexBytesSize        = 5
-	NftTokenIdBytesSize      = 32
-	NftContentHashBytesSize  = 32
-	FeeRateBytesSize         = 2
-	CollectionIdBytesSize    = 2
-	NftContentTypeBytesSize  = 1
+	TxTypeBytesSize         = 1
+	AddressBytesSize        = 20
+	AccountIndexBytesSize   = 4
+	AssetIdBytesSize        = 2
+	StateAmountBytesSize    = 16
+	NftIndexBytesSize       = 5
+	NftContentHashBytesSize = 32
+	FeeRateBytesSize        = 2
+	CollectionIdBytesSize   = 2
+	NftContentTypeBytesSize = 1
 
 	DepositPubDataSize = TxTypeBytesSize + AccountIndexBytesSize +
 		AddressBytesSize + AssetIdBytesSize + StateAmountBytesSize

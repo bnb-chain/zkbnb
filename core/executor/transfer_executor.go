@@ -32,11 +32,18 @@ func NewTransferExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}, nil
 }
 
+func NewTransferExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &TransferExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.TransferTxInfo),
+	}, nil
+}
+
 func (e *TransferExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo
 	toL1Address := txInfo.ToL1Address
-	if !e.isExodusExit {
+	if !e.isDesertExit {
 		txInfo.ToAccountIndex = types.NilAccountIndex
 	}
 	toAccount, err := bc.StateDB().GetAccountByL1Address(toL1Address)
@@ -44,8 +51,8 @@ func (e *TransferExecutor) Prepare() error {
 		return err
 	}
 	if err == types.AppErrAccountNotFound {
-		if !e.isExodusExit {
-			if !e.bc.StateDB().DryRun {
+		if !e.isDesertExit {
+			if !e.bc.StateDB().IsFromApi {
 				if e.tx.Rollback == false {
 					nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
 					txInfo.ToAccountIndex = nextAccountIndex
@@ -316,7 +323,7 @@ func (e *TransferExecutor) Finalize() error {
 	if e.IsCreateAccount {
 		bc := e.bc
 		txInfo := e.TxInfo
-		if !e.isExodusExit {
+		if !e.isDesertExit {
 			bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.ToAccountIndex, bc.CurrentBlock().BlockHeight)
 		}
 		accountInfo := e.GetCreatingAccount()

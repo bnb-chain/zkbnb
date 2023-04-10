@@ -27,14 +27,16 @@ import (
 )
 
 const (
-	MaxCommitterInterval = 60 * 1
+	MaxPackedInterval = 60 * 1
 )
 
 type Config struct {
 	core.ChainConfig
 
 	BlockConfig struct {
-		OptionalBlockSizes    []int
+		OptionalBlockSizes []int
+		//second
+		MaxPackedInterval     int  `json:",optional"`
 		SaveBlockDataPoolSize int  `json:",optional"`
 		RollbackOnly          bool `json:",optional"`
 	}
@@ -43,10 +45,11 @@ type Config struct {
 }
 
 type Committer struct {
-	running            bool
-	config             *Config
-	maxTxsPerBlock     int
-	optionalBlockSizes []int
+	running              bool
+	config               *Config
+	maxTxsPerBlock       int
+	maxCommitterInterval int
+	optionalBlockSizes   []int
 
 	bc                            *core.BlockChain
 	executeTxWorker               *core.TxWorker
@@ -69,7 +72,7 @@ type UpdatePoolTx struct {
 	PendingDeletePoolTxs []*tx.Tx
 }
 
-//work flow: pullPoolTxs->executeTxFunc->updatePoolTxFunc->preSaveBlockDataFunc
+//work flow: pullPoolTxsToQueue->executeTxFunc->updatePoolTxFunc->preSaveBlockDataFunc
 //->updateAssetTreeFunc->updateAccountAndNftTreeFunc->saveBlockDataFunc->finalSaveBlockDataFunc
 
 func NewCommitter(config *Config) (*Committer, error) {
@@ -91,23 +94,29 @@ func NewCommitter(config *Config) (*Committer, error) {
 	if saveBlockDataPoolSize == 0 {
 		saveBlockDataPoolSize = 100
 	}
+	if config.BlockConfig.MaxPackedInterval == 0 {
+		config.BlockConfig.MaxPackedInterval = MaxPackedInterval
+	}
 	pool, err := ants.NewPool(saveBlockDataPoolSize, ants.WithPanicHandler(func(p interface{}) {
+		//sets up panic handler.
 		panic("worker exits from a panic")
 	}))
 	common.NewIPFS(config.IpfsUrl)
 	committer := &Committer{
-		running:            true,
-		config:             config,
-		maxTxsPerBlock:     config.BlockConfig.OptionalBlockSizes[len(config.BlockConfig.OptionalBlockSizes)-1],
-		optionalBlockSizes: config.BlockConfig.OptionalBlockSizes,
-		bc:                 bc,
-		pool:               pool,
+		running:              true,
+		config:               config,
+		maxTxsPerBlock:       config.BlockConfig.OptionalBlockSizes[len(config.BlockConfig.OptionalBlockSizes)-1],
+		maxCommitterInterval: config.BlockConfig.MaxPackedInterval,
+		optionalBlockSizes:   config.BlockConfig.OptionalBlockSizes,
+		bc:                   bc,
+		pool:                 pool,
 	}
 
 	return committer, nil
 }
 
-func (c *Committer) Run() {
+func (c *Committer) Run() error {
+	//rollback only
 	if c.config.BlockConfig.RollbackOnly {
 		for {
 			if !c.running {
@@ -116,35 +125,49 @@ func (c *Committer) Run() {
 			logx.Info("do rollback only")
 			time.Sleep(1 * time.Minute)
 		}
-		return
+		return nil
 	}
-	c.executeTxWorker = core.ExecuteTxWorker(10000, func() {
-		c.executeTxFunc()
-	})
-	c.updatePoolTxWorker = core.UpdatePoolTxWorker(10000, func(item interface{}) {
-		c.updatePoolTxFunc(item.(*UpdatePoolTx))
-	})
-	c.syncAccountToRedisWorker = core.SyncAccountToRedisWorker(10000, func(item interface{}) {
-		c.syncAccountToRedisFunc(item.(*PendingMap))
-	})
-	c.preSaveBlockDataWorker = core.PreSaveBlockDataWorker(10, func(item interface{}) {
-		c.preSaveBlockDataFunc(item.(*statedb.StateDataCopy))
-	})
-	c.updateAssetTreeWorker = core.UpdateAssetTreeWorker(10, func(item interface{}) {
-		c.updateAssetTreeFunc(item.(*statedb.StateDataCopy))
-	})
-	c.updateAccountAndNftTreeWorker = core.UpdateAccountAndNftTreeWorker(10, func(item interface{}) {
-		c.updateAccountAndNftTreeFunc(item.(*statedb.StateDataCopy))
-	})
-	c.saveBlockDataWorker = core.SaveBlockDataWorker(10, func(item interface{}) {
-		c.saveBlockDataFunc(item.(*block.BlockStates))
-	})
-	c.finalSaveBlockDataWorker = core.FinalSaveBlockDataWorker(10, func(item interface{}) {
-		c.finalSaveBlockDataFunc(item.(*block.BlockStates))
+
+	//execute tx,generate a block
+	c.executeTxWorker = core.ExecuteTxWorker(10000, func() error {
+		return c.executeTxFunc()
 	})
 
-	c.loadAllAccounts()
-	c.loadAllNfts()
+	//update pool tx status
+	c.updatePoolTxWorker = core.UpdatePoolTxWorker(10000, func(item interface{}) error {
+		return c.updatePoolTxFunc(item.(*UpdatePoolTx))
+	})
+	c.syncAccountToRedisWorker = core.SyncAccountToRedisWorker(10000, func(item interface{}) error {
+		return c.syncAccountToRedisFunc(item.(*PendingMap))
+	})
+	c.preSaveBlockDataWorker = core.PreSaveBlockDataWorker(10, func(item interface{}) error {
+		return c.preSaveBlockDataFunc(item.(*statedb.StateDataCopy))
+	})
+	c.updateAssetTreeWorker = core.UpdateAssetTreeWorker(10, func(item interface{}) error {
+		return c.updateAssetTreeFunc(item.(*statedb.StateDataCopy))
+	})
+	c.updateAccountAndNftTreeWorker = core.UpdateAccountAndNftTreeWorker(10, func(item interface{}) error {
+		return c.updateAccountAndNftTreeFunc(item.(*statedb.StateDataCopy))
+	})
+	c.saveBlockDataWorker = core.SaveBlockDataWorker(10, func(item interface{}) error {
+		return c.saveBlockDataFunc(item.(*block.BlockStates))
+	})
+	c.finalSaveBlockDataWorker = core.FinalSaveBlockDataWorker(10, func(item interface{}) error {
+		return c.finalSaveBlockDataFunc(item.(*block.BlockStates))
+	})
+
+	//load accounts from db to memcache
+	err := c.bc.LoadAllAccounts(c.pool)
+	if err != nil {
+		return err
+	}
+
+	//load nfts from db to memcache
+	err = c.bc.LoadAllNfts(c.pool)
+	if err != nil {
+		return err
+	}
+
 	c.executeTxWorker.Start()
 	c.syncAccountToRedisWorker.Start()
 	c.updatePoolTxWorker.Start()
@@ -154,49 +177,43 @@ func (c *Committer) Run() {
 	c.saveBlockDataWorker.Start()
 	c.finalSaveBlockDataWorker.Start()
 
-	c.pullPoolTxs()
+	//pull pool txs from db to queue
+	err = c.pullPoolTxsToQueue()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (c *Committer) pullPoolTxs() {
+// pull pool txs from db to queue
+func (c *Committer) pullPoolTxsToQueue() error {
 	executedTx, err := c.bc.TxPoolModel.GetLatestExecutedTx()
 	if err != nil && err != types.DbErrNotFound {
-		logx.Errorf("get executed tx from tx pool failed:%s", err.Error())
-		panic("get executed tx from tx pool failed: " + err.Error())
+		return fmt.Errorf("get executed tx from tx pool failed:%s", err.Error())
 	}
 
 	var executedTxMaxId uint = 0
 	if executedTx != nil {
 		executedTxMaxId = executedTx.ID
 	}
-	pendingTxs := make([]*tx.Tx, 0)
-	if c.bc.Statedb.NeedRestoreExecutedTxs() {
-		pendingTxs, err = c.bc.TxPoolModel.GetTxsByStatusAndIdRange(tx.StatusPending, executedTxMaxId+1, c.bc.Statedb.MaxPollTxIdRollbackImmutable)
-		if err != nil {
-			logx.Errorf("get rollback transactions from tx pool failed:%s", err.Error())
-			panic("get rollback transactions from tx pool failed: " + err.Error())
-		}
-		executedTxMaxId = c.bc.Statedb.MaxPollTxIdRollbackImmutable
-		metrics.GetPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
-		for _, poolTx := range pendingTxs {
-			c.executeTxWorker.Enqueue(poolTx)
-		}
-	}
-
 	limit := 1000
+	pendingTxs := make([]*tx.Tx, 0)
+
 	for {
 		if !c.running {
 			break
 		}
 		start := time.Now()
 		pendingTxs, err = c.bc.TxPoolModel.GetTxsByStatusAndMaxId(tx.StatusPending, executedTxMaxId, int64(limit))
+		if err != nil {
+			logx.Severef("get pending transactions from tx pool failed:%s", err.Error())
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
 		metrics.GetPendingPoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 		metrics.GetPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
 		metrics.TxWorkerQueueMetric.Set(float64(c.executeTxWorker.GetQueueSize()))
-		if err != nil {
-			logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
-			time.Sleep(100 * time.Millisecond)
-			continue
-		}
+
 		if len(pendingTxs) == 0 {
 			time.Sleep(100 * time.Millisecond)
 			continue
@@ -204,12 +221,15 @@ func (c *Committer) pullPoolTxs() {
 		limit = 1000
 		for _, poolTx := range pendingTxs {
 			if int(poolTx.ID)-int(executedTxMaxId) != 1 {
+				// Ensure orderly execution of pool tx. In high concurrency scenarios, the ids obtained from the database are not continuous
+				// Wait for while, the data is successfully written to the database, and then re-get the data
 				if time.Now().Sub(poolTx.CreatedAt).Seconds() < 5 {
 					limit = 10
 					time.Sleep(50 * time.Millisecond)
 					logx.Infof("not equal id=%s,but delay seconds<5,break it", poolTx.ID)
 					break
 				} else {
+					//If the time is greater than 5 seconds, skip this id and compensate through CompensatePendingPoolTx
 					logx.Infof("not equal id=%s,but delay seconds>5,do it", poolTx.ID)
 				}
 			}
@@ -217,8 +237,10 @@ func (c *Committer) pullPoolTxs() {
 			c.executeTxWorker.Enqueue(poolTx)
 		}
 	}
+	return nil
 }
 
+// get pool txs from queue
 func (c *Committer) getPoolTxsFromQueue() []*tx.Tx {
 	pendingUpdatePoolTxs := make([]*tx.Tx, 0, 300)
 	for {
@@ -234,12 +256,13 @@ func (c *Committer) getPoolTxsFromQueue() []*tx.Tx {
 	}
 }
 
-func (c *Committer) executeTxFunc() {
+// execute tx,generate a block
+func (c *Committer) executeTxFunc() error {
 	l1LatestRequestId, err := c.getLatestExecutedRequestId()
 	if err != nil {
-		logx.Errorf("get latest executed request id failed:%s", err.Error())
-		panic("get latest executed request id failed: " + err.Error())
+		return fmt.Errorf("get latest executed request id failed:%s", err.Error())
 	}
+
 	var subPendingTxs []*tx.Tx
 	var pendingTxs []*tx.Tx
 	pendingUpdatePoolTxs := make([]*tx.Tx, 0, c.maxTxsPerBlock)
@@ -248,24 +271,25 @@ func (c *Committer) executeTxFunc() {
 		if curBlock.BlockStatus > block.StatusProposing {
 			previousHeight := curBlock.BlockHeight
 			curBlock, err = c.bc.InitNewBlock()
-			logx.Infof("1 init new block, current height=%d,previous height=%d,blockId=%d", curBlock.BlockHeight, previousHeight, curBlock.ID)
 			if err != nil {
-				logx.Errorf("propose new block failed:%s", err)
-				panic("propose new block failed: " + err.Error())
+				return fmt.Errorf("propose new block failed: %s", err.Error())
 			}
+			logx.Infof("1 init new block, current height=%d,previous height=%d,blockId=%d", curBlock.BlockHeight, previousHeight, curBlock.ID)
 		}
+
 		if subPendingTxs != nil && len(subPendingTxs) > 0 {
 			pendingTxs = subPendingTxs
 			subPendingTxs = nil
 		} else {
 			pendingTxs = c.getPoolTxsFromQueue()
 		}
+
 		for len(pendingTxs) == 0 {
 			if c.shouldCommit(curBlock) {
 				break
 			}
 			if len(pendingUpdatePoolTxs) > 0 {
-				c.addUpdatePoolTxQueue(pendingUpdatePoolTxs, nil)
+				c.addUpdatePoolTxToQueue(pendingUpdatePoolTxs, nil)
 				pendingUpdatePoolTxs = make([]*tx.Tx, 0, c.maxTxsPerBlock)
 			}
 
@@ -281,6 +305,7 @@ func (c *Committer) executeTxFunc() {
 				subPendingTxs = append(subPendingTxs, poolTx)
 				continue
 			}
+
 			metrics.ExecuteTxMetrics.Inc()
 			startApplyTx := time.Now()
 			logx.Infof("start apply pool tx ID: %d", poolTx.ID)
@@ -290,8 +315,7 @@ func (c *Committer) executeTxFunc() {
 				c.bc.Statedb.UpdateNeedRestoreExecutedTxs(false)
 				err := c.bc.DB().BlockModel.DeleteBlockGreaterThanHeight(curBlock.BlockHeight, []int{block.StatusProposing, block.StatusPacked})
 				if err != nil {
-					logx.Errorf("DeleteBlockGreaterThanHeight failed:%s,blockHeight:%d", err.Error(), curBlock.BlockHeight)
-					panic("DeleteBlockGreaterThanHeight failed: " + err.Error())
+					return fmt.Errorf("DeleteBlockGreaterThanHeight failed:%s,blockHeight:%d", err.Error(), curBlock.BlockHeight)
 				}
 				c.bc.ClearRollbackBlockMap()
 			}
@@ -300,8 +324,7 @@ func (c *Committer) executeTxFunc() {
 				logx.Severef("apply pool tx ID: %d failed, err %v ", poolTx.ID, err)
 				if types.IsPriorityOperationTx(poolTx.TxType) {
 					metrics.PoolTxL1ErrorCountMetics.Inc()
-					logx.Severef("apply priority pool tx failed,id=%s,error=%s", strconv.Itoa(int(poolTx.ID)), err.Error())
-					panic("apply priority pool tx failed,id=" + strconv.Itoa(int(poolTx.ID)) + ",error=" + err.Error())
+					return fmt.Errorf("apply priority pool tx failed,id=%s,error=%s", strconv.Itoa(int(poolTx.ID)), err.Error())
 				} else {
 					expectNonce, err := c.bc.Statedb.GetCommittedNonce(poolTx.AccountIndex)
 					if err != nil {
@@ -319,8 +342,7 @@ func (c *Committer) executeTxFunc() {
 			if types.IsPriorityOperationTx(poolTx.TxType) {
 				metrics.PriorityOperationMetric.Set(float64(poolTx.L1RequestId))
 				if l1LatestRequestId != -1 && poolTx.L1RequestId != l1LatestRequestId+1 {
-					logx.Severef("invalid request id=%s,txHash=%s", strconv.Itoa(int(poolTx.L1RequestId)), err.Error())
-					panic("invalid request id=" + strconv.Itoa(int(poolTx.L1RequestId)) + ",txHash=" + poolTx.TxHash)
+					return fmt.Errorf("invalid request id=%s", strconv.Itoa(int(poolTx.L1RequestId)))
 				}
 				l1LatestRequestId = poolTx.L1RequestId
 			}
@@ -332,8 +354,7 @@ func (c *Committer) executeTxFunc() {
 					err = c.createNewBlock(curBlock)
 					logx.Infof("create new block, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
 					if err != nil {
-						logx.Severef("create new block failed:%s", err.Error())
-						panic("create new block failed" + err.Error())
+						return fmt.Errorf("create new block failed:%s", err.Error())
 					}
 				} else {
 					logx.Infof("not create new block,use old block data, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
@@ -341,19 +362,24 @@ func (c *Committer) executeTxFunc() {
 			}
 			pendingUpdatePoolTxs = append(pendingUpdatePoolTxs, poolTx)
 		}
+
 		metrics.ExecuteTxOperationMetrics.Set(float64(time.Since(start).Milliseconds()))
 
 		c.bc.Statedb.SyncPendingAccountToMemoryCache(c.bc.Statedb.PendingAccountMap)
 		c.bc.Statedb.SyncPendingNftToMemoryCache(c.bc.Statedb.PendingNftMap)
 
-		c.addSyncAccountToRedisQueue(c.bc.Statedb.PendingAccountMap, c.bc.Statedb.PendingNftMap)
-		c.addUpdatePoolTxQueue(nil, pendingDeletePoolTxs)
+		c.addSyncAccountToRedisToQueue(c.bc.Statedb.PendingAccountMap, c.bc.Statedb.PendingNftMap)
+		c.addUpdatePoolTxToQueue(nil, pendingDeletePoolTxs)
 
 		if c.shouldCommit(curBlock) {
 			start := time.Now()
 			logx.Infof("commit new block, height=%d,blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
 			pendingUpdatePoolTxs = make([]*tx.Tx, 0, c.maxTxsPerBlock)
-			stateDataCopy := c.buildStateDataCopy(curBlock)
+			stateDataCopy, err := c.buildStateDataCopy(curBlock)
+			if err != nil {
+				return err
+			}
+
 			c.preSaveBlockDataWorker.Enqueue(stateDataCopy)
 			metrics.AccountAssetTreeQueueMetric.Set(float64(c.updateAssetTreeWorker.GetQueueSize()))
 
@@ -361,8 +387,7 @@ func (c *Committer) executeTxFunc() {
 			previousHeight := stateDataCopy.CurrentBlock.BlockHeight
 			curBlock, err = c.bc.InitNewBlock()
 			if err != nil {
-				logx.Errorf("propose new block failed:%s ", err.Error())
-				panic("propose new block failed: " + err.Error())
+				return fmt.Errorf("propose new block failed: %s", err.Error())
 			}
 			logx.Infof("2 init new block, current height=%d,previous height=%d,blockId=%d", curBlock.BlockHeight, previousHeight, curBlock.ID)
 
@@ -379,46 +404,43 @@ func (c *Committer) executeTxFunc() {
 	}
 }
 
-func (c *Committer) buildStateDataCopy(curBlock *block.Block) *statedb.StateDataCopy {
-	deleteGasAccount := false
-	for _, formatAccount := range c.bc.Statedb.StateCache.PendingAccountMap {
-		if formatAccount.AccountIndex == types.GasAccount {
-			if len(c.bc.Statedb.StateCache.PendingGasMap) != 0 {
-				for assetId, delta := range c.bc.Statedb.StateCache.PendingGasMap {
-					if asset, ok := formatAccount.AssetInfo[assetId]; ok {
-						formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
-					} else {
-						formatAccount.AssetInfo[assetId] = &types.AccountAsset{
-							Balance:                  delta,
-							OfferCanceledOrFinalized: types.ZeroBigInt,
-						}
+// copy state cache
+func (c *Committer) buildStateDataCopy(curBlock *block.Block) (*statedb.StateDataCopy, error) {
+	gasAccount := c.bc.Statedb.StateCache.PendingAccountMap[types.GasAccount]
+	if gasAccount != nil {
+		if len(c.bc.Statedb.StateCache.PendingGasMap) != 0 {
+			for assetId, delta := range c.bc.Statedb.StateCache.PendingGasMap {
+				if asset, ok := gasAccount.AssetInfo[assetId]; ok {
+					gasAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
+				} else {
+					gasAccount.AssetInfo[assetId] = &types.AccountAsset{
+						Balance:                  delta,
+						OfferCanceledOrFinalized: types.ZeroBigInt,
 					}
-					c.bc.Statedb.MarkAccountAssetsDirty(formatAccount.AccountIndex, []int64{assetId})
 				}
-			} else {
-				assetsMap := c.bc.Statedb.GetDirtyAccountsAndAssetsMap()[formatAccount.AccountIndex]
-				if assetsMap == nil {
-					deleteGasAccount = true
-				}
+				c.bc.Statedb.MarkAccountAssetsDirty(gasAccount.AccountIndex, []int64{assetId})
 			}
 		} else {
-			assetsMap := c.bc.Statedb.GetDirtyAccountsAndAssetsMap()[formatAccount.AccountIndex]
+			assetsMap := c.bc.Statedb.GetDirtyAccountsAndAssetsMap()[gasAccount.AccountIndex]
 			if assetsMap == nil {
-				logx.Errorf("%s exists in PendingAccountMap but not in GetDirtyAccountsAndAssetsMap", formatAccount.AccountIndex)
-				panic(strconv.FormatInt(formatAccount.AccountIndex, 10) + " exists in PendingAccountMap but not in GetDirtyAccountsAndAssetsMap")
+				delete(c.bc.Statedb.StateCache.PendingAccountMap, types.GasAccount)
 			}
 		}
 	}
-	if deleteGasAccount {
-		delete(c.bc.Statedb.StateCache.PendingAccountMap, types.GasAccount)
+
+	for _, formatAccount := range c.bc.Statedb.StateCache.PendingAccountMap {
+		assetsMap := c.bc.Statedb.GetDirtyAccountsAndAssetsMap()[formatAccount.AccountIndex]
+		if assetsMap == nil {
+			return nil, fmt.Errorf("%d exists in PendingAccountMap but not in GetDirtyAccountsAndAssetsMap", formatAccount.AccountIndex)
+		}
 	}
+
 	for accountIndex, _ := range c.bc.Statedb.GetDirtyAccountsAndAssetsMap() {
 		_, exist := c.bc.Statedb.StateCache.GetPendingAccount(accountIndex)
 		if !exist {
 			accountInfo, err := c.bc.Statedb.GetFormatAccount(accountIndex)
 			if err != nil {
-				logx.Errorf("get account info failed,accountIndex=%s,err=%s ", accountIndex, err.Error())
-				panic("get account info failed: " + err.Error())
+				return nil, fmt.Errorf("get account info failed,accountIndex=%d,err=%s ", accountIndex, err.Error())
 			}
 			c.bc.Statedb.SetPendingAccount(accountIndex, accountInfo)
 		}
@@ -426,8 +448,7 @@ func (c *Committer) buildStateDataCopy(curBlock *block.Block) *statedb.StateData
 
 	for _, nftInfo := range c.bc.Statedb.StateCache.PendingNftMap {
 		if c.bc.Statedb.GetDirtyNftMap()[nftInfo.NftIndex] == false {
-			logx.Errorf("%s exists in PendingNftMap but not in DirtyNftMap", nftInfo.NftIndex)
-			panic(strconv.FormatInt(nftInfo.NftIndex, 10) + " exists in PendingNftMap but not in DirtyNftMap")
+			return nil, fmt.Errorf(strconv.FormatInt(nftInfo.NftIndex, 10) + " exists in PendingNftMap but not in DirtyNftMap")
 		}
 	}
 	for nftIndex, _ := range c.bc.Statedb.StateCache.GetDirtyNftMap() {
@@ -435,8 +456,7 @@ func (c *Committer) buildStateDataCopy(curBlock *block.Block) *statedb.StateData
 		if !exist {
 			nftInfo, err := c.bc.Statedb.GetNft(nftIndex)
 			if err != nil {
-				logx.Errorf("get nft info failed,nftIndex=%s,err=%s ", nftIndex, err.Error())
-				panic("get nft info failed: " + err.Error())
+				return nil, fmt.Errorf("get nft info failed,nftIndex=%d,err=%s ", nftIndex, err.Error())
 			}
 			c.bc.Statedb.SetPendingNft(nftIndex, nftInfo)
 		}
@@ -449,8 +469,7 @@ func (c *Committer) buildStateDataCopy(curBlock *block.Block) *statedb.StateData
 		}
 		newAccount, err := chain.FromFormatAccountInfo(accountInfo)
 		if err != nil {
-			logx.Errorf("account info format failed:%s ", err.Error())
-			panic("account info format failed: " + err.Error())
+			return nil, fmt.Errorf("account info format failed: %s", err.Error())
 		}
 		newAccount.L2BlockHeight = curBlock.BlockHeight
 		addPendingAccounts = append(addPendingAccounts, newAccount)
@@ -464,6 +483,7 @@ func (c *Committer) buildStateDataCopy(curBlock *block.Block) *statedb.StateData
 		}
 		addPendingNfts = append(addPendingNfts, nftInfo)
 	}
+
 	updateAccountMap := make(map[int64]*types.AccountInfo, 0)
 	updateNftMap := make(map[int64]*nft.L2Nft, 0)
 	if len(addPendingAccounts) > 0 || len(addPendingNfts) > 0 {
@@ -471,49 +491,47 @@ func (c *Committer) buildStateDataCopy(curBlock *block.Block) *statedb.StateData
 			if len(addPendingAccounts) != 0 {
 				err := c.bc.DB().AccountModel.BatchInsertInTransact(dbTx, addPendingAccounts)
 				if err != nil {
-					logx.Errorf("account batch insert or update failed:%s ", err.Error())
-					panic("account batch insert or update failed: " + err.Error())
+					return fmt.Errorf("account batch insert or update failed: %s", err.Error())
 				}
 			}
+
 			if len(addPendingNfts) != 0 {
 				err := c.bc.DB().L2NftModel.BatchInsertInTransact(dbTx, addPendingNfts)
 				if err != nil {
-					logx.Errorf("l2nft batch insert or update failed:%s ", err.Error())
-					panic("l2nft batch insert or update failed: " + err.Error())
+					return fmt.Errorf("l2nft batch insert or update failed: %s", err.Error())
 				}
 			}
-			accountIndexes := make([]int64, 0, len(addPendingAccounts))
 
+			accountIndexes := make([]int64, 0, len(addPendingAccounts))
 			for _, accountInfo := range addPendingAccounts {
 				accountIndexes = append(accountIndexes, accountInfo.AccountIndex)
 			}
+
 			nftIndexes := make([]int64, 0, len(addPendingNfts))
 			for _, nftInfo := range addPendingNfts {
 				nftIndexes = append(nftIndexes, nftInfo.NftIndex)
 			}
+
 			accountIndexesJson, err := json.Marshal(accountIndexes)
 			if err != nil {
-				logx.Errorf("marshal accountIndexes failed:%s,blockHeight:%s", err, curBlock.BlockHeight)
-				panic("marshal accountIndexes failed: " + err.Error())
+				return fmt.Errorf("marshal accountIndexes failed:%s,blockHeight:%d", err, curBlock.BlockHeight)
 			}
 			nftIndexesJson, err := json.Marshal(nftIndexes)
 			if err != nil {
-				logx.Errorf("marshal nftIndexesJson failed:%s,blockHeight:%s", err, curBlock.BlockHeight)
-				panic("marshal nftIndexesJson failed: " + err.Error())
+				return fmt.Errorf("marshal nftIndexesJson failed:%s,blockHeight:%d", err, curBlock.BlockHeight)
 			}
+
 			curBlock.AccountIndexes = string(accountIndexesJson)
 			curBlock.NftIndexes = string(nftIndexesJson)
 			curBlock.BlockStatus = block.StatusPacked
 			err = c.bc.DB().BlockModel.PreSaveBlockDataInTransact(dbTx, curBlock)
 			if err != nil {
-				logx.Errorf("PreSaveBlockDataInTransact failed:%s,blockHeight:%s", err, curBlock.BlockHeight)
-				panic("PreSaveBlockDataInTransact failed: " + err.Error())
+				return fmt.Errorf("PreSaveBlockDataInTransact failed:%s,blockHeight:%d", err, curBlock.BlockHeight)
 			}
 			return nil
 		})
 		if err != nil {
-			logx.Errorf("account or nft insert failed:%s ", err.Error())
-			panic("account or nft insert failed: " + err.Error())
+			return nil, fmt.Errorf("account or nft insert failed: %s", err.Error())
 		}
 
 		for _, accountInfo := range addPendingAccounts {
@@ -525,13 +543,13 @@ func (c *Committer) buildStateDataCopy(curBlock *block.Block) *statedb.StateData
 			updateNftMap[nftInfo.NftIndex] = c.bc.Statedb.StateCache.PendingNftMap[nftInfo.NftIndex]
 		}
 	}
-	gasAccount := c.bc.Statedb.StateCache.PendingAccountMap[types.GasAccount]
+	gasAccount = c.bc.Statedb.StateCache.PendingAccountMap[types.GasAccount]
 	if gasAccount != nil {
 		updateAccountMap[types.GasAccount] = gasAccount
 	}
 	c.bc.Statedb.SyncPendingAccountToMemoryCache(updateAccountMap)
 	c.bc.Statedb.SyncPendingNftToMemoryCache(updateNftMap)
-	c.addSyncAccountToRedisQueue(updateAccountMap, updateNftMap)
+	c.addSyncAccountToRedisToQueue(updateAccountMap, updateNftMap)
 
 	pendingAccountMap := make(map[int64]*types.AccountInfo, len(c.bc.Statedb.StateCache.PendingAccountMap))
 	pendingNftMap := make(map[int64]*nft.L2Nft, len(c.bc.Statedb.StateCache.PendingNftMap))
@@ -548,10 +566,11 @@ func (c *Committer) buildStateDataCopy(curBlock *block.Block) *statedb.StateData
 		StateCache:   c.bc.Statedb.StateCache,
 		CurrentBlock: curBlock,
 	}
-	return stateDataCopy
+	return stateDataCopy, nil
 }
 
-func (c *Committer) addUpdatePoolTxQueue(pendingUpdatePoolTxs []*tx.Tx, pendingDeletePoolTxs []*tx.Tx) {
+// put the pool txs that need to be updated into the queue
+func (c *Committer) addUpdatePoolTxToQueue(pendingUpdatePoolTxs []*tx.Tx, pendingDeletePoolTxs []*tx.Tx) {
 	updatePoolTxMap := &UpdatePoolTx{}
 	if pendingUpdatePoolTxs != nil {
 		updatePoolTxMap.PendingUpdatePoolTxs = make([]*tx.Tx, 0, len(pendingUpdatePoolTxs))
@@ -568,58 +587,57 @@ func (c *Committer) addUpdatePoolTxQueue(pendingUpdatePoolTxs []*tx.Tx, pendingD
 	c.updatePoolTxWorker.Enqueue(updatePoolTxMap)
 }
 
-func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
+// update pool tx to StatusExecuted
+func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) error {
 	start := time.Now()
-	if updatePoolTxMap.PendingUpdatePoolTxs != nil {
-		length := len(updatePoolTxMap.PendingUpdatePoolTxs)
-		if length > 0 {
-			ids := make([]uint, 0, length)
-			updateNftIndexOrCollectionIdList := make([]*tx.PoolTx, 0)
-			for _, pendingUpdatePoolTx := range updatePoolTxMap.PendingUpdatePoolTxs {
-				ids = append(ids, pendingUpdatePoolTx.ID)
-				if pendingUpdatePoolTx.IsPartialUpdate {
-					updateNftIndexOrCollectionIdList = append(updateNftIndexOrCollectionIdList, &tx.PoolTx{
-						BaseTx: tx.BaseTx{Model: gorm.Model{ID: pendingUpdatePoolTx.ID},
-							NftIndex:         pendingUpdatePoolTx.NftIndex,
-							CollectionId:     pendingUpdatePoolTx.CollectionId,
-							AccountIndex:     pendingUpdatePoolTx.AccountIndex,
-							IsCreateAccount:  pendingUpdatePoolTx.IsCreateAccount,
-							FromAccountIndex: pendingUpdatePoolTx.FromAccountIndex,
-							ToAccountIndex:   pendingUpdatePoolTx.ToAccountIndex,
-						},
-					})
-				}
+	if len(updatePoolTxMap.PendingUpdatePoolTxs) > 0 {
+		ids := make([]uint, 0, len(updatePoolTxMap.PendingUpdatePoolTxs))
+		updateNftIndexOrCollectionIdList := make([]*tx.PoolTx, 0)
+		for _, pendingUpdatePoolTx := range updatePoolTxMap.PendingUpdatePoolTxs {
+			ids = append(ids, pendingUpdatePoolTx.ID)
+			if !pendingUpdatePoolTx.IsPartialUpdate {
+				continue
 			}
-			if len(updateNftIndexOrCollectionIdList) > 0 {
-				err := c.bc.TxPoolModel.BatchUpdateNftIndexOrCollectionId(updateNftIndexOrCollectionIdList)
-				if err != nil {
-					logx.Error("update tx pool failed:", err)
-					return
-				}
-			}
-			err := c.bc.TxPoolModel.UpdateTxsStatusAndHeightByIds(ids, tx.StatusExecuted, updatePoolTxMap.PendingUpdatePoolTxs[0].BlockHeight)
+			updateNftIndexOrCollectionIdList = append(updateNftIndexOrCollectionIdList, &tx.PoolTx{
+				BaseTx: tx.BaseTx{Model: gorm.Model{ID: pendingUpdatePoolTx.ID},
+					NftIndex:         pendingUpdatePoolTx.NftIndex,
+					CollectionId:     pendingUpdatePoolTx.CollectionId,
+					AccountIndex:     pendingUpdatePoolTx.AccountIndex,
+					IsCreateAccount:  pendingUpdatePoolTx.IsCreateAccount,
+					FromAccountIndex: pendingUpdatePoolTx.FromAccountIndex,
+					ToAccountIndex:   pendingUpdatePoolTx.ToAccountIndex,
+				},
+			})
+		}
+		if len(updateNftIndexOrCollectionIdList) > 0 {
+			err := c.bc.TxPoolModel.BatchUpdateNftIndexOrCollectionId(updateNftIndexOrCollectionIdList)
 			if err != nil {
 				logx.Error("update tx pool failed:", err)
+				return nil
 			}
 		}
+		err := c.bc.TxPoolModel.UpdateTxsStatusAndHeightByIds(ids, tx.StatusExecuted, updatePoolTxMap.PendingUpdatePoolTxs[0].BlockHeight)
+		if err != nil {
+			logx.Error("update tx pool failed:", err)
+		}
 	}
-	if updatePoolTxMap.PendingDeletePoolTxs != nil {
-		length := len(updatePoolTxMap.PendingDeletePoolTxs)
-		if length > 0 {
-			poolTxIds := make([]uint, 0, len(updatePoolTxMap.PendingDeletePoolTxs))
-			for _, poolTx := range updatePoolTxMap.PendingDeletePoolTxs {
-				poolTxIds = append(poolTxIds, poolTx.ID)
-			}
-			err := c.bc.TxPoolModel.DeleteTxsBatch(poolTxIds, tx.StatusFailed, -1)
-			if err != nil {
-				logx.Error("update tx pool failed:", err)
-			}
+
+	if len(updatePoolTxMap.PendingDeletePoolTxs) > 0 {
+		poolTxIds := make([]uint, 0, len(updatePoolTxMap.PendingDeletePoolTxs))
+		for _, poolTx := range updatePoolTxMap.PendingDeletePoolTxs {
+			poolTxIds = append(poolTxIds, poolTx.ID)
+		}
+		err := c.bc.TxPoolModel.DeleteTxsBatch(poolTxIds, tx.StatusFailed, -1)
+		if err != nil {
+			logx.Error("update tx pool failed:", err)
 		}
 	}
 	metrics.UpdatePoolTxsMetrics.Set(float64(time.Since(start).Milliseconds()))
+	return nil
 }
 
-func (c *Committer) addSyncAccountToRedisQueue(originPendingAccountMap map[int64]*types.AccountInfo, originPendingNftMap map[int64]*nft.L2Nft) {
+// Put the accounts and nfts data that need to be synchronized to redis into the queue
+func (c *Committer) addSyncAccountToRedisToQueue(originPendingAccountMap map[int64]*types.AccountInfo, originPendingNftMap map[int64]*nft.L2Nft) {
 	if len(originPendingAccountMap) == 0 && len(originPendingNftMap) == 0 {
 		return
 	}
@@ -636,94 +654,107 @@ func (c *Committer) addSyncAccountToRedisQueue(originPendingAccountMap map[int64
 	c.syncAccountToRedisWorker.Enqueue(pendingMap)
 }
 
-func (c *Committer) syncAccountToRedisFunc(pendingMap *PendingMap) {
+// sync accounts and nfts to redis
+func (c *Committer) syncAccountToRedisFunc(pendingMap *PendingMap) error {
 	start := time.Now()
 	c.bc.Statedb.SyncPendingAccountToRedis(pendingMap.PendingAccountMap)
 	c.bc.Statedb.SyncPendingNftToRedis(pendingMap.PendingNftMap)
 	metrics.SyncAccountToRedisMetrics.Set(float64(time.Since(start).Milliseconds()))
+	return nil
 }
 
-func (c *Committer) preSaveBlockDataFunc(stateDataCopy *statedb.StateDataCopy) {
+// preSaveBlockData,eg:AccountIndexes,NftIndexes
+func (c *Committer) preSaveBlockDataFunc(stateDataCopy *statedb.StateDataCopy) error {
 	start := time.Now()
 	logx.Infof("preSaveBlockDataFunc start, blockHeight:%d", stateDataCopy.CurrentBlock.BlockHeight)
 	accountIndexes := make([]int64, 0, len(stateDataCopy.StateCache.PendingAccountMap))
-
 	for _, accountInfo := range stateDataCopy.StateCache.PendingAccountMap {
 		accountIndexes = append(accountIndexes, accountInfo.AccountIndex)
 	}
+
 	nftIndexes := make([]int64, 0, len(stateDataCopy.StateCache.PendingNftMap))
 	for _, nftInfo := range stateDataCopy.StateCache.PendingNftMap {
 		nftIndexes = append(nftIndexes, nftInfo.NftIndex)
 	}
+
 	accountIndexesJson, err := json.Marshal(accountIndexes)
 	if err != nil {
-		logx.Errorf("marshal accountIndexes failed:%s,blockHeight:%s", err, stateDataCopy.CurrentBlock.BlockHeight)
-		panic("marshal accountIndexes failed: " + err.Error())
+		return fmt.Errorf("marshal accountIndexes failed:%s,blockHeight:%d", err, stateDataCopy.CurrentBlock.BlockHeight)
 	}
 	nftIndexesJson, err := json.Marshal(nftIndexes)
 	if err != nil {
-		logx.Errorf("marshal nftIndexesJson failed:%s,blockHeight:%s", err, stateDataCopy.CurrentBlock.BlockHeight)
-		panic("marshal nftIndexesJson failed: " + err.Error())
+		return fmt.Errorf("marshal nftIndexesJson failed:%s,blockHeight:%s", err, stateDataCopy.CurrentBlock.BlockHeight)
 	}
+
 	stateDataCopy.CurrentBlock.AccountIndexes = string(accountIndexesJson)
 	stateDataCopy.CurrentBlock.NftIndexes = string(nftIndexesJson)
 	stateDataCopy.CurrentBlock.BlockStatus = block.StatusPacked
+
 	err = c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
 		return c.bc.DB().BlockModel.PreSaveBlockDataInTransact(dbTx, stateDataCopy.CurrentBlock)
 	})
 	if err != nil {
-		logx.Errorf("preSaveBlockDataFunc failed:%s,blockHeight:%s", err, stateDataCopy.CurrentBlock.BlockHeight)
-		panic("preSaveBlockDataFunc failed: " + err.Error())
+		return fmt.Errorf("preSaveBlockDataFunc failed:%s,blockHeight:%d", err, stateDataCopy.CurrentBlock.BlockHeight)
 	}
+
 	latestVerifiedBlockNr, err := c.bc.BlockModel.GetLatestVerifiedHeight()
 	if err != nil {
-		logx.Error("get latest verified height failed: ", err)
-		panic("get latest verified height failed:" + err.Error())
+		return fmt.Errorf("get latest verified height failed:%s", err.Error())
 	}
 	c.bc.Statedb.UpdatePrunedBlockHeight(latestVerifiedBlockNr)
 
 	metrics.PreSaveBlockDataMetrics.WithLabelValues("all").Set(float64(time.Since(start).Milliseconds()))
 	c.updateAssetTreeWorker.Enqueue(stateDataCopy)
+	return nil
 }
 
-func (c *Committer) updateAssetTreeFunc(stateDataCopy *statedb.StateDataCopy) {
+// compute account asset hash, commit asset smt,compute account leaf hash, compute nft leaf hash
+func (c *Committer) updateAssetTreeFunc(stateDataCopy *statedb.StateDataCopy) error {
 	start := time.Now()
 	metrics.UpdateAssetTreeTxMetrics.Add(float64(len(stateDataCopy.StateCache.Txs)))
 	logx.Infof("updateAssetTreeFunc blockHeight:%d,blockId:%d", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
 	err := c.bc.UpdateAssetTree(stateDataCopy)
 	if err != nil {
-		logx.Errorf("updateAssetTreeFunc failed:%s,blockHeight:%d", err, stateDataCopy.CurrentBlock.BlockHeight)
-		panic("updateAssetTreeFunc failed: " + err.Error())
+		return fmt.Errorf("updateAssetTreeFunc failed:%s,blockHeight:%d", err, stateDataCopy.CurrentBlock.BlockHeight)
 	}
 	c.updateAccountAndNftTreeWorker.Enqueue(stateDataCopy)
 	metrics.AccountAndNftTreeQueueMetric.Set(float64(c.updateAccountAndNftTreeWorker.GetQueueSize()))
 	metrics.UpdateAccountAssetTreeMetrics.Set(float64(time.Since(start).Milliseconds()))
-
+	return nil
 }
 
-func (c *Committer) updateAccountAndNftTreeFunc(stateDataCopy *statedb.StateDataCopy) {
+// UpdateAccountAndNftTree multi set account tree with version,multi set nft tree with version
+// commit account and nft tree
+// build Block CompressedBlock PendingAccount PendingAccountHistory PendingNft PendingNftHistory
+func (c *Committer) updateAccountAndNftTreeFunc(stateDataCopy *statedb.StateDataCopy) error {
 	start := time.Now()
 	metrics.UpdateAccountAndNftTreeTxMetrics.Add(float64(len(stateDataCopy.StateCache.Txs)))
+
 	logx.Infof("updateAccountAndNftTreeFunc blockHeight:%d,blockId:%d", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
 	blockSize := c.computeCurrentBlockSize(stateDataCopy)
 	if blockSize < len(stateDataCopy.StateCache.Txs) {
-		panic("block size too small")
+		return fmt.Errorf("block size too small")
 	}
+
 	blockStates, err := c.bc.UpdateAccountAndNftTree(blockSize, stateDataCopy)
 	if err != nil {
-		logx.Errorf("updateAccountAndNftTreeFunc failed:%s,blockHeight:%d", err, stateDataCopy.CurrentBlock.BlockHeight)
-		panic("updateAccountAndNftTreeFunc failed: " + err.Error())
+		return fmt.Errorf("updateAccountAndNftTreeFunc failed:%s,blockHeight:%d", err, stateDataCopy.CurrentBlock.BlockHeight)
 	}
+
 	c.saveBlockDataWorker.Enqueue(blockStates)
+
 	metrics.L2BlockRedisHeightMetric.Set(float64(blockStates.Block.BlockHeight))
 	metrics.AccountLatestVersionTreeMetric.Set(float64(c.bc.StateDB().AccountTree.LatestVersion()))
 	metrics.AccountRecentVersionTreeMetric.Set(float64(c.bc.StateDB().AccountTree.RecentVersion()))
 	metrics.NftTreeLatestVersionMetric.Set(float64(c.bc.StateDB().NftTree.LatestVersion()))
 	metrics.NftTreeRecentVersionMetric.Set(float64(c.bc.StateDB().NftTree.RecentVersion()))
 	metrics.UpdateAccountTreeAndNftTreeMetrics.Set(float64(time.Since(start).Milliseconds()))
+
+	return nil
 }
 
-func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
+// save block data
+func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) error {
 	start := time.Now()
 	logx.Infof("saveBlockDataFunc start, blockHeight:%d", blockStates.Block.BlockHeight)
 	totalTask := 0
@@ -736,17 +767,18 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 
 	for _, poolTx := range blockStates.Block.Txs {
 		poolTxIds = append(poolTxIds, poolTx.ID)
-		if poolTx.IsPartialUpdate {
-			updateNftIndexOrCollectionIdList = append(updateNftIndexOrCollectionIdList, &tx.PoolTx{BaseTx: tx.BaseTx{
-				Model:            gorm.Model{ID: poolTx.ID},
-				NftIndex:         poolTx.NftIndex,
-				CollectionId:     poolTx.CollectionId,
-				AccountIndex:     poolTx.AccountIndex,
-				IsCreateAccount:  poolTx.IsCreateAccount,
-				FromAccountIndex: poolTx.FromAccountIndex,
-				ToAccountIndex:   poolTx.ToAccountIndex,
-			}})
+		if !poolTx.IsPartialUpdate {
+			continue
 		}
+		updateNftIndexOrCollectionIdList = append(updateNftIndexOrCollectionIdList, &tx.PoolTx{BaseTx: tx.BaseTx{
+			Model:            gorm.Model{ID: poolTx.ID},
+			NftIndex:         poolTx.NftIndex,
+			CollectionId:     poolTx.CollectionId,
+			AccountIndex:     poolTx.AccountIndex,
+			IsCreateAccount:  poolTx.IsCreateAccount,
+			FromAccountIndex: poolTx.FromAccountIndex,
+			ToAccountIndex:   poolTx.ToAccountIndex,
+		}})
 	}
 
 	blockStates.Block.ClearTxsModel()
@@ -773,7 +805,7 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 		})
 	}(poolTxIds, blockStates.Block.BlockHeight, updateNftIndexOrCollectionIdList)
 	if err != nil {
-		panic("DeleteTxsBatch failed: " + err.Error())
+		return fmt.Errorf("DeleteTxsBatch failed: %s", err.Error())
 	}
 
 	pendingAccountLen := len(blockStates.PendingAccount)
@@ -811,7 +843,7 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 				})
 			}(accounts)
 			if err != nil {
-				panic("batchInsertOrUpdate accounts failed: " + err.Error())
+				return fmt.Errorf("batchInsertOrUpdate accounts failed: %s", err.Error())
 			}
 		}
 	}
@@ -847,7 +879,7 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 				})
 			}(accountHistories)
 			if err != nil {
-				panic("createAccountHistories failed: " + err.Error())
+				return fmt.Errorf("createAccountHistories failed: %s", err.Error())
 			}
 		}
 	}
@@ -887,7 +919,7 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 				})
 			}(nfts)
 			if err != nil {
-				panic("batchInsertOrUpdate nfts failed: " + err.Error())
+				return fmt.Errorf("batchInsertOrUpdate nfts failed: %s", err.Error())
 			}
 		}
 	}
@@ -923,7 +955,7 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 				})
 			}(nftHistories)
 			if err != nil {
-				panic("createNftHistories failed: " + err.Error())
+				return fmt.Errorf("createNftHistories failed: %s", err.Error())
 			}
 		}
 	}
@@ -957,7 +989,7 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 				})
 			}(txs)
 			if err != nil {
-				panic("CreateTxs failed: " + err.Error())
+				return fmt.Errorf("CreateTxs failed: %s", err.Error())
 			}
 		}
 
@@ -994,7 +1026,7 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 					})
 				}(txDetailsSlice)
 				if err != nil {
-					panic("CreateTxDetails failed: " + err.Error())
+					return fmt.Errorf("CreateTxDetails failed: %s", err.Error())
 				}
 			}
 		}
@@ -1002,15 +1034,17 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 	for i := 0; i < totalTask; i++ {
 		err := <-errChan
 		if err != nil {
-			panic("saveBlockDataFunc failed: " + err.Error())
+			return fmt.Errorf("saveBlockDataFunc failed: %s", err.Error())
 		}
 	}
 
 	metrics.SaveBlockDataMetrics.WithLabelValues("all").Set(float64(time.Since(start).Milliseconds()))
 	c.finalSaveBlockDataWorker.Enqueue(blockStates)
+	return nil
 }
 
-func (c *Committer) finalSaveBlockDataFunc(blockStates *block.BlockStates) {
+// final save block data
+func (c *Committer) finalSaveBlockDataFunc(blockStates *block.BlockStates) error {
 	start := time.Now()
 	logx.Infof("finalSaveBlockDataFunc start, blockHeight:%d", blockStates.Block.BlockHeight)
 	// update db
@@ -1032,14 +1066,15 @@ func (c *Committer) finalSaveBlockDataFunc(blockStates *block.BlockStates) {
 		return nil
 	})
 	if err != nil {
-		logx.Errorf("finalSaveBlockDataFunc failed:%s,blockHeight:%d", err.Error(), blockStates.Block.BlockHeight)
-		panic("finalSaveBlockDataFunc failed: " + err.Error())
+		return fmt.Errorf("finalSaveBlockDataFunc failed:%s,blockHeight:%d", err.Error(), blockStates.Block.BlockHeight)
 	}
 	c.bc.Statedb.UpdateMaxPoolTxIdFinished(blockStates.Block.Txs[len(blockStates.Block.Txs)-1].PoolTxId)
 	metrics.L2BlockDbHeightMetric.Set(float64(blockStates.Block.BlockHeight))
 	metrics.FinalSaveBlockDataMetrics.WithLabelValues("all").Set(float64(time.Since(start).Milliseconds()))
+	return nil
 }
 
+// create new block
 func (c *Committer) createNewBlock(curBlock *block.Block) error {
 	return c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
 		return c.bc.BlockModel.CreateBlockInTransact(dbTx, curBlock)
@@ -1047,6 +1082,7 @@ func (c *Committer) createNewBlock(curBlock *block.Block) error {
 }
 
 func (c *Committer) shouldCommit(curBlock *block.Block) bool {
+	//After the rollback, re-execute tx and form a block  based on the block size,because curBlock.CreatedAt does not change
 	if c.bc.Statedb.NeedRestoreExecutedTxs() {
 		if len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
 			return true
@@ -1054,7 +1090,7 @@ func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 		return false
 	}
 	var now = time.Now()
-	if (len(c.bc.Statedb.Txs) > 0 && now.Unix()-curBlock.CreatedAt.Unix() >= MaxCommitterInterval) ||
+	if (len(c.bc.Statedb.Txs) > 0 && now.Unix()-curBlock.CreatedAt.Unix() >= int64(c.maxCommitterInterval)) ||
 		len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
 		return true
 	}
@@ -1074,7 +1110,6 @@ func (c *Committer) computeCurrentBlockSize(stateCopy *statedb.StateDataCopy) in
 }
 
 func (c *Committer) getLatestExecutedRequestId() (int64, error) {
-
 	statuses := []int{
 		tx.StatusExecuted,
 		tx.StatusPacked,
@@ -1082,139 +1117,14 @@ func (c *Committer) getLatestExecutedRequestId() (int64, error) {
 		tx.StatusVerified,
 	}
 
-	txTypes := []int64{
-		types.TxTypeDeposit,
-		types.TxTypeDepositNft,
-		types.TxTypeFullExit,
-		types.TxTypeFullExitNft,
-	}
-
-	latestTx, err := c.bc.TxPoolModel.GetLatestTx(txTypes, statuses)
+	latestTx, err := c.bc.TxPoolModel.GetLatestTx(types.GetL1TxTypes(), statuses)
 	if err != nil && err != types.DbErrNotFound {
-		logx.Errorf("get latest executed tx failed: %v", err)
+		logx.Severef("get latest executed tx failed: %v", err)
 		return -1, err
 	} else if err == types.DbErrNotFound {
 		return -1, nil
 	}
 	return latestTx.L1RequestId, nil
-}
-
-func (c *Committer) loadAllAccounts() {
-	start := time.Now()
-	logx.Infof("load all accounts start")
-	totalTask := 0
-	errChan := make(chan error, 1)
-	defer close(errChan)
-	batchReloadSize := 1000
-	maxAccountIndex, err := c.bc.AccountModel.GetMaxAccountIndex()
-	if err != nil && err != types.DbErrNotFound {
-		logx.Severef("load all accounts failed:%s", err.Error())
-		panic("load all accounts failed: " + err.Error())
-	}
-	if maxAccountIndex == -1 {
-		return
-	}
-	for i := 0; int64(i) <= maxAccountIndex; i += batchReloadSize {
-		toAccountIndex := int64(i+batchReloadSize) - 1
-		if toAccountIndex > maxAccountIndex {
-			toAccountIndex = maxAccountIndex
-		}
-		totalTask++
-		err := func(fromAccountIndex int64, toAccountIndex int64) error {
-			return c.pool.Submit(func() {
-				start := time.Now()
-				accounts, err := c.bc.AccountModel.GetByAccountIndexRange(fromAccountIndex, toAccountIndex)
-				if err != nil && err != types.DbErrNotFound {
-					logx.Severef("load all accounts failed:%s", err.Error())
-					errChan <- err
-					return
-				}
-				if accounts != nil {
-					for _, accountInfo := range accounts {
-						formatAccount, err := chain.ToFormatAccountInfo(accountInfo)
-						if err != nil {
-							logx.Severef("load all accounts failed:%s", err.Error())
-							errChan <- err
-							return
-						}
-						c.bc.Statedb.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
-						c.bc.Statedb.L1AddressCache.Add(formatAccount.L1Address, accountInfo.AccountIndex)
-
-					}
-				}
-				logx.Infof("GetByNftIndexRange cost time %s", float64(time.Since(start).Milliseconds()))
-				errChan <- nil
-			})
-		}(int64(i), toAccountIndex)
-		if err != nil {
-			logx.Severef("load all accounts failed:%s", err.Error())
-			panic("load all accounts failed: " + err.Error())
-		}
-	}
-
-	for i := 0; i < totalTask; i++ {
-		err := <-errChan
-		if err != nil {
-			logx.Severef("load all accounts failed:%s", err.Error())
-			panic("load all accounts failed: " + err.Error())
-		}
-	}
-	logx.Infof("load all accounts end. cost time %s", float64(time.Since(start).Milliseconds()))
-}
-
-func (c *Committer) loadAllNfts() {
-	start := time.Now()
-	logx.Infof("load all nfts start")
-	totalTask := 0
-	errChan := make(chan error, 1)
-	defer close(errChan)
-	batchReloadSize := 1000
-	maxNftIndex, err := c.bc.L2NftModel.GetMaxNftIndex()
-	if err != nil && err != types.DbErrNotFound {
-		logx.Severef("load all nfts failed:%s", err.Error())
-		panic("load all nfts failed: " + err.Error())
-	}
-	if maxNftIndex == -1 {
-		return
-	}
-	for i := 0; int64(i) <= maxNftIndex; i += batchReloadSize {
-		toNftIndex := int64(i+batchReloadSize) - 1
-		if toNftIndex > maxNftIndex {
-			toNftIndex = maxNftIndex
-		}
-		totalTask++
-		err := func(fromNftIndex int64, toNftIndex int64) error {
-			return c.pool.Submit(func() {
-				start := time.Now()
-				nfts, err := c.bc.L2NftModel.GetByNftIndexRange(fromNftIndex, toNftIndex)
-				if err != nil && err != types.DbErrNotFound {
-					logx.Severef("load all nfts failed:%s", err.Error())
-					errChan <- err
-					return
-				}
-				if nfts != nil {
-					for _, nftInfo := range nfts {
-						c.bc.Statedb.NftCache.Add(nftInfo.NftIndex, nftInfo)
-					}
-				}
-				logx.Infof("GetByNftIndexRange cost time %s", float64(time.Since(start).Milliseconds()))
-				errChan <- nil
-			})
-		}(int64(i), toNftIndex)
-		if err != nil {
-			logx.Severef("load all nfts failed:%s", err.Error())
-			panic("load all nfts failed: " + err.Error())
-		}
-	}
-
-	for i := 0; i < totalTask; i++ {
-		err := <-errChan
-		if err != nil {
-			logx.Severef("load all nfts failed:%s", err.Error())
-			panic("load all nfts failed: " + err.Error())
-		}
-	}
-	logx.Infof("load all nfts end. cost time %s", float64(time.Since(start).Milliseconds()))
 }
 
 func (c *Committer) PendingTxNum() {
@@ -1224,23 +1134,22 @@ func (c *Committer) PendingTxNum() {
 }
 
 func (c *Committer) CompensatePendingPoolTx() {
-	fromCreatAt := time.Now().Add(time.Duration(-10) * time.Minute).UnixMilli()
+	fromCreatAt := time.Now().Add(time.Duration(-10*c.maxCommitterInterval) * time.Second).UnixMilli()
 	pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatusAndCreateTime(tx.StatusPending, time.UnixMilli(fromCreatAt), c.bc.Statedb.GetMaxPoolTxIdFinished())
 	if err != nil {
 		logx.Errorf("get pending transactions from tx pool for compensation failed:%s", err.Error())
 		return
 	}
-	if pendingTxs != nil {
-		for _, poolTx := range pendingTxs {
-			logx.Severef("get pending transactions from tx pool for compensation id:%s", poolTx.ID)
-			_, found := c.bc.Statedb.MemCache.Get(dbcache.PendingPoolTxKeyByPoolTxId(poolTx.ID))
-			if found {
-				logx.Infof("add pool tx to the queue repeatedly in the compensation task id:%s", poolTx.ID)
-				continue
-			}
-			c.bc.Statedb.MemCache.SetWithTTL(dbcache.PendingPoolTxKeyByPoolTxId(poolTx.ID), poolTx.ID, 0, time.Duration(1)*time.Hour)
-			c.executeTxWorker.Enqueue(poolTx)
+
+	for _, poolTx := range pendingTxs {
+		logx.Severef("get pending transactions from tx pool for compensation id:%s", poolTx.ID)
+		_, found := c.bc.Statedb.MemCache.Get(dbcache.PendingPoolTxKeyByPoolTxId(poolTx.ID))
+		if found {
+			logx.Infof("add pool tx to the queue repeatedly in the compensation task id:%s", poolTx.ID)
+			continue
 		}
+		c.bc.Statedb.MemCache.SetWithTTL(dbcache.PendingPoolTxKeyByPoolTxId(poolTx.ID), poolTx.ID, 0, time.Duration(c.maxCommitterInterval*50)*time.Second)
+		c.executeTxWorker.Enqueue(poolTx)
 	}
 }
 
@@ -1261,9 +1170,6 @@ func (c *Committer) Shutdown() {
 func (c *Committer) SyncNftIndexServer() error {
 	histories, err := c.bc.L2NftMetadataHistoryModel.GetL2NftMetadataHistoryList(nft.StatusNftIndex)
 	if err != nil {
-		if err == types.DbErrSqlOperation {
-			return err
-		}
 		return nil
 	}
 	for _, history := range histories {
@@ -1295,9 +1201,6 @@ func (c *Committer) SyncNftIndexServer() error {
 func (c *Committer) SendIpfsServer() error {
 	histories, err := c.bc.L2NftMetadataHistoryModel.GetL2NftMetadataHistoryList(nft.NotConfirmed)
 	if err != nil {
-		if err == types.DbErrSqlOperation {
-			return err
-		}
 		return nil
 	}
 	for _, history := range histories {
@@ -1333,9 +1236,6 @@ func (c *Committer) RefreshServer() error {
 	for {
 		histories, err := c.bc.L2NftMetadataHistoryModel.GetL2NftMetadataHistoryPage(nft.Confirmed, limit, offset)
 		if err != nil {
-			if err == types.DbErrSqlOperation {
-				return err
-			}
 			return nil
 		}
 		for _, hostory := range histories {

@@ -62,3 +62,36 @@ func NewTxExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 	return nil, types.AppErrUnsupportedTxType
 }
+
+func NewTxExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	switch txInfo.GetTxType() {
+	case types.TxTypeChangePubKey:
+		return NewChangePubKeyExecutorForDesert(bc, txInfo)
+	case types.TxTypeDeposit:
+		return NewDepositExecutorForDesert(bc, txInfo)
+	case types.TxTypeDepositNft:
+		return NewDepositNftExecutorForDesert(bc, txInfo)
+	case types.TxTypeTransfer:
+		return NewTransferExecutorForDesert(bc, txInfo)
+	case types.TxTypeWithdraw:
+		return NewWithdrawExecutorForDesert(bc, txInfo)
+	case types.TxTypeCreateCollection:
+		return NewCreateCollectionExecutorForDesert(bc, txInfo)
+	case types.TxTypeMintNft:
+		return NewMintNftExecutorForDesert(bc, txInfo)
+	case types.TxTypeTransferNft:
+		return NewTransferNftExecutorForDesert(bc, txInfo)
+	case types.TxTypeAtomicMatch:
+		return NewAtomicMatchExecutorForDesert(bc, txInfo)
+	case types.TxTypeCancelOffer:
+		return NewCancelOfferExecutorForDesert(bc, txInfo)
+	case types.TxTypeWithdrawNft:
+		return NewWithdrawNftExecutorForDesert(bc, txInfo)
+	case types.TxTypeFullExit:
+		return NewFullExitExecutorForDesert(bc, txInfo)
+	case types.TxTypeFullExitNft:
+		return NewFullExitNftExecutorForDesert(bc, txInfo)
+	}
+
+	return nil, types.AppErrUnsupportedTxType
+}

@@ -86,11 +86,6 @@ var (
 		Usage: "private key",
 		Value: "",
 	}
-	OwnerFlag = &cli.StringFlag{
-		Name:  "owner",
-		Usage: "owner",
-		Value: "",
-	}
 	TokenFlag = &cli.StringFlag{
 		Name:  "token",
 		Usage: "token",
@@ -99,11 +94,6 @@ var (
 	AmountFlag = &cli.StringFlag{
 		Name:  "amount",
 		Usage: "amount",
-		Value: "",
-	}
-	NftIndexFlag = &cli.StringFlag{
-		Name:  "nftIndex",
-		Usage: "nftIndex",
 		Value: "",
 	}
 	ProofFlag = &cli.StringFlag{

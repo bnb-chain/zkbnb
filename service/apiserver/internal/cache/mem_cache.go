@@ -1,7 +1,10 @@
 package cache
 
 import (
+	"context"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/dao/dbcache"
+	"github.com/bnb-chain/zkbnb/types"
 	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 
@@ -54,11 +57,12 @@ type MemCache struct {
 	assetExpiration     time.Duration
 	txPendingExpiration time.Duration
 	priceExpiration     time.Duration
+	redisCache          dbcache.Cache
 }
 
 func MustNewMemCache(accountModel accdao.AccountModel, assetModel assetdao.AssetModel,
 	accountExpiration, blockExpiration, txExpiration,
-	assetExpiration, txPendingExpiration, priceExpiration int, maxCounterNum, maxKeyNum int64) *MemCache {
+	assetExpiration, txPendingExpiration, priceExpiration int, maxCounterNum, maxKeyNum int64, redisCache dbcache.Cache) *MemCache {
 
 	cache, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters: maxCounterNum,
@@ -88,6 +92,7 @@ func MustNewMemCache(accountModel accdao.AccountModel, assetModel assetdao.Asset
 		assetExpiration:     time.Duration(assetExpiration) * time.Millisecond,
 		txPendingExpiration: time.Duration(txPendingExpiration) * time.Millisecond,
 		priceExpiration:     time.Duration(priceExpiration) * time.Millisecond,
+		redisCache:          redisCache,
 	}
 	return memCache
 }
@@ -121,7 +126,7 @@ func (m *MemCache) getWithSetFromCache(key string, fromCache bool, duration time
 	return result, nil
 }
 
-func (m *MemCache) setAccount(accountIndex int64, l1Address, accountPk string) {
+func (m *MemCache) setAccount(accountIndex int64, l1Address string) {
 	m.goCache.SetWithTTL(fmt.Sprintf("%s%d", AccountIndexL1AddressKeyPrefix, accountIndex), l1Address, 0, cacheDefaultExpiration)
 	m.goCache.SetWithTTL(fmt.Sprintf("%s%s", AccountL1AddressKeyPrefix, l1Address), accountIndex, 0, cacheDefaultExpiration)
 }
@@ -132,11 +137,23 @@ func (m *MemCache) GetAccountIndexByL1Address(l1Address string) (int64, error) {
 		return index.(int64), nil
 	}
 	account, err := m.accountModel.GetAccountByL1Address(l1Address)
-	if err != nil {
+	if err != nil && err != types.DbErrNotFound {
 		return 0, err
 	}
-	m.setAccount(account.AccountIndex, account.L1Address, account.PublicKey)
-	return account.AccountIndex, nil
+	if err == types.DbErrNotFound {
+		var accountIndex interface{}
+		var redisAccount interface{}
+		redisAccount, err = m.redisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(l1Address), &accountIndex)
+		if err == nil && redisAccount != nil {
+			m.setAccount(accountIndex.(int64), l1Address)
+			return accountIndex.(int64), nil
+		} else {
+			return 0, types.DbErrNotFound
+		}
+	} else {
+		m.setAccount(account.AccountIndex, account.L1Address)
+		return account.AccountIndex, nil
+	}
 }
 
 func (m *MemCache) GetL1AddressByIndex(accountIndex int64) (string, error) {
@@ -144,25 +161,24 @@ func (m *MemCache) GetL1AddressByIndex(accountIndex int64) (string, error) {
 	if found {
 		return name.(string), nil
 	}
-	account, err := m.accountModel.GetAccountByIndex(accountIndex)
-	if err != nil {
+	accountInfo, err := m.accountModel.GetAccountByIndex(accountIndex)
+	if err != nil && err != types.DbErrNotFound {
 		return "", err
 	}
-	m.setAccount(account.AccountIndex, account.L1Address, account.PublicKey)
-	return account.L1Address, nil
-}
-
-func (m *MemCache) GetAccountL1AddressByIndex(accountIndex int64) (string, error) {
-	l1Address, found := m.goCache.Get(fmt.Sprintf("%s%d", AccountIndexL1AddressKeyPrefix, accountIndex))
-	if found {
-		return l1Address.(string), nil
+	if err == types.DbErrNotFound {
+		var redisAccount interface{}
+		accountInfo := &accdao.Account{}
+		redisAccount, err := m.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), accountInfo)
+		if err == nil && redisAccount != nil {
+			m.setAccount(accountIndex, accountInfo.L1Address)
+			return accountInfo.L1Address, nil
+		} else {
+			return "", types.DbErrNotFound
+		}
+	} else {
+		m.setAccount(accountInfo.AccountIndex, accountInfo.L1Address)
+		return accountInfo.L1Address, nil
 	}
-	account, err := m.accountModel.GetAccountByIndex(accountIndex)
-	if err != nil {
-		return "", err
-	}
-	m.setAccount(account.AccountIndex, account.L1Address, account.PublicKey)
-	return account.L1Address, nil
 }
 
 func (m *MemCache) GetAccountWithFallback(accountIndex int64, f fallback) (*accdao.Account, error) {
@@ -173,7 +189,7 @@ func (m *MemCache) GetAccountWithFallback(accountIndex int64, f fallback) (*accd
 	}
 
 	account := a.(*accdao.Account)
-	m.setAccount(account.AccountIndex, account.L1Address, account.PublicKey)
+	m.setAccount(account.AccountIndex, account.L1Address)
 	return account, nil
 }
 

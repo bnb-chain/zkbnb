@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package generateproof
+package desertexit
 
 import (
 	"math/big"
@@ -59,30 +59,30 @@ type VerifyAndExecuteBlocksCallData struct {
 }
 
 type PerformDesertAssetData struct {
-	StoredBlockInfo    StoredBlockInfo
-	AssetExitData      ExodusVerifierAssetExitData
-	AccountExitData    ExodusVerifierAccountExitData
+	StoredBlockInfo    *StoredBlockInfo
+	AssetExitData      DesertVerifierAssetExitData
+	AccountExitData    DesertVerifierAccountExitData
 	AssetMerkleProof   []string
 	AccountMerkleProof []string
 	NftRoot            string
 }
 
 type PerformDesertNftData struct {
-	StoredBlockInfo    StoredBlockInfo
-	AccountExitData    ExodusVerifierAccountExitData
-	ExitNfts           []ExodusVerifierNftExitData
+	StoredBlockInfo    *StoredBlockInfo
+	AccountExitData    DesertVerifierAccountExitData
+	ExitNfts           []DesertVerifierNftExitData
 	AssetRoot          string
 	NftMerkleProofs    [][]string
 	AccountMerkleProof []string
 }
 
-type ExodusVerifierAssetExitData struct {
+type DesertVerifierAssetExitData struct {
 	AssetId                  uint16
-	Amount                   int64
-	OfferCanceledOrFinalized int64
+	Amount                   string
+	OfferCanceledOrFinalized string
 }
 
-type ExodusVerifierAccountExitData struct {
+type DesertVerifierAccountExitData struct {
 	AccountId       uint32
 	L1Address       string
 	PubKeyX         string
@@ -91,11 +91,12 @@ type ExodusVerifierAccountExitData struct {
 	CollectionNonce int64
 }
 
-type ExodusVerifierNftExitData struct {
+type DesertVerifierNftExitData struct {
 	NftIndex            uint64
 	OwnerAccountIndex   int64
 	CreatorAccountIndex int64
-	NftContentHash      string
+	NftContentHash1     string
+	NftContentHash2     string
 	NftContentType      uint8
 	CreatorTreasuryRate int64
 	CollectionId        int64

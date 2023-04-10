@@ -39,6 +39,13 @@ func NewAtomicMatchExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}, nil
 }
 
+func NewAtomicMatchExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &AtomicMatchExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.AtomicMatchTxInfo),
+	}, nil
+}
+
 func (e *AtomicMatchExecutor) Prepare() error {
 	txInfo := e.TxInfo
 
@@ -90,11 +97,6 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 
 	if protocolRate != txInfo.BuyOffer.ProtocolRate {
 		return types.AppErrInvalidPlatformRate
-	}
-
-	protocolAmount := ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.BuyOffer.ProtocolRate)), big.NewInt(TenThousand))
-	if protocolAmount.Cmp(txInfo.BuyOffer.ProtocolAmount) != 0 {
-		return types.AppErrInvalidPlatformAmount
 	}
 
 	if txInfo.BuyOffer.Type != types.BuyOfferType ||
@@ -548,26 +550,6 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		PublicKey:       types.EmptyPk,
 	})
 
-	// gas account asset gas
-	order++
-	accountOrder++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.GasAccountIndex,
-		L1Address:    gasAccount.L1Address,
-		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, types.ZeroBigInt).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           gasAccount.Nonce,
-		CollectionNonce: gasAccount.CollectionNonce,
-		IsGas:           true,
-		PublicKey:       gasAccount.PublicKey,
-	})
-	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-
 	// buyChannelAccount
 	order++
 	accountOrder++
@@ -626,6 +608,26 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		PublicKey:       protocolAccount.PublicKey,
 	})
 	protocolAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(protocolAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.BuyOffer.ProtocolAmount)
+
+	// gas account asset gas
+	order++
+	accountOrder++
+	txDetails = append(txDetails, &tx.TxDetail{
+		AssetId:      txInfo.GasFeeAssetId,
+		AssetType:    types.FungibleAssetType,
+		AccountIndex: txInfo.GasAccountIndex,
+		L1Address:    gasAccount.L1Address,
+		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
+		BalanceDelta: types.ConstructAccountAsset(
+			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, types.ZeroBigInt).String(),
+		Order:           order,
+		AccountOrder:    accountOrder,
+		Nonce:           gasAccount.Nonce,
+		CollectionNonce: gasAccount.CollectionNonce,
+		IsGas:           true,
+		PublicKey:       gasAccount.PublicKey,
+	})
+	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 
 	return txDetails, nil
 }

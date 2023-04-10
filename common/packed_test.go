@@ -18,7 +18,12 @@
 package common
 
 import (
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
+	"github.com/bnb-chain/zkbnb-crypto/util"
+	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -36,4 +41,85 @@ func TestToPackedFee(t *testing.T) {
 	fee, err := ToPackedFee(amount)
 	assert.NoError(t, err)
 	assert.Equal(t, fee, int64(32011))
+}
+
+func TestUnpackAmount(t *testing.T) {
+	//a, _ := strconv.ParseInt("1111111111111111111111111111111111111111", 2, 40)
+
+	a, _ := new(big.Int).SetString("3435973836700000000000000000000000000000000", 10)
+	logx.Info(a)
+	packedAmount, _ := util.ToPackedAmount(a)
+	logx.Info(packedAmount)
+	nAmount, _ := util.UnpackAmount(a)
+	logx.Info(nAmount.String())
+
+}
+
+func TestUnpackFee(t *testing.T) {
+	a, _ := strconv.ParseInt("1111111111111111", 2, 16)
+	logx.Info(a)
+	nAmount, _ := util.UnpackFee(new(big.Int).SetInt64(a))
+	logx.Info(nAmount.String())
+
+}
+
+func TestCheckPackedAmount(t *testing.T) {
+	amount, _ := new(big.Int).SetString("1", 10)
+	packedAmount, _ := util.ToPackedAmount(amount)
+	logx.Info(packedAmount)
+
+	nAmount, _ := util.UnpackAmount(big.NewInt(packedAmount))
+	logx.Info(nAmount.String())
+}
+
+func TestZeroPackedAmount(t *testing.T) {
+	amount, _ := new(big.Int).SetString("0", 10)
+	packedAmount, err := util.ToPackedAmount(amount)
+	assert.NoError(t, err)
+	logx.Info(packedAmount)
+
+	nAmount, err := util.UnpackAmount(big.NewInt(packedAmount))
+	assert.NoError(t, err)
+	logx.Info(nAmount.String())
+
+	assert.Equal(t, amount, nAmount)
+}
+
+func TestOnePackedAmount(t *testing.T) {
+	amount, _ := new(big.Int).SetString("1", 10)
+	packedAmount, err := util.ToPackedAmount(amount)
+	assert.NoError(t, err)
+	logx.Info(packedAmount)
+
+	nAmount, err := util.UnpackAmount(big.NewInt(packedAmount))
+	assert.NoError(t, err)
+	logx.Info(nAmount.String())
+
+	assert.Equal(t, amount, nAmount)
+}
+
+func TestMaxPackedAmount(t *testing.T) {
+	amount := ffmath.Add(util.PackedAmountMaxAmount, big.NewInt(0))
+	packedAmount, err := util.ToPackedAmount(amount)
+	assert.NoError(t, err)
+	logx.Info(packedAmount)
+
+	nAmount, err := util.UnpackAmount(big.NewInt(packedAmount))
+	assert.NoError(t, err)
+	logx.Info(nAmount.String())
+
+	assert.Equal(t, amount, nAmount)
+}
+
+func TestMaxPackedAmount1(t *testing.T) {
+	var subPendingTxs []*tx.Tx
+	subPendingTxs = nil
+	count := len(subPendingTxs)
+	logx.Infof("eeeee-%d", count)
+
+	subPendingTxs = append(subPendingTxs, &tx.Tx{})
+	for _, subPendingTx := range subPendingTxs {
+		logx.Error(subPendingTx)
+	}
+	logx.Infof("1")
 }

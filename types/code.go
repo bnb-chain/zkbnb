@@ -76,6 +76,7 @@ var (
 	AppErrAccountNameAlreadyRegistered = NewBusinessError(21106, "invalid account name, already registered")
 	AppErrAccountInvalidToAccount      = NewBusinessError(21107, "invalid ToAccount")
 	AppErrInvalidAccount               = NewBusinessError(21108, "invalid account")
+	AppErrInvalidPublicKey             = NewBusinessError(21108, "invalid PublicKey,please run changePubKey")
 
 	// Asset
 	AppErrAssetNotFound               = NewBusinessError(21200, "asset not found")
@@ -107,6 +108,7 @@ var (
 	AppErrAccountNotNftOwner        = NewBusinessError(21411, "account is not owner of the nft")
 	AppErrUnsupportedTxType         = NewBusinessError(21412, "unsupported tx type")
 	AppErrPrepareNftFailed          = NewBusinessError(21413, "prepare nft failed")
+	AppErrChannelNameTooHigh        = NewBusinessError(21414, "ChannelName should not be larger than ")
 
 	// Offer
 	AppErrInvalidOfferType           = NewBusinessError(21500, "invalid offer type")
@@ -126,13 +128,10 @@ var (
 	AppErrInvalidBuyOfferState       = NewBusinessError(21512, "invalid buy offer state, already canceled or finalized")
 	AppErrInvalidAssetOfOffer        = NewBusinessError(21513, "invalid asset of offer")
 	AppErrInvalidPlatformRate        = NewBusinessError(21514, "invalid platform rate")
-	AppErrInvalidPlatformAmount      = NewBusinessError(21515, "invalid platform amount")
-	AppErrInvalidSellPlatformAmount  = NewBusinessError(21516, "sell platform amount should be 0")
-	AppErrInvalidSellPlatformRate    = NewBusinessError(21517, "sell platform rate should be 0")
 
 	// Nft
 	AppErrNftAlreadyExist          = NewBusinessError(21600, "invalid nft index, already exist")
-	AppErrInvalidNftContenthash    = NewBusinessError(21601, "invalid nft content hash")
+	AppErrInvalidNftContenthash    = NewBusinessError(21601, "invalid nft content hash,mint nft again")
 	AppErrNotNftOwner              = NewBusinessError(21602, "account is not owner of the nft")
 	AppErrInvalidNftIndex          = NewBusinessError(21603, "invalid nft index")
 	AppErrNftNotFound              = NewBusinessError(21604, "nft not found")
@@ -142,6 +141,7 @@ var (
 	AppErrInvalidMutableAttributes = NewBusinessError(21608, "mutableAttributes should not be larger than ")
 	AppErrInvalidNftNonce          = NewBusinessError(21609, "invalid nft nonce")
 	AppErrInvalidRoyaltyRate       = NewBusinessError(21610, "invalid royalty rate")
+	AppErrInvalidNftContentType    = NewBusinessError(21611, "nftContentType should be 0 or 1")
 	// Collection
 	AppErrInvalidCollectionId   = NewBusinessError(21700, "invalid collection id")
 	AppErrInvalidCollectionName = NewBusinessError(21701, "invalid collection name")
