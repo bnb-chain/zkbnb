@@ -32,21 +32,12 @@ func NewCommitProcessor(bc *BlockChain) Processor {
 	}
 }
 
-func (p *CommitProcessor) Process(tx *tx.Tx) error {
+func (p *CommitProcessor) Process(tx *tx.Tx) (err error) {
 	var start time.Time
 	p.bc.setCurrentBlockTimeStamp()
 	defer func() {
-		if err := recover(); err != nil {
-			if types.IsL2Tx(tx.TxType) {
-				expectNonce, err := p.bc.Statedb.GetCommittedNonce(tx.AccountIndex)
-				if err != nil {
-					p.bc.Statedb.ClearPendingNonceFromRedisCache(tx.AccountIndex)
-				} else {
-					p.bc.Statedb.SetPendingNonceToRedisCache(tx.AccountIndex, expectNonce-1)
-				}
-			}
-			logx.Severef("failed to recover commit processor, %v", err)
-			panic("failed to recover commit processor")
+		if recoverErr := recover(); recoverErr != nil {
+			err = fmt.Errorf("failed to recover commit processor, %v", recoverErr)
 		}
 	}()
 	defer p.bc.resetCurrentBlockTimeStamp()
