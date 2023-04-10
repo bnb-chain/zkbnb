@@ -157,13 +157,13 @@ func (c *Committer) Run() error {
 	})
 
 	//load accounts from db to memcache
-	err := c.loadAllAccounts()
+	err := c.bc.LoadAllAccounts(c.pool)
 	if err != nil {
 		return err
 	}
 
 	//load nfts from db to memcache
-	err = c.loadAllNfts()
+	err = c.bc.LoadAllNfts(c.pool)
 	if err != nil {
 		return err
 	}
@@ -1125,117 +1125,6 @@ func (c *Committer) getLatestExecutedRequestId() (int64, error) {
 		return -1, nil
 	}
 	return latestTx.L1RequestId, nil
-}
-
-func (c *Committer) loadAllAccounts() error {
-	start := time.Now()
-	logx.Infof("load all accounts start")
-	totalTask := 0
-	errChan := make(chan error, 1)
-	defer close(errChan)
-
-	batchReloadSize := 1000
-	maxAccountIndex, err := c.bc.AccountModel.GetMaxAccountIndex()
-	if err != nil && err != types.DbErrNotFound {
-		return fmt.Errorf("load all accounts failed: %s", err.Error())
-	}
-	if maxAccountIndex == -1 {
-		return nil
-	}
-	for i := 0; int64(i) <= maxAccountIndex; i += batchReloadSize {
-		toAccountIndex := int64(i+batchReloadSize) - 1
-		if toAccountIndex > maxAccountIndex {
-			toAccountIndex = maxAccountIndex
-		}
-		totalTask++
-		err := func(fromAccountIndex int64, toAccountIndex int64) error {
-			return c.pool.Submit(func() {
-				start := time.Now()
-				accounts, err := c.bc.AccountModel.GetByAccountIndexRange(fromAccountIndex, toAccountIndex)
-				if err != nil && err != types.DbErrNotFound {
-					logx.Severef("load all accounts failed:%s", err.Error())
-					errChan <- err
-					return
-				}
-				for _, accountInfo := range accounts {
-					formatAccount, err := chain.ToFormatAccountInfo(accountInfo)
-					if err != nil {
-						logx.Severef("load all accounts failed:%s", err.Error())
-						errChan <- err
-						return
-					}
-					c.bc.Statedb.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
-					c.bc.Statedb.L1AddressCache.Add(formatAccount.L1Address, accountInfo.AccountIndex)
-				}
-				logx.Infof("GetByNftIndexRange cost time %s", float64(time.Since(start).Milliseconds()))
-				errChan <- nil
-			})
-		}(int64(i), toAccountIndex)
-		if err != nil {
-			return fmt.Errorf("load all accounts failed: %s", err.Error())
-		}
-	}
-
-	for i := 0; i < totalTask; i++ {
-		err := <-errChan
-		if err != nil {
-			return fmt.Errorf("load all accounts failed:  %s", err.Error())
-		}
-	}
-	logx.Infof("load all accounts end. cost time %s", float64(time.Since(start).Milliseconds()))
-	return nil
-}
-
-func (c *Committer) loadAllNfts() error {
-	start := time.Now()
-	logx.Infof("load all nfts start")
-	totalTask := 0
-	errChan := make(chan error, 1)
-	defer close(errChan)
-
-	batchReloadSize := 1000
-	maxNftIndex, err := c.bc.L2NftModel.GetMaxNftIndex()
-	if err != nil && err != types.DbErrNotFound {
-		return fmt.Errorf("load all nfts failed:  %s", err.Error())
-	}
-	if maxNftIndex == -1 {
-		return nil
-	}
-	for i := 0; int64(i) <= maxNftIndex; i += batchReloadSize {
-		toNftIndex := int64(i+batchReloadSize) - 1
-		if toNftIndex > maxNftIndex {
-			toNftIndex = maxNftIndex
-		}
-		totalTask++
-		err := func(fromNftIndex int64, toNftIndex int64) error {
-			return c.pool.Submit(func() {
-				start := time.Now()
-				nfts, err := c.bc.L2NftModel.GetByNftIndexRange(fromNftIndex, toNftIndex)
-				if err != nil && err != types.DbErrNotFound {
-					logx.Severef("load all nfts failed:%s", err.Error())
-					errChan <- err
-					return
-				}
-				for _, nftInfo := range nfts {
-					c.bc.Statedb.NftCache.Add(nftInfo.NftIndex, nftInfo)
-				}
-				logx.Infof("GetByNftIndexRange cost time %s", float64(time.Since(start).Milliseconds()))
-				errChan <- nil
-			})
-		}(int64(i), toNftIndex)
-		if err != nil {
-			return fmt.Errorf("load all nfts failed:  %s", err.Error())
-		}
-	}
-
-	for i := 0; i < totalTask; i++ {
-		err := <-errChan
-		if err != nil {
-			return fmt.Errorf("load all nfts failed:  %s", err.Error())
-		}
-	}
-	logx.Infof("load all nfts end. cost time %s", float64(time.Since(start).Milliseconds()))
-	return nil
 }
 
 func (c *Committer) PendingTxNum() {
