@@ -108,6 +108,7 @@ var (
 	AppErrAccountNotNftOwner        = NewBusinessError(21411, "account is not owner of the nft")
 	AppErrUnsupportedTxType         = NewBusinessError(21412, "unsupported tx type")
 	AppErrPrepareNftFailed          = NewBusinessError(21413, "prepare nft failed")
+	AppErrChannelNameTooHigh        = NewBusinessError(21414, "ChannelName should not be larger than ")
 
 	// Offer
 	AppErrInvalidOfferType           = NewBusinessError(21500, "invalid offer type")
