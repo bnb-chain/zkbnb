@@ -38,8 +38,7 @@ func ReadUint16(buf []byte, offset int) (newOffset int, res uint16) {
 }
 
 func ReadUint24(buf []byte, offset int) (newOffset int, res uint64) {
-	res = binary.BigEndian.Uint64(buf[offset : offset+3])
-	return offset + 3, res
+	return offset + 3, new(big.Int).SetBytes(buf[offset : offset+3]).Uint64()
 }
 
 func ReadUint32(buf []byte, offset int) (newOffset int, res uint32) {
