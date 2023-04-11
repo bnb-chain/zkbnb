@@ -226,11 +226,11 @@ func (c *Committer) pullPoolTxsToQueue() error {
 				if time.Now().Sub(poolTx.CreatedAt).Seconds() < 5 {
 					limit = 10
 					time.Sleep(50 * time.Millisecond)
-					logx.Infof("not equal id=%s,but delay seconds<5,break it", poolTx.ID)
+					logx.Infof("not equal id=%d,but delay seconds<5,break it", poolTx.ID)
 					break
 				} else {
 					//If the time is greater than 5 seconds, skip this id and compensate through CompensatePendingPoolTx
-					logx.Infof("not equal id=%s,but delay seconds>5,do it", poolTx.ID)
+					logx.Infof("not equal id=%d,but delay seconds>5,do it", poolTx.ID)
 				}
 			}
 			executedTxMaxId = poolTx.ID
@@ -321,10 +321,10 @@ func (c *Committer) executeTxFunc() error {
 			}
 			metrics.ExecuteTxApply1TxMetrics.Set(float64(time.Since(startApplyTx).Milliseconds()))
 			if err != nil {
-				logx.Severef("apply pool tx ID: %d failed, err %v ", poolTx.ID, err)
+				logx.Severef("apply pool tx failed,id=%d, err %v ", poolTx.ID, err)
 				if types.IsPriorityOperationTx(poolTx.TxType) {
 					metrics.PoolTxL1ErrorCountMetics.Inc()
-					return fmt.Errorf("apply priority pool tx failed,id=%s,error=%s", strconv.Itoa(int(poolTx.ID)), err.Error())
+					return fmt.Errorf("apply priority pool tx failed,id=%d,error=%s", poolTx.ID, err.Error())
 				} else {
 					expectNonce, err := c.bc.Statedb.GetCommittedNonce(poolTx.AccountIndex)
 					if err != nil {
@@ -342,7 +342,7 @@ func (c *Committer) executeTxFunc() error {
 			if types.IsPriorityOperationTx(poolTx.TxType) {
 				metrics.PriorityOperationMetric.Set(float64(poolTx.L1RequestId))
 				if l1LatestRequestId != -1 && poolTx.L1RequestId != l1LatestRequestId+1 {
-					return fmt.Errorf("invalid request id=%s", strconv.Itoa(int(poolTx.L1RequestId)))
+					return fmt.Errorf("invalid request id=%d", poolTx.L1RequestId)
 				}
 				l1LatestRequestId = poolTx.L1RequestId
 			}
@@ -352,12 +352,12 @@ func (c *Committer) executeTxFunc() error {
 				previousHeight := curBlock.BlockHeight
 				if curBlock.ID == 0 {
 					err = c.createNewBlock(curBlock)
-					logx.Infof("create new block, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
+					logx.Infof("create new block, current height=%d,previous height=%d,blockId=%d", curBlock.BlockHeight, previousHeight, curBlock.ID)
 					if err != nil {
 						return fmt.Errorf("create new block failed:%s", err.Error())
 					}
 				} else {
-					logx.Infof("not create new block,use old block data, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
+					logx.Infof("not create new block,use old block data, current height=%d,previous height=%d,blockId=%d", curBlock.BlockHeight, previousHeight, curBlock.ID)
 				}
 			}
 			pendingUpdatePoolTxs = append(pendingUpdatePoolTxs, poolTx)
@@ -687,7 +687,7 @@ func (c *Committer) preSaveBlockDataFunc(stateDataCopy *statedb.StateDataCopy) e
 	}
 	nftIndexesJson, err := json.Marshal(nftIndexes)
 	if err != nil {
-		return fmt.Errorf("marshal nftIndexesJson failed:%s,blockHeight:%s", err, stateDataCopy.CurrentBlock.BlockHeight)
+		return fmt.Errorf("marshal nftIndexesJson failed:%s,blockHeight:%d", err, stateDataCopy.CurrentBlock.BlockHeight)
 	}
 
 	stateDataCopy.CurrentBlock.AccountIndexes = string(accountIndexesJson)
@@ -1146,10 +1146,10 @@ func (c *Committer) CompensatePendingPoolTx() {
 	}
 
 	for _, poolTx := range pendingTxs {
-		logx.Severef("get pending transactions from tx pool for compensation id:%s", poolTx.ID)
+		logx.Severef("get pending transactions from tx pool for compensation id:%d", poolTx.ID)
 		_, found := c.bc.Statedb.MemCache.Get(dbcache.PendingPoolTxKeyByPoolTxId(poolTx.ID))
 		if found {
-			logx.Infof("add pool tx to the queue repeatedly in the compensation task id:%s", poolTx.ID)
+			logx.Infof("add pool tx to the queue repeatedly in the compensation task id:%d", poolTx.ID)
 			continue
 		}
 		c.bc.Statedb.MemCache.SetWithTTL(dbcache.PendingPoolTxKeyByPoolTxId(poolTx.ID), poolTx.ID, 0, time.Duration(c.maxCommitterInterval*50)*time.Second)
