@@ -366,11 +366,11 @@ func (s *Sender) CommitBlocks() (err error) {
 	if l1RollupTx != nil && l1RollupTx.L1Nonce == int64(nonce) {
 		standByGasPrice := decimal.NewFromInt(l1RollupTx.GasPrice).Add(decimal.NewFromInt(l1RollupTx.GasPrice).Mul(decimal.NewFromFloat(0.1)))
 		if standByGasPrice.GreaterThan(maxGasPrice) {
-			logx.Errorf("abandon commit block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
+			logx.Errorf("abandon commit block to l1, gasPrice>maxGasPrice,l1 nonce: %d,gasPrice: %d,maxGasPrice: %d", nonce, standByGasPrice, maxGasPrice)
 			return nil
 		}
 		gasPrice = standByGasPrice.RoundUp(0).BigInt()
-		logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
+		logx.Infof("speed up commit block to l1,l1 nonce: %d,gasPrice: %d", nonce, gasPrice)
 	}
 
 	// Judge whether the blocks should be committed to the chain for better gas consumption
@@ -393,11 +393,11 @@ func (s *Sender) CommitBlocks() (err error) {
 			}
 			standByGasPrice := decimal.NewFromInt(gasPrice.Int64()).Add(decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromFloat(0.1)))
 			if standByGasPrice.GreaterThan(maxGasPrice) {
-				logx.Errorf("abandon commit block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
+				logx.Errorf("abandon commit block to l1, gasPrice>maxGasPrice,l1 nonce: %d,gasPrice: %d,maxGasPrice: %d", nonce, standByGasPrice, maxGasPrice)
 				return nil
 			}
 			gasPrice = standByGasPrice.RoundUp(0).BigInt()
-			logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
+			logx.Infof("speed up commit block to l1,l1 nonce: %d,gasPrice: %d", nonce, gasPrice)
 		}
 
 		// commit blocks on-chain
@@ -624,11 +624,11 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	if l1RollupTx != nil && l1RollupTx.L1Nonce == int64(nonce) {
 		standByGasPrice := decimal.NewFromInt(l1RollupTx.GasPrice).Add(decimal.NewFromInt(l1RollupTx.GasPrice).Mul(decimal.NewFromFloat(0.1)))
 		if standByGasPrice.GreaterThan(maxGasPrice) {
-			logx.Errorf("abandon verify block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
+			logx.Errorf("abandon verify block to l1, gasPrice>maxGasPrice,l1 nonce: %d,gasPrice: %d,maxGasPrice: %d", nonce, standByGasPrice, maxGasPrice)
 			return nil
 		}
 		gasPrice = standByGasPrice.RoundUp(0).BigInt()
-		logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
+		logx.Infof("speed up verify block to l1,l1 nonce: %d,gasPrice: %d", nonce, gasPrice)
 	}
 
 	// Judge whether the blocks should be verified and executed to the chain for better gas consumption
@@ -651,11 +651,11 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			}
 			standByGasPrice := decimal.NewFromInt(gasPrice.Int64()).Add(decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromFloat(0.1)))
 			if standByGasPrice.GreaterThan(maxGasPrice) {
-				logx.Errorf("abandon verify block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
+				logx.Errorf("abandon verify block to l1, gasPrice>maxGasPrice,l1 nonce: %d,gasPrice: %d,maxGasPrice: %d", nonce, standByGasPrice, maxGasPrice)
 				return nil
 			}
 			gasPrice = standByGasPrice.RoundUp(0).BigInt()
-			logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
+			logx.Infof("speed up verify block to l1,l1 nonce: %d,gasPrice: %d", nonce, gasPrice)
 		}
 		// Verify blocks on-chain
 		txHash, err = s.zkbnbClient.VerifyAndExecuteBlocksWithNonce(
@@ -746,8 +746,8 @@ func (s *Sender) ShouldCommitBlocks(lastBlock zkbnb.StorageStoredBlockInfo,
 	maxCommitAvgUnitGas := sconfig.GetSenderConfig().MaxCommitAvgUnitGas
 	unitGas := estimatedFee / totalTxCount
 	if unitGas <= maxCommitAvgUnitGas {
-		logx.Info("abandon commit block to l1, UnitGasFee is greater than MaxCommitBlockUnitGas, UnitGasFee:%d, "+
-			"MaxCommitAvgUnitGas:%d", unitGas, maxCommitAvgUnitGas)
+		logx.Info("abandon commit block to l1, UnitGasFee is greater than MaxCommitBlockUnitGas, UnitGasFee:%ud, "+
+			"MaxCommitAvgUnitGas:%ud", unitGas, maxCommitAvgUnitGas)
 		return true
 	}
 	return false
@@ -783,8 +783,8 @@ func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, verifyAndEx
 	maxVerifyAvgUnitGas := sconfig.GetSenderConfig().MaxVerifyAvgUnitGas
 	unitGas := estimatedFee / totalTxCount
 	if unitGas > maxVerifyAvgUnitGas {
-		logx.Info("abandon verify and execute block to l1, UnitGasFee is greater than maxVerifyAvgUnitGas, UnitGasFee:%d, "+
-			"MaxVerifyAvgUnitGas:%d", unitGas, maxVerifyAvgUnitGas)
+		logx.Info("abandon verify and execute block to l1, UnitGasFee is greater than maxVerifyAvgUnitGas, UnitGasFee:%ud, "+
+			"MaxVerifyAvgUnitGas:%ud", unitGas, maxVerifyAvgUnitGas)
 		return false
 	}
 	return true

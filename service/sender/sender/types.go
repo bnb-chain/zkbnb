@@ -156,8 +156,8 @@ func compressPublicData(originPubData string) []byte {
 
 	txCountInPubData := pubDataTotalCount / txBytesPerPubData
 
-	resPubData := make([]byte, (types2.PubDataBitsSizePerTx/8)*2)
-	for i := 0; i <= txCountInPubData; i++ {
+	resPubData := make([]byte, 0)
+	for i := 0; i < txCountInPubData; i++ {
 		subPubData := pubDataBytes[i*txBytesPerPubData : (i+1)*txBytesPerPubData]
 		if isNotEmptyTx(subPubData) {
 			resPubData = append(resPubData, subPubData...)
