@@ -113,14 +113,9 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.Compres
 			onChainOperations = append(onChainOperations, onChainOperationData)
 		}
 
-		logx.Info("Compressed Block Height:", oBlock.BlockHeight)
-		logx.Info("Original public data:", oBlock.PublicData)
-		compressedPublicData := compressPublicData(oBlock.PublicData)
-		logx.Info("Compressed public data:", common.Bytes2Hex(compressedPublicData))
-
 		commitBlock := zkbnb.ZkBNBCommitBlockInfo{
 			NewStateRoot:      newStateRoot,
-			PublicData:        compressedPublicData,
+			PublicData:        compressPublicData(oBlock.PublicData),
 			Timestamp:         big.NewInt(oBlock.Timestamp),
 			OnchainOperations: onChainOperations,
 			BlockNumber:       uint32(oBlock.BlockHeight),
