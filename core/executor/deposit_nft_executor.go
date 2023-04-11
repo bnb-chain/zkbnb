@@ -261,6 +261,7 @@ func (e *DepositNftExecutor) Finalize() error {
 		txInfo := e.TxInfo
 		if !e.isDesertExit {
 			bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
+			logx.Infof("create account,pool id =%d,new AccountIndex=%d,BlockHeight=%d", e.tx.ID, txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
 		}
 		accountInfo := e.GetCreatingAccount()
 		bc.StateDB().SetPendingAccountL1AddressMap(accountInfo.L1Address, accountInfo.AccountIndex)

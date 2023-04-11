@@ -53,6 +53,7 @@ func (e *MintNftExecutor) Prepare() error {
 				nextNftIndex := e.tx.NftIndex
 				txInfo.NftIndex = nextNftIndex
 			}
+			logx.Infof("mint nft,pool id =%d,new nft=%d,BlockHeight=%d", e.tx.ID, txInfo.NftIndex, e.bc.CurrentBlock().BlockHeight)
 		}
 		// Mark the tree states that would be affected in this executor.
 		e.MarkNftDirty(txInfo.NftIndex)

@@ -23,6 +23,8 @@ type Config struct {
 		GasPrice                uint64
 		//((MaxGasPrice-GasPrice)/GasPrice)*100
 		MaxGasPriceIncreasePercentage uint64 `json:",optional"`
+		DisableCommitBlock            bool   `json:",optional"`
+		DisableVerifyBlock            bool   `json:",optional"`
 	}
 	Apollo struct {
 		AppID          string
