@@ -260,7 +260,7 @@ func (m *defaultTxPoolModel) GetTxsUnscopedByAccountIndex(accountIndex int64, li
 		f(opt)
 	}
 
-	dbTx := m.DB.Unscoped().Table(m.table).Where("account_index = ?", accountIndex)
+	dbTx := m.DB.Unscoped().Table(m.table).Where("account_index = ? or to_account_index = ?", accountIndex, accountIndex)
 	if len(opt.Types) > 0 {
 		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}
