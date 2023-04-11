@@ -33,6 +33,10 @@ func Run(configFile string) error {
 
 	_, err := cronJob.AddFunc("@every 10s", func() {
 		logx.Info("========================= start commit task =========================")
+		if c.ChainConfig.DisableCommitBlock {
+			logx.Info("disable commit block")
+			return
+		}
 		err := s.CommitBlocks()
 		if err != nil {
 			logx.Severef("failed to rollup block, %v", err)
@@ -45,6 +49,10 @@ func Run(configFile string) error {
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
 		logx.Info("========================= start verify task =========================")
+		if c.ChainConfig.DisableVerifyBlock {
+			logx.Info("disable verify block")
+			return
+		}
 		err = s.VerifyAndExecuteBlocks()
 		if err != nil {
 			logx.Error("failed to send verify transaction, %v", err)

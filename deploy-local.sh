@@ -287,7 +287,7 @@ ChainConfig:
 
 Apollo:
   AppID:             zkbnb-cloud
-  Cluster:           prod
+  Cluster:           default
   ApolloIp:          http://internal-tf-cm-test-apollo-config-alb-2119591301.ap-northeast-1.elb.amazonaws.com:9028
   Namespace:         applicationDev
   IsBackupConfig:    true

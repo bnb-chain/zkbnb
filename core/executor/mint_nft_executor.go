@@ -53,6 +53,7 @@ func (e *MintNftExecutor) Prepare() error {
 				nextNftIndex := e.tx.NftIndex
 				txInfo.NftIndex = nextNftIndex
 			}
+			logx.Infof("mint nft,pool id =%d,new nft=%d,BlockHeight=%d", e.tx.ID, txInfo.NftIndex, e.bc.CurrentBlock().BlockHeight)
 		}
 		// Mark the tree states that would be affected in this executor.
 		e.MarkNftDirty(txInfo.NftIndex)
@@ -79,6 +80,13 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 
 	if txInfo.NftContentType != 0 && txInfo.NftContentType != 1 {
 		return types.AppErrInvalidNftContentType
+	}
+
+	if !e.bc.StateDB().IsFromApi {
+		nftContentHashLen := len(common.FromHex(txInfo.NftContentHash))
+		if nftContentHashLen < 1 || nftContentHashLen > 32 {
+			return types.AppErrInvalidNftContenthash
+		}
 	}
 
 	creatorAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.CreatorAccountIndex)
