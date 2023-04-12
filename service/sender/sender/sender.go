@@ -749,12 +749,12 @@ func (s *Sender) ShouldCommitBlocks(lastBlock zkbnb.StorageStoredBlockInfo,
 
 	maxCommitAvgUnitGas := sconfig.GetSenderConfig().MaxCommitAvgUnitGas
 	unitGas := estimatedFee / totalTxCount
-	if unitGas <= maxCommitAvgUnitGas {
-		logx.Info("abandon commit block to l1, UnitGasFee is greater than MaxCommitBlockUnitGas, UnitGasFee:%ud, "+
-			"MaxCommitAvgUnitGas:%ud", unitGas, maxCommitAvgUnitGas)
-		return true
+	if unitGas > maxCommitAvgUnitGas {
+		logx.Info("abandon commit block to l1, UnitGasFee is greater than MaxCommitBlockUnitGas, UnitGasFee:", unitGas,
+			",MaxCommitAvgUnitGas:", maxCommitAvgUnitGas)
+		return false
 	}
-	return false
+	return true
 }
 
 func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, verifyAndExecuteBlocksInfo []zkbnb.ZkBNBVerifyAndExecuteBlockInfo,
@@ -787,8 +787,8 @@ func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, verifyAndEx
 	maxVerifyAvgUnitGas := sconfig.GetSenderConfig().MaxVerifyAvgUnitGas
 	unitGas := estimatedFee / totalTxCount
 	if unitGas > maxVerifyAvgUnitGas {
-		logx.Info("abandon verify and execute block to l1, UnitGasFee is greater than maxVerifyAvgUnitGas, UnitGasFee:%ud, "+
-			"MaxVerifyAvgUnitGas:%ud", unitGas, maxVerifyAvgUnitGas)
+		logx.Info("abandon verify and execute block to l1, UnitGasFee is greater than maxVerifyAvgUnitGas, UnitGasFee:", unitGas,
+			",MaxVerifyAvgUnitGas:", maxVerifyAvgUnitGas)
 		return false
 	}
 	return true
