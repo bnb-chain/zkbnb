@@ -374,7 +374,10 @@ func (e *MintNftExecutor) Validate() error {
 	if len(e.TxInfo.MutableAttributes) > 2000 {
 		return types.AppErrInvalidMutableAttributes.RefineError(2000)
 	}
+	return nil
+}
 
+func (e *MintNftExecutor) Finalize() error {
 	if e.IsCreateAccount {
 		bc := e.bc
 		txInfo := e.TxInfo
