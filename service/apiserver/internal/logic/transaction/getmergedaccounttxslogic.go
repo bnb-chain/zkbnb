@@ -120,20 +120,6 @@ func (l *GetMergedAccountTxsLogic) getTxDataByPoolTxId(txList []*tx.Tx, poolTxId
 	return nil
 }
 
-func (l *GetMergedAccountTxsLogic) appendTxsList(txsResultList []*types.Tx, txList []*tx.Tx) []*types.Tx {
-
-	for _, dbTx := range txList {
-		tx := utils.ConvertTx(dbTx)
-		tx.L1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.AccountIndex)
-		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
-		if tx.ToAccountIndex >= 0 {
-			tx.ToL1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.ToAccountIndex)
-		}
-		txsResultList = append(txsResultList, tx)
-	}
-	return txsResultList
-}
-
 func (l *GetMergedAccountTxsLogic) preparePoolTxIds(txs []*tx.Tx) []int64 {
 	poolTxIds := make([]int64, 0, len(txs))
 	if len(txs) > 0 {
