@@ -63,7 +63,7 @@ func (l *GetMergedAccountTxsLogic) GetMergedAccountTxs(req *types.ReqGetAccountT
 
 	poolTxIds := l.preparePoolTxIds(poolTxs)
 	txs, err := l.svcCtx.TxModel.GetTxsByPoolTxIds(poolTxIds)
-	if err != nil {
+	if err != nil && err != types2.DbErrNotFound {
 		return nil, err
 	}
 
@@ -110,7 +110,7 @@ func (l *GetMergedAccountTxsLogic) mergeTxsList(poolTxList []*tx.Tx, txList []*t
 }
 
 func (l *GetMergedAccountTxsLogic) getTxDataByPoolTxId(txList []*tx.Tx, poolTxId uint) *tx.Tx {
-	if len(txList) > 0 {
+	if txList != nil && len(txList) > 0 {
 		for _, tx := range txList {
 			if tx.PoolTxId == poolTxId {
 				return tx
