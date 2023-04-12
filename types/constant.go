@@ -52,6 +52,8 @@ const (
 	ProtocolAccount = int64(0)
 
 	BNBAddress = "0x00"
+
+	TxHashContext = "TxId"
 )
 
 var (

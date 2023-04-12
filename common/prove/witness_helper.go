@@ -18,7 +18,9 @@
 package prove
 
 import (
+	"context"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -230,7 +232,9 @@ func (w *WitnessHelper) constructAccountWitness(
 			if err != nil {
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
-			nAssetHash, err := tree.ComputeAccountAssetLeafHash(nAsset.Balance.String(), nAsset.OfferCanceledOrFinalized.String(), accountKey, accountAsset.AssetId, oTx.BlockHeight)
+			ctx := log.NewCtxWithKV(log.AccountIdContext, accountKey, log.AssetIdContext, accountAsset.AssetId,
+				log.BlockHeightContext, oTx.BlockHeight)
+			nAssetHash, err := tree.ComputeAccountAssetLeafHash(nAsset.Balance.String(), nAsset.OfferCanceledOrFinalized.String(), ctx)
 			if err != nil {
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
@@ -304,14 +308,14 @@ func (w *WitnessHelper) constructAccountWitness(
 			}
 		}
 
+		ctx := log.NewCtxWithKV(log.AccountIdContext, accountKey, log.BlockHeightContext, oTx.BlockHeight)
 		nAccountHash, err := tree.ComputeAccountLeafHash(
 			nL1Address,
 			nPubKey,
 			nonce,
 			collectionNonce,
 			w.assetTrees.Get(accountKey).Root(),
-			accountKey,
-			oTx.BlockHeight,
+			ctx,
 		)
 		if err != nil {
 			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
@@ -423,14 +427,14 @@ func (w *WitnessHelper) constructNftWitness(
 	if err != nil {
 		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 	}
+	ctx := log.NewCtxWithKV(log.NftIndexContext, nNftInfo.NftIndex, log.BlockHeightContext, oTx.BlockHeight)
 	nNftHash, err := tree.ComputeNftAssetLeafHash(
 		nNftInfo.CreatorAccountIndex,
 		nNftInfo.OwnerAccountIndex,
 		nNftInfo.NftContentHash,
 		nNftInfo.RoyaltyRate,
 		nNftInfo.CollectionId,
-		nNftInfo.NftIndex,
-		oTx.BlockHeight,
+		ctx,
 	)
 
 	if err != nil {
@@ -758,7 +762,10 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 			merkleProofsAccountAssetsBefore = append(merkleProofsAccountAssetsBefore, merkleProofsAccountAssetBefore)
 
 			balanceAfter := ffmath.Add(balanceBefore, gasChanges[assetId])
-			nAssetHash, err := tree.ComputeAccountAssetLeafHash(balanceAfter.String(), offerCanceledOrFinalized.String(), gasAccountIndex, assetId, block.BlockHeight)
+			ctx := context.WithValue(context.Background(), log.AccountIdContext, gasAccountIndex)
+			ctx = context.WithValue(ctx, log.AssetIdContext, assetId)
+			ctx = context.WithValue(ctx, log.BlockHeightContext, block.BlockHeight)
+			nAssetHash, err := tree.ComputeAccountAssetLeafHash(balanceAfter.String(), offerCanceledOrFinalized.String(), ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -768,14 +775,14 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 			}
 		}
 
+		ctx := log.NewCtxWithKV(log.AccountIdContext, gasAccountIndex, log.BlockHeightContext, block.BlockHeight)
 		nAccountHash, err := tree.ComputeAccountLeafHash(
 			w.gasAccountInfo.L1Address,
 			w.gasAccountInfo.PublicKey,
 			w.gasAccountInfo.Nonce,
 			w.gasAccountInfo.CollectionNonce,
 			w.assetTrees.Get(gasAccountIndex).Root(),
-			gasAccountIndex,
-			block.BlockHeight,
+			ctx,
 		)
 		if err != nil {
 			return nil, err

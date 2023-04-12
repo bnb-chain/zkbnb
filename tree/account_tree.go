@@ -19,6 +19,7 @@ package tree
 
 import (
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/log"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/panjf2000/ants/v2"
 	"hash"
@@ -299,7 +300,8 @@ func reloadAccountTreeFromRDB(
 func AssetToNode(balance string, offerCanceledOrFinalized string, accountIndex int64,
 	assetId int64,
 	blockHeight int64) (hashVal []byte, err error) {
-	hashVal, err = ComputeAccountAssetLeafHash(balance, offerCanceledOrFinalized, accountIndex, assetId, blockHeight)
+	ctx := log.NewCtxWithKV(log.AccountIdContext, accountIndex, log.AssetIdContext, assetId, log.BlockHeightContext, blockHeight)
+	hashVal, err = ComputeAccountAssetLeafHash(balance, offerCanceledOrFinalized, ctx)
 	if err != nil {
 		logx.Errorf("unable to compute asset leaf hash: %s", err.Error())
 		return nil, err
@@ -317,14 +319,14 @@ func AccountToNode(
 	accountIndex int64,
 	blockHeight int64,
 ) (hashVal []byte, err error) {
+	ctx := log.NewCtxWithKV(log.AccountIdContext, accountIndex, log.BlockHeightContext, blockHeight)
 	hashVal, err = ComputeAccountLeafHash(
 		l1Address,
 		publicKey,
 		nonce,
 		collectionNonce,
 		assetRoot,
-		accountIndex,
-		blockHeight,
+		ctx,
 	)
 	if err != nil {
 		logx.Errorf("unable to compute account leaf hash: %s", err.Error())
