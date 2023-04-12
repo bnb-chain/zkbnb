@@ -98,11 +98,13 @@ var (
 		Name:      "verify_Exception_height",
 		Help:      "verify_Exception_height metrics.",
 	})
-	contractBalanceMetric = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "zkbnb",
-		Name:      "contract_balance",
-		Help:      "contract_balance metrics.",
-	})
+	contractBalanceMetric = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "zkbnb",
+			Name:      "contract_balance",
+			Help:      "contract_balance metrics.",
+		},
+		[]string{"type"})
 )
 
 type Sender struct {
@@ -285,20 +287,6 @@ func InitPrometheusFacility() {
 }
 
 func (s *Sender) CommitBlocks() (err error) {
-	info, err := s.sysConfigModel.GetSysConfigByName("ZkBNBContract")
-	if err == nil {
-		balance, err := s.client.GetBalance(info.Value)
-		fbalance := new(big.Float)
-		fbalance.SetString(balance.String())
-		ethValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18)))
-		if err != nil {
-			contractBalanceMetric.Set(float64(0))
-		} else {
-			f, _ := ethValue.Float64()
-			contractBalanceMetric.Set(f)
-		}
-	}
-
 	pendingTx, err := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeCommit)
 	if err != nil && err != types.DbErrNotFound {
 		return err
@@ -709,7 +697,7 @@ func (s *Sender) GetCompressedBlocksForCommit(start int64) (blocksForCommit []*c
 		if totalTxCount < commitTxCountLimit {
 			return blocks, nil
 		}
-		
+
 		if maxCommitBlockCount > 1 {
 			maxCommitBlockCount--
 		}
@@ -899,4 +887,34 @@ func (s *Sender) Shutdown() {
 	if err != nil {
 		logx.Errorf("close db error: %s", err.Error())
 	}
+}
+
+func (s *Sender) MonitorBalance() {
+	info, err := s.sysConfigModel.GetSysConfigByName("ZkBNBContract")
+	if err == nil {
+		s.SetBalance(info, "ZkBNBContract")
+	}
+
+	info, err = s.sysConfigModel.GetSysConfigByName("CommitAddress")
+	if err == nil {
+		s.SetBalance(info, "CommitAddress")
+	}
+
+	info, err = s.sysConfigModel.GetSysConfigByName("VerifyAddress")
+	if err == nil {
+		s.SetBalance(info, "VerifyAddress")
+	}
+}
+
+func (s *Sender) SetBalance(info *sysconfig.SysConfig, name string) {
+	balance, err := s.client.GetBalance(info.Value)
+	if err != nil {
+		contractBalanceMetric.WithLabelValues(name).Set(float64(0))
+		logx.Errorf("%s get balance error: %s", name, err.Error())
+	}
+	fbalance := new(big.Float)
+	fbalance.SetString(balance.String())
+	ethValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18)))
+	f, _ := ethValue.Float64()
+	contractBalanceMetric.WithLabelValues(name).Set(f)
 }

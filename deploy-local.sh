@@ -31,6 +31,11 @@ VALIDATORS=
 TREASURY_ACCOUNT_ADDRESS=
 # gas account address, the default value is the second validator's address
 GAS_ACCOUNT_ADDRESS=
+# commit  address, the default value is commit to bnb contract address
+COMMIT_ADDRESS=
+# verify  address, the default value is verify to bnb contract address
+VERIFY_ADDRESS=
+
 ZKBNB_OPTIONAL_BLOCK_SIZES=1,10
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
@@ -125,6 +130,11 @@ sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${DEPLOY_PATH}/zkbnb
 
 DefaultNftFactoryAddr=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.DefaultNftFactory'`
 sed -i -e "s/DefaultNftFactory: .*/DefaultNftFactory: ${DefaultNftFactoryAddr}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+
+sed -i -e "s/CommitAddress: .*/CommitAddress: ${COMMIT_ADDRESS}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+
+sed -i -e "s/VerifyAddress: .*/VerifyAddress: ${VERIFY_ADDRESS}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+
 
  cd ${DEPLOY_PATH}/zkbnb/
  make api-server

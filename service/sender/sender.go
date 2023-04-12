@@ -75,6 +75,15 @@ func Run(configFile string) error {
 		panic("failed to start the update send transaction task, err:" + err.Error())
 	}
 
+	_, err = cronJob.AddFunc("@every 10s", func() {
+		logx.Info("========================= start monitor balance task =========================")
+		s.MonitorBalance()
+	})
+	if err != nil {
+		logx.Severef("failed to start the monitor balance task, %v", err)
+		panic("failed to start the monitor balance task, err:" + err.Error())
+	}
+
 	cronJob.Start()
 
 	exit := make(chan struct{})
