@@ -93,6 +93,8 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
+			poolTx.AssetId = txInfo.AssetId
+			poolTx.TxAmount = txInfo.AssetAmount.String()
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err == nil {
 				poolTx.AccountIndex = accountIndex
@@ -112,6 +114,8 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info: %v", err)
 			}
+			poolTx.NftIndex = txInfo.NftIndex
+			poolTx.CollectionId = txInfo.CollectionId
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err == nil {
 				poolTx.AccountIndex = accountIndex
@@ -131,6 +135,8 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
+			poolTx.AssetId = txInfo.AssetId
+			poolTx.TxAmount = txInfo.AssetAmount.String()
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err == nil {
 				poolTx.AccountIndex = accountIndex
@@ -150,6 +156,8 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
+			poolTx.NftIndex = txInfo.NftIndex
+			poolTx.CollectionId = txInfo.CollectionId
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err == nil {
 				poolTx.AccountIndex = accountIndex

@@ -107,7 +107,7 @@ func (c *GenerateProof) Run() error {
 		for _, pendingBlock := range pendingBlocks {
 			if int(pendingBlock.BlockHeight)-int(executedTxMaxHeight) != 1 {
 				time.Sleep(50 * time.Millisecond)
-				logx.Infof("not equal block height=%s", pendingBlock.BlockHeight)
+				logx.Infof("not equal block height=%d", pendingBlock.BlockHeight)
 				break
 			}
 
@@ -190,7 +190,7 @@ func (c *GenerateProof) executeBlockFunc(desertExitBlock *desertexit.DesertExitB
 		if !exist {
 			accountInfo, err := c.bc.Statedb.GetFormatAccount(accountIndex)
 			if err != nil {
-				return fmt.Errorf("get account info failed,accountIndex=%s,err=%s ", accountIndex, err.Error())
+				return fmt.Errorf("get account info failed,accountIndex=%d,err=%s ", accountIndex, err.Error())
 			}
 			c.bc.Statedb.SetPendingAccount(accountIndex, accountInfo)
 		}
