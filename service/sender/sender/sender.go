@@ -706,6 +706,10 @@ func (s *Sender) GetCompressedBlocksForCommit(start int64) (blocksForCommit []*c
 		}
 
 		totalTxCount = s.CalculateTotalTxCountForCompressBlock(blocks)
+
+		logx.Infof("GetCompressedBlocksForCommit start:%d, end:%d, blockCount:%d, totalTxCount:%d",
+			start, start+int64(maxCommitBlockCount), len(blocks), totalTxCount)
+
 		if totalTxCount < commitTxCountLimit {
 			return blocks, nil
 		}
@@ -835,9 +839,8 @@ func (s *Sender) CalculateTotalTxCountForCompressBlock(blocks []*compressedblock
 		for _, b := range blocks {
 			totalTxCount = totalTxCount + b.RealBlockSize
 		}
-		return uint64(totalTxCount)
 	}
-	return 0
+	return uint64(totalTxCount)
 }
 
 func (s *Sender) CalculateTotalTxCountForBlock(blocks []*block.Block) uint64 {
