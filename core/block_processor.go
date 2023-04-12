@@ -77,6 +77,8 @@ func (p *CommitProcessor) Process(tx *tx.Tx) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to apply transaction, %v", err)
 	}
+	tx.IsNonceChanged = true
+
 	start = time.Now()
 	err = executor.GeneratePubData()
 	metrics.ExecuteTxGeneratePubDataMetrics.Set(float64(time.Since(start).Milliseconds()))

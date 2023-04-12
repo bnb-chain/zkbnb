@@ -330,6 +330,9 @@ func (c *Committer) executeTxFunc() error {
 					if err != nil {
 						c.bc.Statedb.ClearPendingNonceFromRedisCache(poolTx.AccountIndex)
 					} else {
+						if poolTx.IsNonceChanged {
+							expectNonce = expectNonce - 1
+						}
 						c.bc.Statedb.SetPendingNonceToRedisCache(poolTx.AccountIndex, expectNonce-1)
 					}
 					metrics.PoolTxL2ErrorCountMetics.Inc()

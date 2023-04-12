@@ -297,25 +297,39 @@ func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, erro
 // account map, not performance friendly, please take care when use this API.
 // Secondly, if not found in the current state cache, then try to find the account from database.
 func (s *StateDB) GetAccountByL1Address(l1Address string) (*types.AccountInfo, error) {
-	cached, exist := s.StateCache.GetPendingAccountL1AddressMap(l1Address)
-	if exist {
-		fromAccount, err := s.GetFormatAccount(cached)
-		if err != nil {
-			return nil, err
-		}
-		if fromAccount.AccountIndex == cached && fromAccount.L1Address == l1Address {
-			return fromAccount, err
-		} else {
-			return nil, types.AppErrInvalidAccount
+	if s.IsFromApi {
+		var accountIndex interface{}
+		var redisAccount interface{}
+		redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(l1Address), &accountIndex)
+		if err == nil && redisAccount != nil {
+			account := &account.Account{}
+			redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex.(int64)), account)
+			if err == nil && redisAccount != nil {
+				formatAccount, err := chain.ToFormatAccountInfo(account)
+				if err == nil {
+					s.AccountCache.Add(accountIndex, formatAccount)
+					s.L1AddressCache.Add(formatAccount.L1Address, accountIndex)
+				}
+			}
 		}
 	}
-	accountIndex, exist := s.L1AddressCache.Get(l1Address)
+	var exist bool
+	var accountIndex int64
+	accountIndex, exist = s.StateCache.GetPendingAccountL1AddressMap(l1Address)
+	if !exist {
+		var accountIndexInterface interface{}
+		accountIndexInterface, exist = s.L1AddressCache.Get(l1Address)
+		if exist {
+			accountIndex = accountIndexInterface.(int64)
+		}
+	}
+
 	if exist {
-		fromAccount, err := s.GetFormatAccount(accountIndex.(int64))
+		fromAccount, err := s.GetFormatAccount(accountIndex)
 		if err != nil {
 			return nil, err
 		}
-		if fromAccount.AccountIndex == accountIndex.(int64) && fromAccount.L1Address == l1Address {
+		if fromAccount.AccountIndex == accountIndex && fromAccount.L1Address == l1Address {
 			return fromAccount, err
 		} else {
 			return nil, types.AppErrInvalidAccount
