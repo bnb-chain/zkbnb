@@ -1087,21 +1087,18 @@ func (c *Committer) createNewBlock(curBlock *block.Block) error {
 
 func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 	//After the rollback, re-execute tx and form a block  based on the block size,because curBlock.CreatedAt does not change
-	/**
 	if c.bc.Statedb.NeedRestoreExecutedTxs() {
 		if len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
 			return true
 		}
 		return false
 	}
+	
 	var now = time.Now()
 	if (len(c.bc.Statedb.Txs) > 0 && now.Unix()-curBlock.CreatedAt.Unix() >= int64(c.maxCommitterInterval)) ||
 		len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
 		return true
 	}
-
-	return false
-	**/
 
 	txCountLimitPerBlock := c.maxTxsPerBlock/2 + 1
 	if c.maxTxsPerBlock == 8 {
@@ -1110,6 +1107,7 @@ func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 	if len(c.bc.Statedb.Txs) >= txCountLimitPerBlock {
 		return true
 	}
+
 	return false
 }
 
