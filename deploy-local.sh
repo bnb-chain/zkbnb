@@ -67,7 +67,7 @@ if [ $flag = "new" ]; then
   echo "new crypto env"
   echo '2. start generate zkbnb.vk and zkbnb.pk'
   cd ${DEPLOY_PATH}
-  cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportSol -blocksizes=${ZKBNB_OPTIONAL_BLOCK_SIZES}
+  cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportSol -blocksizes=${ZKBNB_OPTIONAL_BLOCK_SIZES} -batchsize=${ZKBNB_R1CS_BATCH_SIZE}
   cd ${DEPLOY_PATH}
   mkdir -p $KEY_PATH
   cp -r ./zkbnb-crypto/circuit/solidity/* $KEY_PATH
@@ -162,7 +162,7 @@ KeyPath: [${PROVING_KEYS}]
 
 BlockConfig:
   OptionalBlockSizes: [${ZKBNB_OPTIONAL_BLOCK_SIZES}]
-    R1CSBatchSize: [${ZKBNB_R1CS_BATCH_SIZE}]
+  R1CSBatchSize: ${ZKBNB_R1CS_BATCH_SIZE}
 
 TreeDB:
   Driver: memorydb
