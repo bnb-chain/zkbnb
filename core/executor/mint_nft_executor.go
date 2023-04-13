@@ -17,7 +17,8 @@ import (
 type MintNftExecutor struct {
 	BaseExecutor
 
-	TxInfo *txtypes.MintNftTxInfo
+	TxInfo          *txtypes.MintNftTxInfo
+	IsCreateAccount bool
 }
 
 func NewMintNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -42,6 +43,10 @@ func NewMintNftExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecu
 
 func (e *MintNftExecutor) Prepare() error {
 	txInfo := e.TxInfo
+	if !e.isDesertExit {
+		txInfo.ToAccountIndex = types.NilAccountIndex
+	}
+
 	if !e.bc.StateDB().IsFromApi {
 		if !e.isDesertExit {
 			// Set the right nft index for tx info.
@@ -59,8 +64,37 @@ func (e *MintNftExecutor) Prepare() error {
 		e.MarkNftDirty(txInfo.NftIndex)
 	}
 
+	toL1Address := txInfo.ToL1Address
+	toAccount, err := e.bc.StateDB().GetAccountByL1Address(toL1Address)
+	if err != nil && err != types.AppErrAccountNotFound {
+		return err
+	}
+	if err == types.AppErrAccountNotFound {
+		if !e.isDesertExit {
+			if !e.bc.StateDB().IsFromApi {
+				if e.tx.Rollback == false {
+					nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
+					txInfo.ToAccountIndex = nextAccountIndex
+				} else {
+					//for rollback
+					txInfo.ToAccountIndex = e.tx.ToAccountIndex
+				}
+			}
+		}
+		e.IsCreateAccount = true
+	} else {
+		txInfo.ToAccountIndex = toAccount.AccountIndex
+	}
+
 	e.MarkAccountAssetsDirty(txInfo.CreatorAccountIndex, []int64{txInfo.GasFeeAssetId})
 	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
+	// For empty tx details generation
+	if e.IsCreateAccount {
+		err := e.CreateEmptyAccount(txInfo.ToAccountIndex, txInfo.ToL1Address, []int64{types.EmptyAccountAssetId})
+		if err != nil {
+			return err
+		}
+	}
 	e.MarkAccountAssetsDirty(txInfo.ToAccountIndex, []int64{})
 	return e.BaseExecutor.Prepare()
 }
@@ -100,12 +134,14 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 		return types.AppErrBalanceNotEnough
 	}
 
-	toAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
-	if err != nil {
-		return err
-	}
-	if txInfo.ToL1Address != toAccount.L1Address {
-		return types.AppErrInvalidToAddress
+	if !e.IsCreateAccount {
+		toAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
+		if err != nil {
+			return err
+		}
+		if txInfo.ToL1Address != toAccount.L1Address {
+			return types.AppErrInvalidToAddress
+		}
 	}
 
 	return nil
@@ -114,11 +150,21 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 func (e *MintNftExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.TxInfo
+	var toAccount *types.AccountInfo
 
 	// apply changes
 	creatorAccount, err := bc.StateDB().GetFormatAccount(txInfo.CreatorAccountIndex)
 	if err != nil {
 		return err
+	}
+
+	if e.IsCreateAccount {
+		toAccount = e.GetCreatingAccount()
+	} else {
+		toAccount, err = bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
+		if err != nil {
+			return err
+		}
 	}
 
 	creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -135,11 +181,7 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 		NftContentType:      txInfo.NftContentType,
 	})
 	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
-	if !e.isDesertExit {
-		if e.tx.Rollback == false {
-			e.bc.StateDB().UpdateNftIndex(txInfo.NftIndex)
-		}
-	}
+	stateCache.SetPendingAccount(txInfo.ToAccountIndex, toAccount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
@@ -150,6 +192,7 @@ func (e *MintNftExecutor) GeneratePubData() error {
 	buf.WriteByte(uint8(types.TxTypeMintNft))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
+	buf.Write(common2.AddressStrToBytes(txInfo.ToL1Address))
 	buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
@@ -182,22 +225,34 @@ func (e *MintNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
 	e.tx.NftIndex = e.TxInfo.NftIndex
 	e.tx.IsPartialUpdate = true
+	e.tx.IsCreateAccount = e.IsCreateAccount
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.TxInfo
 
-	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.CreatorAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex})
-	if err != nil {
-		return nil, err
+	var err error
+	var copiedAccounts map[int64]*types.AccountInfo
+	var toAccount *types.AccountInfo
+	if e.IsCreateAccount {
+		copiedAccounts, err = e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.CreatorAccountIndex, txInfo.GasAccountIndex})
+		if err != nil {
+			return nil, err
+		}
+		toAccount = e.GetEmptyAccount()
+	} else {
+		copiedAccounts, err = e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.CreatorAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex})
+		if err != nil {
+			return nil, err
+		}
+		toAccount = copiedAccounts[txInfo.ToAccountIndex]
 	}
 
 	creatorAccount := copiedAccounts[txInfo.CreatorAccountIndex]
-	toAccount := copiedAccounts[txInfo.ToAccountIndex]
 	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
 
-	txDetails := make([]*tx.TxDetail, 0, 4)
+	txDetails := make([]*tx.TxDetail, 0, 5)
 
 	// from account gas asset
 	order := int64(0)
@@ -244,6 +299,23 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: toAccount.CollectionNonce,
 		PublicKey:       toAccount.PublicKey,
 	})
+
+	if e.IsCreateAccount {
+		order++
+		txDetails = append(txDetails, &tx.TxDetail{
+			AssetId:         types.EmptyAccountAssetId,
+			AssetType:       types.CreateAccountType,
+			AccountIndex:    txInfo.ToAccountIndex,
+			L1Address:       toAccount.L1Address,
+			Balance:         toAccount.L1Address,
+			BalanceDelta:    txInfo.ToL1Address,
+			Order:           order,
+			AccountOrder:    accountOrder,
+			Nonce:           toAccount.Nonce,
+			CollectionNonce: toAccount.CollectionNonce,
+			PublicKey:       toAccount.PublicKey,
+		})
+	}
 
 	// to account nft delta
 	oldNftInfo := types.EmptyNftInfo(txInfo.NftIndex)
@@ -301,6 +373,29 @@ func (e *MintNftExecutor) Validate() error {
 	}
 	if len(e.TxInfo.MutableAttributes) > 2000 {
 		return types.AppErrInvalidMutableAttributes.RefineError(2000)
+	}
+	return nil
+}
+
+func (e *MintNftExecutor) Finalize() error {
+	if e.IsCreateAccount {
+		bc := e.bc
+		txInfo := e.TxInfo
+		if !e.isDesertExit {
+			bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.ToAccountIndex, bc.CurrentBlock().BlockHeight)
+			logx.Infof("create account,pool id =%d,new AccountIndex=%d,BlockHeight=%d", e.tx.ID, txInfo.ToAccountIndex, bc.CurrentBlock().BlockHeight)
+		}
+		accountInfo := e.GetCreatingAccount()
+		bc.StateDB().SetPendingAccountL1AddressMap(accountInfo.L1Address, accountInfo.AccountIndex)
+	}
+	if !e.isDesertExit {
+		if e.tx.Rollback == false {
+			e.bc.StateDB().UpdateNftIndex(e.TxInfo.NftIndex)
+		}
+	}
+	err := e.BaseExecutor.Finalize()
+	if err != nil {
+		return err
 	}
 	return nil
 }

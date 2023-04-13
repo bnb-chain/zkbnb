@@ -18,7 +18,9 @@
 package prove
 
 import (
+	"context"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -62,13 +64,13 @@ func NewWitnessHelper(treeCtx *tree.Context, accountTree, nftTree bsmt.SparseMer
 	}
 }
 
-func (w *WitnessHelper) ConstructTxWitness(oTx *tx.Tx, finalityBlockNr uint64,
+func (w *WitnessHelper) ConstructTxWitness(oTx *tx.Tx, finalityBlockNr uint64, ctx context.Context,
 ) (cryptoTx *TxWitness, err error) {
 	switch oTx.TxType {
 	case types.TxTypeEmpty:
 		return nil, fmt.Errorf("there should be no empty tx")
 	default:
-		cryptoTx, err = w.constructTxWitness(oTx, finalityBlockNr)
+		cryptoTx, err = w.constructTxWitness(oTx, finalityBlockNr, ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -76,11 +78,11 @@ func (w *WitnessHelper) ConstructTxWitness(oTx *tx.Tx, finalityBlockNr uint64,
 	return cryptoTx, nil
 }
 
-func (w *WitnessHelper) constructTxWitness(oTx *tx.Tx, finalityBlockNr uint64) (witness *TxWitness, err error) {
+func (w *WitnessHelper) constructTxWitness(oTx *tx.Tx, finalityBlockNr uint64, ctx context.Context) (witness *TxWitness, err error) {
 	if oTx == nil || w.accountTree == nil || w.assetTrees == nil || w.nftTree == nil {
 		return nil, fmt.Errorf("failed because of nil tx or tree")
 	}
-	witness, err = w.constructWitnessInfo(oTx, finalityBlockNr)
+	witness, err = w.constructWitnessInfo(oTx, finalityBlockNr, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -121,23 +123,24 @@ func (w *WitnessHelper) constructTxWitness(oTx *tx.Tx, finalityBlockNr uint64) (
 func (w *WitnessHelper) constructWitnessInfo(
 	oTx *tx.Tx,
 	finalityBlockNr uint64,
+	ctx context.Context,
 ) (
 	cryptoTx *TxWitness,
 	err error,
 ) {
-	accountKeys, proverAccounts, proverNftInfo, err := w.constructSimpleWitnessInfo(oTx)
+	accountKeys, proverAccounts, proverNftInfo, err := w.constructSimpleWitnessInfo(oTx, ctx)
 	if err != nil {
 		return nil, err
 	}
 	// construct account witness
 	accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err :=
-		w.constructAccountWitness(oTx, finalityBlockNr, accountKeys, proverAccounts)
+		w.constructAccountWitness(oTx, finalityBlockNr, accountKeys, proverAccounts, ctx)
 	if err != nil {
 		return nil, err
 	}
 	// construct nft witness
 	nftRootBefore, nftBefore, merkleProofsNftBefore, err :=
-		w.constructNftWitness(oTx, proverNftInfo)
+		w.constructNftWitness(oTx, proverNftInfo, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -162,13 +165,14 @@ func (w *WitnessHelper) constructAccountWitness(
 	finalityBlockNr uint64,
 	accountKeys []int64,
 	proverAccounts []*AccountWitnessInfo,
+	ctx context.Context,
 ) (
 	accountRootBefore []byte,
-	// account before info, size is 7
+// account before info, size is 7
 	accountsInfoBefore [NbAccountsPerTx]*cryptoTypes.Account,
-	// before account asset merkle proof
+// before account asset merkle proof
 	merkleProofsAccountAssetsBefore [NbAccountsPerTx][NbAccountAssetsPerAccount][AssetMerkleLevels][]byte,
-	// before account merkle proof
+// before account merkle proof
 	merkleProofsAccountBefore [NbAccountsPerTx][AccountMerkleLevels][]byte,
 	err error,
 ) {
@@ -177,6 +181,7 @@ func (w *WitnessHelper) constructAccountWitness(
 		accountCount = 0
 	)
 	for _, accountKey := range accountKeys {
+		ctx := log.UpdateCtxWithKV(ctx, log.AccountIndexCtx, accountKey)
 		var (
 			cryptoAccount = new(cryptoTypes.Account)
 			// get account asset before
@@ -201,6 +206,7 @@ func (w *WitnessHelper) constructAccountWitness(
 			AssetRoot:       w.assetTrees.Get(accountKey).Root(),
 		}
 		for i, accountAsset := range proverAccountInfo.AccountAssets {
+			ctx := log.UpdateCtxWithKV(ctx, log.AccountIndexCtx, accountKey, log.AssetIdCtx, accountAsset.AssetId)
 			assetMerkleProof, err := w.assetTrees.Get(accountKey).GetProof(uint64(accountAsset.AssetId))
 			if err != nil {
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
@@ -222,6 +228,7 @@ func (w *WitnessHelper) constructAccountWitness(
 				proverAccountInfo.AssetsRelatedTxDetails[i].AssetType,
 				proverAccountInfo.AssetsRelatedTxDetails[i].Balance,
 				proverAccountInfo.AssetsRelatedTxDetails[i].BalanceDelta,
+				ctx,
 			)
 			if err != nil {
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
@@ -230,7 +237,7 @@ func (w *WitnessHelper) constructAccountWitness(
 			if err != nil {
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
-			nAssetHash, err := tree.ComputeAccountAssetLeafHash(nAsset.Balance.String(), nAsset.OfferCanceledOrFinalized.String(), accountKey, accountAsset.AssetId, oTx.BlockHeight)
+			nAssetHash, err := tree.ComputeAccountAssetLeafHash(nAsset.Balance.String(), nAsset.OfferCanceledOrFinalized.String(), ctx)
 			if err != nil {
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
@@ -295,7 +302,8 @@ func (w *WitnessHelper) constructAccountWitness(
 		nL1Address := proverAccounts[accountCount].AccountInfo.L1Address
 		if oTx.ToAccountIndex == accountKey && (oTx.TxType == types.TxTypeDeposit ||
 			oTx.TxType == types.TxTypeDepositNft ||
-			oTx.TxType == types.TxTypeTransfer || oTx.TxType == types.TxTypeTransferNft) {
+			oTx.TxType == types.TxTypeTransfer || oTx.TxType == types.TxTypeTransferNft ||
+			oTx.TxType == types.TxTypeMintNft) {
 			for _, txDetail := range oTx.TxDetails {
 				if txDetail.AssetType == types.CreateAccountType {
 					nL1Address = txDetail.BalanceDelta
@@ -310,8 +318,7 @@ func (w *WitnessHelper) constructAccountWitness(
 			nonce,
 			collectionNonce,
 			w.assetTrees.Get(accountKey).Root(),
-			accountKey,
-			oTx.BlockHeight,
+			ctx,
 		)
 		if err != nil {
 			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
@@ -370,13 +377,13 @@ func (w *WitnessHelper) constructAccountWitness(
 }
 
 func (w *WitnessHelper) constructNftWitness(
-	oTx *tx.Tx, proverNftInfo *NftWitnessInfo,
+	oTx *tx.Tx, proverNftInfo *NftWitnessInfo, ctx context.Context,
 ) (
-	// nft root before
+// nft root before
 	nftRootBefore []byte,
-	// nft before
+// nft before
 	nftBefore *cryptoTypes.Nft,
-	// before nft tree merkle proof
+// before nft tree merkle proof
 	merkleProofsNftBefore [NftMerkleLevels][]byte,
 	err error,
 ) {
@@ -393,6 +400,7 @@ func (w *WitnessHelper) constructNftWitness(
 		nftBefore = cryptoTypes.EmptyNft(LastNftIndex)
 		return nftRootBefore, nftBefore, merkleProofsNftBefore, nil
 	}
+
 	nftMerkleProofs, err := w.nftTree.GetProof(uint64(proverNftInfo.NftInfo.NftIndex))
 	if err != nil {
 		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
@@ -415,6 +423,7 @@ func (w *WitnessHelper) constructNftWitness(
 		proverNftInfo.NftRelatedTxDetail.AssetType,
 		proverNftInfo.NftRelatedTxDetail.Balance,
 		proverNftInfo.NftRelatedTxDetail.BalanceDelta,
+		ctx,
 	)
 	if err != nil {
 		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
@@ -423,14 +432,15 @@ func (w *WitnessHelper) constructNftWitness(
 	if err != nil {
 		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 	}
+	ctx = log.UpdateCtxWithKV(ctx, log.NftIndexCtx, nNftInfo.NftIndex)
+
 	nNftHash, err := tree.ComputeNftAssetLeafHash(
 		nNftInfo.CreatorAccountIndex,
 		nNftInfo.OwnerAccountIndex,
 		nNftInfo.NftContentHash,
 		nNftInfo.RoyaltyRate,
 		nNftInfo.CollectionId,
-		nNftInfo.NftIndex,
-		oTx.BlockHeight,
+		ctx,
 	)
 
 	if err != nil {
@@ -470,7 +480,7 @@ func SetFixedNftArray(proof [][]byte) (res [NftMerkleLevels][]byte, err error) {
 	return res, nil
 }
 
-func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
+func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx, ctx context.Context) (
 	accountKeys []int64,
 	accountWitnessInfo []*AccountWitnessInfo,
 	nftWitnessInfo *NftWitnessInfo,
@@ -564,7 +574,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 				txDetail,
 			)
 			// update asset info
-			newBalance, err := chain.ComputeNewBalance(txDetail.AssetType, txDetail.Balance, txDetail.BalanceDelta)
+			newBalance, err := chain.ComputeNewBalance(txDetail.AssetType, txDetail.Balance, txDetail.BalanceDelta, ctx)
 			if err != nil {
 				return nil, nil, nil, err
 			}
@@ -758,7 +768,10 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 			merkleProofsAccountAssetsBefore = append(merkleProofsAccountAssetsBefore, merkleProofsAccountAssetBefore)
 
 			balanceAfter := ffmath.Add(balanceBefore, gasChanges[assetId])
-			nAssetHash, err := tree.ComputeAccountAssetLeafHash(balanceAfter.String(), offerCanceledOrFinalized.String(), gasAccountIndex, assetId, block.BlockHeight)
+			ctx := context.WithValue(context.Background(), log.AccountIndexCtx, gasAccountIndex)
+			ctx = context.WithValue(ctx, log.AssetIdCtx, assetId)
+			ctx = context.WithValue(ctx, log.BlockHeightContext, block.BlockHeight)
+			nAssetHash, err := tree.ComputeAccountAssetLeafHash(balanceAfter.String(), offerCanceledOrFinalized.String(), ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -768,14 +781,14 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 			}
 		}
 
+		ctx := log.NewCtxWithKV(log.BlockHeightContext, block.BlockHeight, log.AccountIndexCtx, gasAccountIndex)
 		nAccountHash, err := tree.ComputeAccountLeafHash(
 			w.gasAccountInfo.L1Address,
 			w.gasAccountInfo.PublicKey,
 			w.gasAccountInfo.Nonce,
 			w.gasAccountInfo.CollectionNonce,
 			w.assetTrees.Get(gasAccountIndex).Root(),
-			gasAccountIndex,
-			block.BlockHeight,
+			ctx,
 		)
 		if err != nil {
 			return nil, err
