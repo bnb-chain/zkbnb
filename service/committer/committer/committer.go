@@ -334,6 +334,9 @@ func (c *Committer) executeTxFunc() error {
 					if err != nil {
 						c.bc.Statedb.ClearPendingNonceFromRedisCache(poolTx.AccountIndex)
 					} else {
+						if poolTx.IsNonceChanged {
+							expectNonce = expectNonce - 1
+						}
 						c.bc.Statedb.SetPendingNonceToRedisCache(poolTx.AccountIndex, expectNonce-1)
 					}
 					metrics.PoolTxL2ErrorCountMetics.Inc()
@@ -1097,6 +1100,7 @@ func (c *Committer) createNewBlock(curBlock *block.Block) error {
 
 func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 	//After the rollback, re-execute tx and form a block  based on the block size,because curBlock.CreatedAt does not change
+	/**
 	if c.bc.Statedb.NeedRestoreExecutedTxs() {
 		if len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
 			return true
@@ -1109,6 +1113,16 @@ func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 		return true
 	}
 
+	return false
+	**/
+
+	txCountLimitPerBlock := c.maxTxsPerBlock/2 + 1
+	if c.maxTxsPerBlock == 8 {
+		txCountLimitPerBlock = 1
+	}
+	if len(c.bc.Statedb.Txs) >= txCountLimitPerBlock {
+		return true
+	}
 	return false
 }
 

@@ -99,11 +99,13 @@ var (
 		Name:      "verify_Exception_height",
 		Help:      "verify_Exception_height metrics.",
 	})
-	contractBalanceMetric = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "zkbnb",
-		Name:      "contract_balance",
-		Help:      "contract_balance metrics.",
-	})
+	contractBalanceMetric = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "zkbnb",
+			Name:      "contract_balance",
+			Help:      "contract_balance metrics.",
+		},
+		[]string{"type"})
 )
 
 type Sender struct {
@@ -286,20 +288,6 @@ func InitPrometheusFacility() {
 }
 
 func (s *Sender) CommitBlocks() (err error) {
-	info, err := s.sysConfigModel.GetSysConfigByName("ZkBNBContract")
-	if err == nil {
-		balance, err := s.client.GetBalance(info.Value)
-		fbalance := new(big.Float)
-		fbalance.SetString(balance.String())
-		ethValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18)))
-		if err != nil {
-			contractBalanceMetric.Set(float64(0))
-		} else {
-			f, _ := ethValue.Float64()
-			contractBalanceMetric.Set(f)
-		}
-	}
-
 	pendingTx, err := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeCommit)
 	if err != nil && err != types.DbErrNotFound {
 		return err
@@ -412,13 +400,14 @@ func (s *Sender) CommitBlocks() (err error) {
 			gasPrice,
 			s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
-			commitExceptionHeightMetric.Set(float64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber))
+			blockHeight := pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber
+			commitExceptionHeightMetric.Set(float64(blockHeight))
 			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
-				logx.WithContext(ctx).Errorf("failed to send commit tx,try again: errL %v:%s", err, txHash)
+				logx.WithContext(ctx).Errorf("failed to send commit tx,try again: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
 				retry = true
 				continue
 			}
-			return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
+			return fmt.Errorf("failed to send commit tx, errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
 		}
 		break
 	}
@@ -669,13 +658,14 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			pendingVerifyAndExecuteBlocks,
 			proofs, gasPrice, s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
-			verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))
+			blockHeight := pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber
+			verifyExceptionHeightMetric.Set(float64(blockHeight))
 			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
-				logx.WithContext(ctx).Errorf("failed to send verify tx,try again: errL %v:%s", err, txHash)
+				logx.WithContext(ctx).Errorf("failed to send verify tx,try again: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
 				retry = true
 				continue
 			}
-			return fmt.Errorf("failed to send verify tx: %v:%s", err, txHash)
+			return fmt.Errorf("failed to send verify tx: %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
 		}
 		break
 	}
@@ -906,4 +896,34 @@ func (s *Sender) Shutdown() {
 	if err != nil {
 		logx.Errorf("close db error: %s", err.Error())
 	}
+}
+
+func (s *Sender) MonitorBalance() {
+	info, err := s.sysConfigModel.GetSysConfigByName("ZkBNBContract")
+	if err == nil {
+		s.SetBalance(info, "ZkBNBContract")
+	}
+
+	info, err = s.sysConfigModel.GetSysConfigByName("CommitAddress")
+	if err == nil {
+		s.SetBalance(info, "CommitAddress")
+	}
+
+	info, err = s.sysConfigModel.GetSysConfigByName("VerifyAddress")
+	if err == nil {
+		s.SetBalance(info, "VerifyAddress")
+	}
+}
+
+func (s *Sender) SetBalance(info *sysconfig.SysConfig, name string) {
+	balance, err := s.client.GetBalance(info.Value)
+	if err != nil {
+		contractBalanceMetric.WithLabelValues(name).Set(float64(0))
+		logx.Errorf("%s get balance error: %s", name, err.Error())
+	}
+	fbalance := new(big.Float)
+	fbalance.SetString(balance.String())
+	ethValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18)))
+	f, _ := ethValue.Float64()
+	contractBalanceMetric.WithLabelValues(name).Set(f)
 }

@@ -52,6 +52,8 @@ type contractAddr struct {
 	ZnsControllerProxy string
 	ZnsResolverProxy   string
 	ZkBNBProxy         string
+	CommitAddress      string
+	VerifyAddress      string
 	UpgradeGateKeeper  string
 	BUSDToken          string
 	LEGToken           string
@@ -217,6 +219,18 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 			Value:     svrConf.ZkBNBProxy,
 			ValueType: "string",
 			Comment:   "ZkBNB contract on BSC",
+		},
+		{
+			Name:      types.CommitAddress,
+			Value:     svrConf.CommitAddress,
+			ValueType: "string",
+			Comment:   "ZkBNB commit on BSC",
+		},
+		{
+			Name:      types.VerifyAddress,
+			Value:     svrConf.VerifyAddress,
+			ValueType: "string",
+			Comment:   "ZkBNB verify on BSC",
 		},
 		// Governance Contract
 		{

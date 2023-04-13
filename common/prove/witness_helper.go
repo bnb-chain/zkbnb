@@ -168,11 +168,11 @@ func (w *WitnessHelper) constructAccountWitness(
 	ctx context.Context,
 ) (
 	accountRootBefore []byte,
-	// account before info, size is 7
+// account before info, size is 7
 	accountsInfoBefore [NbAccountsPerTx]*cryptoTypes.Account,
-	// before account asset merkle proof
+// before account asset merkle proof
 	merkleProofsAccountAssetsBefore [NbAccountsPerTx][NbAccountAssetsPerAccount][AssetMerkleLevels][]byte,
-	// before account merkle proof
+// before account merkle proof
 	merkleProofsAccountBefore [NbAccountsPerTx][AccountMerkleLevels][]byte,
 	err error,
 ) {
@@ -302,7 +302,8 @@ func (w *WitnessHelper) constructAccountWitness(
 		nL1Address := proverAccounts[accountCount].AccountInfo.L1Address
 		if oTx.ToAccountIndex == accountKey && (oTx.TxType == types.TxTypeDeposit ||
 			oTx.TxType == types.TxTypeDepositNft ||
-			oTx.TxType == types.TxTypeTransfer || oTx.TxType == types.TxTypeTransferNft) {
+			oTx.TxType == types.TxTypeTransfer || oTx.TxType == types.TxTypeTransferNft ||
+			oTx.TxType == types.TxTypeMintNft) {
 			for _, txDetail := range oTx.TxDetails {
 				if txDetail.AssetType == types.CreateAccountType {
 					nL1Address = txDetail.BalanceDelta
@@ -378,11 +379,11 @@ func (w *WitnessHelper) constructAccountWitness(
 func (w *WitnessHelper) constructNftWitness(
 	oTx *tx.Tx, proverNftInfo *NftWitnessInfo, ctx context.Context,
 ) (
-	// nft root before
+// nft root before
 	nftRootBefore []byte,
-	// nft before
+// nft before
 	nftBefore *cryptoTypes.Nft,
-	// before nft tree merkle proof
+// before nft tree merkle proof
 	merkleProofsNftBefore [NftMerkleLevels][]byte,
 	err error,
 ) {

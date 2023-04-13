@@ -107,6 +107,8 @@ type (
 		L1RequestId int64 `gorm:"-"`
 		// update pool tx account index
 		IsPartialUpdate bool `gorm:"-"`
+
+		IsNonceChanged bool `gorm:"-"`
 	}
 )
 
