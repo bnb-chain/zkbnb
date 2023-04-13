@@ -395,13 +395,14 @@ func (s *Sender) CommitBlocks() (err error) {
 			gasPrice,
 			s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
-			commitExceptionHeightMetric.Set(float64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber))
+			blockHeight := pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber
+			commitExceptionHeightMetric.Set(float64(blockHeight))
 			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
-				logx.Errorf("failed to send commit tx,try again: errL %v:%s", err, txHash)
+				logx.Errorf("failed to send commit tx,try again: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
 				retry = true
 				continue
 			}
-			return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
+			return fmt.Errorf("failed to send commit tx, errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
 		}
 		break
 	}
@@ -650,13 +651,14 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			pendingVerifyAndExecuteBlocks,
 			proofs, gasPrice, s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
-			verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))
+			blockHeight := pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber
+			verifyExceptionHeightMetric.Set(float64(blockHeight))
 			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
-				logx.Errorf("failed to send verify tx,try again: errL %v:%s", err, txHash)
+				logx.Errorf("failed to send verify tx,try again: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
 				retry = true
 				continue
 			}
-			return fmt.Errorf("failed to send verify tx: %v:%s", err, txHash)
+			return fmt.Errorf("failed to send verify tx: %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
 		}
 		break
 	}
