@@ -228,22 +228,27 @@ func (p *Prover) ProveBlock() error {
 		}
 		return err
 	}
-	defer func() {
-		if err == nil {
-			return
-		}
 
+	logx.Severef("doProveBlock start, height=%d", blockWitness.Height)
+	err = p.doProveBlock(blockWitness)
+	if err != nil {
+		logx.Severef("doProveBlock failed, err %v,height=%d", err, blockWitness.Height)
 		// Recover block witness status.
 		res := p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusPublished)
 		if res != nil {
-			logx.Errorf("revert block witness status failed, err %v", res)
+			logx.Severef("revert block witness status failed, err %v,height=%d", res, blockWitness.Height)
+			panic("recover block witness status error " + res.Error())
 		}
 		l2ExceptionProofHeightMetrics.Set(float64(blockWitness.Height))
-	}()
+		return err
+	}
+	return nil
+}
 
+func (p *Prover) doProveBlock(blockWitness *blockwitness.BlockWitness) error {
 	// Parse crypto block.
 	var cryptoBlock *circuit.Block
-	err = json.Unmarshal([]byte(blockWitness.WitnessData), &cryptoBlock)
+	err := json.Unmarshal([]byte(blockWitness.WitnessData), &cryptoBlock)
 	if err != nil {
 		return err
 	}
