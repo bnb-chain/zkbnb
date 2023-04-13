@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/log"
 	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/dgraph-io/ristretto"
@@ -594,7 +595,8 @@ func (s *StateDB) UpdateAssetTree(stateDataCopy *StateDataCopy) error {
 		taskNum++
 		err := func(accountIndex int64, assets []int64) error {
 			return gopool.Submit(func() {
-				index, leaf, err := s.SetAndCommitAssetTree(accountIndex, assets, stateDataCopy)
+				ctx := log.NewCtxWithKV(log.BlockHeightContext, stateDataCopy.CurrentBlock.BlockHeight, log.AccountIndexCtx, accountIndex)
+				index, leaf, err := s.SetAndCommitAssetTree(accountIndex, assets, stateDataCopy, ctx)
 				resultChan <- &treeUpdateResp{
 					role:  accountTreeRole,
 					index: index,
@@ -694,7 +696,7 @@ func (s *StateDB) SetAccountAndNftTree(stateDataCopy *StateDataCopy) error {
 }
 
 // SetAndCommitAssetTree compute account asset hash, commit asset smt,compute account leaf hash
-func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stateCopy *StateDataCopy) (int64, []byte, error) {
+func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stateCopy *StateDataCopy, ctx context.Context) (int64, []byte, error) {
 	start := time.Now()
 	account, exist := stateCopy.StateCache.GetPendingAccount(accountIndex)
 	metrics.AccountTreeTimeGauge.WithLabelValues("cache_get_account").Set(float64(time.Since(start).Milliseconds()))
@@ -708,10 +710,8 @@ func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stat
 	for _, assetId := range assets {
 		balance := account.AssetInfo[assetId].Balance
 		startItem := time.Now()
-		assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-			balance.String(),
-			account.AssetInfo[assetId].OfferCanceledOrFinalized.String(), accountIndex, assetId, stateCopy.CurrentBlock.BlockHeight,
-		)
+		ctx := log.UpdateCtxWithKV(ctx, log.AssetIdCtx, assetId)
+		assetLeaf, err := tree.ComputeAccountAssetLeafHash(balance.String(), account.AssetInfo[assetId].OfferCanceledOrFinalized.String(), ctx)
 		metrics.AccountTreeTimeGauge.WithLabelValues("compute_poseidon").Set(float64(time.Since(startItem).Milliseconds()))
 		if err != nil {
 			return accountIndex, nil, fmt.Errorf("compute new account asset leaf failed: %v", err)
@@ -734,8 +734,7 @@ func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stat
 		account.Nonce,
 		account.CollectionNonce,
 		s.AccountAssetTrees.Get(accountIndex).Root(),
-		accountIndex,
-		stateCopy.CurrentBlock.BlockHeight,
+		ctx,
 	)
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("unable to compute account leaf: %v", err)
@@ -748,7 +747,7 @@ func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stat
 		prunedVersion = latestVersion
 	}
 	newVersion := bsmt.Version(stateCopy.CurrentBlock.BlockHeight)
-	logx.Infof("asset.CommitWithNewVersion:blockHeight=%d,accountIndex=%d,prunedVersion=%d:", stateCopy.CurrentBlock.BlockHeight, accountIndex, prunedVersion)
+	logx.WithContext(ctx).Infof("asset.CommitWithNewVersion:blockHeight=%d,accountIndex=%d,prunedVersion=%d:", stateCopy.CurrentBlock.BlockHeight, accountIndex, prunedVersion)
 	ver, err := asset.CommitWithNewVersion(&prunedVersion, &newVersion)
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("unable to commit asset tree [%d], tree ver: %d, prune ver: %d,error:%s", accountIndex, ver, prunedVersion, err.Error())
@@ -757,21 +756,21 @@ func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stat
 	return accountIndex, nAccountLeafHash, nil
 }
 
-//compute nft leaf hash
+// compute nft leaf hash
 func (s *StateDB) computeNftLeafHash(nftIndex int64, stateCopy *StateDataCopy) (int64, []byte, error) {
 	start := time.Now()
 	nftInfo, exist := stateCopy.StateCache.GetPendingNft(nftIndex)
 	if !exist {
 		return nftIndex, nil, fmt.Errorf("computeNftLeafHash failed,No NFT found in GetPendingNft nftIndex=%d", nftIndex)
 	}
+	ctx := log.NewCtxWithKV(log.BlockHeightContext, stateCopy.CurrentBlock.BlockHeight, log.NftIndexCtx, nftIndex)
 	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
 		nftInfo.CreatorAccountIndex,
 		nftInfo.OwnerAccountIndex,
 		nftInfo.NftContentHash,
 		nftInfo.RoyaltyRate,
 		nftInfo.CollectionId,
-		nftInfo.NftIndex,
-		stateCopy.CurrentBlock.BlockHeight,
+		ctx,
 	)
 	if err != nil {
 		return nftIndex, nil, fmt.Errorf("unable to compute nftInfo leaf: %v", err)
