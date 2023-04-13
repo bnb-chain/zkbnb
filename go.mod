@@ -23,7 +23,6 @@ require (
 	github.com/swaggo/gin-swagger v1.5.3
 	github.com/swaggo/swag v1.8.8
 	github.com/zeromicro/go-zero v1.5.1
-	go.opentelemetry.io/otel/trace v1.14.0
 	gorm.io/gorm v1.24.0
 	gorm.io/plugin/dbresolver v1.3.0
 )
@@ -167,6 +166,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.14.0 // indirect
 	go.opentelemetry.io/otel/exporters/zipkin v1.14.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.14.0 // indirect
+	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/automaxprocs v1.5.2 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
