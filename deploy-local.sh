@@ -14,11 +14,11 @@ ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 NETWORK_RPC_SYS_CONFIG_NAME=LocalTestNetworkRpc # BscTestNetworkRpc or LocalTestNetworkRpc
 BSC_TESTNET_RPC=HTTP://127.0.0.1:8545
-BSC_TESTNET_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+BSC_TESTNET_PRIVATE_KEY=2d92239525b6632b963f49d28411596512fab69052a1738e530a59617e433b81
 #use COMMIT_BLOCK_PRIVATE_KEY for submitting commit_block to bnb contract in sender application
 #use VERIFY_BLOCK_PRIVATE_KEY for submitting verify_block to bnb contract in sender application
-COMMIT_BLOCK_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-VERIFY_BLOCK_PRIVATE_KEY=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+COMMIT_BLOCK_PRIVATE_KEY=
+VERIFY_BLOCK_PRIVATE_KEY=
 # security Council Members for upgrade approve
 # FOR TEST
 # generage by Mnemonic (account #17 ~ #19): giggle federal note disorder will close traffic air melody artefact taxi tissue
@@ -26,12 +26,12 @@ SECURITY_COUNCIL_MEMBERS_NUMBER_1=0x0000000000000000000000000000000000000000
 SECURITY_COUNCIL_MEMBERS_NUMBER_2=0x0000000000000000000000000000000000000000
 SECURITY_COUNCIL_MEMBERS_NUMBER_3=0x0000000000000000000000000000000000000000
 # validator config, split by `,` the address of COMMIT_BLOCK_PRIVATE_KEY  and the address of VERIFY_BLOCK_PRIVATE_KEY,
-VALIDATORS=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266,0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+VALIDATORS=
 # treasury account address, the default value is the first validator's address
 TREASURY_ACCOUNT_ADDRESS=
 # gas account address, the default value is the second validator's address
 GAS_ACCOUNT_ADDRESS=
-ZKBNB_OPTIONAL_BLOCK_SIZES=1
+ZKBNB_OPTIONAL_BLOCK_SIZES=1,10
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'

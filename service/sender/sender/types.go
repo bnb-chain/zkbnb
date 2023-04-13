@@ -105,7 +105,7 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.Compres
 				if txList[index].TxType == types.TxTypeChangePubKey {
 					txInfo, err := types.ParseChangePubKeyTxInfo(txList[index].TxInfo)
 					if err != nil {
-						ctx = log.UpdateCtxWithKV(ctx, log.AccountIdContext, txInfo.AccountIndex)
+						ctx := log.UpdateCtxWithKV(ctx, log.AccountIndexCtx, txInfo.AccountIndex)
 						logx.WithContext(ctx).Errorf("parse change pub key tx info tx failed: %s", err.Error())
 						return nil, err
 					}
