@@ -1104,11 +1104,13 @@ func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 	**/
 
 	txCountLimitPerBlock := c.maxTxsPerBlock/2 + 1
+	if c.maxTxsPerBlock == 8 {
+		txCountLimitPerBlock = 1
+	}
 	if len(c.bc.Statedb.Txs) >= txCountLimitPerBlock {
 		return true
 	}
 	return false
-
 }
 
 func (c *Committer) computeCurrentBlockSize(stateCopy *statedb.StateDataCopy) int {
