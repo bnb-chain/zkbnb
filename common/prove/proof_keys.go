@@ -3,6 +3,7 @@ package prove
 import (
 	"bytes"
 	"fmt"
+	"github.com/consensys/gnark/constraint"
 	"math/big"
 	"os"
 
@@ -18,7 +19,7 @@ import (
 
 func LoadProvingKey(filepath string) (pks []groth16.ProvingKey, err error) {
 	logx.Info("start reading proving key")
-	return groth16.ReadSegmentProveKey(filepath)
+	return groth16.ReadSegmentProveKey(ecc.BN254, filepath)
 }
 
 func LoadVerifyingKey(filepath string) (verifyingKey groth16.VerifyingKey, err error) {
@@ -33,8 +34,24 @@ func LoadVerifyingKey(filepath string) (verifyingKey groth16.VerifyingKey, err e
 	return verifyingKey, nil
 }
 
+func LoadR1CSLen(filename string) (nbConstraints int, err error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return -1, fmt.Errorf("read file error")
+	}
+	defer f.Close()
+
+	var value int
+	_, err = fmt.Fscanf(f, "%d", &value)
+	if err != nil {
+		return -1, err
+	}
+
+	return value, nil
+}
+
 func GenerateProof(
-	r1cs frontend.CompiledConstraintSystem,
+	r1cs constraint.ConstraintSystem,
 	provingKey []groth16.ProvingKey,
 	verifyingKey groth16.VerifyingKey,
 	cBlock *circuit.Block,
@@ -49,12 +66,12 @@ func GenerateProof(
 	verifyWitness.OldStateRoot = cBlock.OldStateRoot
 	verifyWitness.NewStateRoot = cBlock.NewStateRoot
 	verifyWitness.BlockCommitment = cBlock.BlockCommitment
-	witness, err := frontend.NewWitness(&blockWitness, ecc.BN254)
+	witness, err := frontend.NewWitness(&blockWitness, ecc.BN254.ScalarField())
 	if err != nil {
 		return proof, err
 	}
 
-	vWitness, err := frontend.NewWitness(&verifyWitness, ecc.BN254, frontend.PublicOnly())
+	vWitness, err := frontend.NewWitness(&verifyWitness, ecc.BN254.ScalarField(), frontend.PublicOnly())
 	if err != nil {
 		return proof, err
 	}

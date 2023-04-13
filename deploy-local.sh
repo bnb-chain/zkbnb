@@ -37,6 +37,7 @@ COMMIT_ADDRESS=
 VERIFY_ADDRESS=
 
 ZKBNB_OPTIONAL_BLOCK_SIZES=1,10
+ZKBNB_R1CS_BATCH_SIZE=100000
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
@@ -161,6 +162,7 @@ KeyPath: [${PROVING_KEYS}]
 
 BlockConfig:
   OptionalBlockSizes: [${ZKBNB_OPTIONAL_BLOCK_SIZES}]
+    R1CSBatchSize: [${ZKBNB_R1CS_BATCH_SIZE}]
 
 TreeDB:
   Driver: memorydb
