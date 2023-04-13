@@ -276,6 +276,7 @@ func (c *Committer) executeTxFunc() error {
 			if err != nil {
 				return fmt.Errorf("propose new block failed: %s", err.Error())
 			}
+			ctx := log.UpdateCtxWithKV(ctx, log.BlockHeightContext, curBlock.BlockHeight)
 			logx.WithContext(ctx).Infof("1 init new block, current height=%d,previous height=%d,blockId=%d", curBlock.BlockHeight, previousHeight, curBlock.ID)
 		}
 

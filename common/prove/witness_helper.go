@@ -181,6 +181,7 @@ func (w *WitnessHelper) constructAccountWitness(
 		accountCount = 0
 	)
 	for _, accountKey := range accountKeys {
+		ctx := log.UpdateCtxWithKV(ctx, log.AccountIndexCtx, accountKey)
 		var (
 			cryptoAccount = new(cryptoTypes.Account)
 			// get account asset before
@@ -779,7 +780,7 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 			}
 		}
 
-		ctx := log.NewCtxWithKV(log.AccountIndexCtx, gasAccountIndex, log.BlockHeightContext, block.BlockHeight)
+		ctx := log.NewCtxWithKV(log.BlockHeightContext, block.BlockHeight, log.AccountIndexCtx, gasAccountIndex)
 		nAccountHash, err := tree.ComputeAccountLeafHash(
 			w.gasAccountInfo.L1Address,
 			w.gasAccountInfo.PublicKey,

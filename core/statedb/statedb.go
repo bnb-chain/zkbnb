@@ -581,7 +581,7 @@ func (s *StateDB) UpdateAssetTree(stateDataCopy *StateDataCopy) error {
 		taskNum++
 		err := func(accountIndex int64, assets []int64) error {
 			return gopool.Submit(func() {
-				ctx := log.NewCtxWithKV(log.AccountIndexCtx, accountIndex, log.BlockHeightContext, stateDataCopy.CurrentBlock.BlockHeight)
+				ctx := log.NewCtxWithKV(log.BlockHeightContext, stateDataCopy.CurrentBlock.BlockHeight, log.AccountIndexCtx, accountIndex)
 				index, leaf, err := s.SetAndCommitAssetTree(accountIndex, assets, stateDataCopy, ctx)
 				resultChan <- &treeUpdateResp{
 					role:  accountTreeRole,
@@ -733,7 +733,7 @@ func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stat
 		prunedVersion = latestVersion
 	}
 	newVersion := bsmt.Version(stateCopy.CurrentBlock.BlockHeight)
-	logx.Infof("asset.CommitWithNewVersion:blockHeight=%d,accountIndex=%d,prunedVersion=%d:", stateCopy.CurrentBlock.BlockHeight, accountIndex, prunedVersion)
+	logx.WithContext(ctx).Infof("asset.CommitWithNewVersion:blockHeight=%d,accountIndex=%d,prunedVersion=%d:", stateCopy.CurrentBlock.BlockHeight, accountIndex, prunedVersion)
 	ver, err := asset.CommitWithNewVersion(&prunedVersion, &newVersion)
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("unable to commit asset tree [%d], tree ver: %d, prune ver: %d,error:%s", accountIndex, ver, prunedVersion, err.Error())

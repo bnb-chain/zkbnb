@@ -6,12 +6,12 @@ import (
 )
 
 const (
-	AccountIndexCtx     = "AccountId"
-	NftIndexCtx         = "NftIndex"
-	AssetIdCtx          = "AssetId"
-	BlockHeightContext  = "BlockHeight"
-	PoolTxIdContext     = "PoolTxId"
-	PoolTxIdListContext = "PoolTxIds"
+	AccountIndexCtx     = "accountId"
+	NftIndexCtx         = "nftIndex"
+	AssetIdCtx          = "assetId"
+	BlockHeightContext  = "blockHeight"
+	PoolTxIdContext     = "poolTxId"
+	PoolTxIdListContext = "poolTxIds"
 )
 
 func UpdateCtxWithKV(ctx context.Context, keyValues ...interface{}) context.Context {
