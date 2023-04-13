@@ -2,7 +2,6 @@ package permctrl
 
 import (
 	"context"
-	"github.com/bnb-chain/zkbnb/service/apiserver/internal/config"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/fetcher/address"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/types"
@@ -63,8 +62,8 @@ func containElement(elementArray []string, array []string) bool {
 	return false
 }
 
-func InitPermissionControl(config config.Config) {
+func InitPermissionControl() {
 	// Get the permission control configuration from the Apollo server
-	permissionControlConfig = LoadApolloPermissionControlConfig(config)
+	permissionControlConfig = LoadApolloPermissionControlConfig()
 	logx.Infof("Initiate Permission Control Facility Successfully!")
 }
