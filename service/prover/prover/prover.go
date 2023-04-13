@@ -154,6 +154,14 @@ func NewProver(c config.Config) (*Prover, error) {
 		r1cs.LoadFromSplitBinaryConcurrent(c.KeyPath[i], nbConstraints, c.BlockConfig.R1CSBatchSize, runtime.NumCPU())
 		prover.R1cs[i] = r1cs
 		if err != nil {
+			logx.Severe("r1cs init error")
+			panic("r1cs init error")
+		}
+		logx.Infof("blockConstraints constraints: %d", prover.R1cs[i].GetNbConstraints())
+		logx.Info("finish compile blockConstraints")
+		// read proving and verifying keys
+		prover.ProvingKeys[i], err = prove.LoadProvingKey(c.KeyPath[i])
+		if err != nil {
 			logx.Severe("provingKey loading error")
 			panic("provingKey loading error")
 		}
