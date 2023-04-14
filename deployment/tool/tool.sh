@@ -9,8 +9,8 @@
 WORKDIR=$(cd `dirname $0`/..; pwd)
 KEY_PATH=${WORKDIR}/.zkbnb
 ZkBNB_CONTRACT_REPO=https://github.com/bnb-chain/zkbnb-contract.git
-ZkBNB_CRYPTO_REPO=https://github.com/bnb-chain/zkbnb-crypto.git
-BSC_TESTNET_ENDPOINT=https://data-seed-prebsc-1-s1.binance.org:8545
+ZkBNB_CRYPTO_REPO=https://github.com/15000785133/zkbnb-crypto.git
+BSC_TESTNET_ENDPOINT=https://data-seed-prebsc-2-s2.binance.org:8545
 ZKBNB_CRYPTO_BRANCH=$(cat $WORKDIR/../go.mod | grep github.com/bnb-chain/zkbnb-crypto | awk -F" " '{print $2}' | awk -F"-" '{if ($3 != "") print $3;else print $1;}')
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
@@ -20,15 +20,15 @@ function prepare() {
     rm -rf ${WORKDIR}/dependency
     mkdir -p ${WORKDIR}/dependency && cd ${WORKDIR}/dependency
 
-    git clone --branch develop ${ZkBNB_CONTRACT_REPO}
-    git clone --branch develop ${ZkBNB_CRYPTO_REPO}
+    git clone --branch qa ${ZkBNB_CONTRACT_REPO}
+    git clone --branch qa ${ZkBNB_CRYPTO_REPO}
     cd ${WORKDIR}/dependency/zkbnb-crypto && git checkout ${ZKBNB_CRYPTO_BRANCH}
 
     if [ ! -z $1 ] && [ "$1" = "new" ]; then
         echo "new crypto env"
         echo 'start generate zkbnb.vk and zkbnb.pk ...'
         cd ${WORKDIR}/dependency/zkbnb-crypto
-        go test ./circuit/solidity -timeout 99999s -run TestExportSol
+        go test ./circuit/solidity -timeout 99999s -run TestExportSol -blocksizes=1
         mkdir -p $KEY_PATH
         cp -r ./circuit/solidity/* $KEY_PATH/
     fi
@@ -47,8 +47,16 @@ function getLatestBlockHeight() {
 
 function deployContracts() {
     echo 'deploy contracts, register and deposit on BSC Testnet'
-    cd ${WORKDIR}/dependency/zkbnb-contract && echo "BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}" > .env && npm install
-
+    cd ${WORKDIR}/dependency/zkbnb-contract && cp .env.example .env
+    sed -i -e "s~BSC_TESTNET_RPC=.*~BSC_TESTNET_RPC=${BSC_TESTNET_RPC}~" .env
+    sed -i -e "s/BSC_TESTNET_PRIVATE_KEY=.*/BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}/" .env
+    sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_1=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_1=${SECURITY_COUNCIL_MEMBERS_NUMBER_1}/" .env
+    sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_2=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_2=${SECURITY_COUNCIL_MEMBERS_NUMBER_2}/" .env
+    sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_3=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_3=${SECURITY_COUNCIL_MEMBERS_NUMBER_3}/" .env
+    sed -i -e "s/VALIDATORS=.*/VALIDATORS=${VALIDATORS}/" .env
+    sed -i -e "s/TREASURY_ACCOUNT_ADDRESS=.*/TREASURY_ACCOUNT_ADDRESS=${TREASURY_ACCOUNT_ADDRESS}/" .env
+    sed -i -e "s/GAS_ACCOUNT_ADDRESS=.*/GAS_ACCOUNT_ADDRESS=${GAS_ACCOUNT_ADDRESS}/" .env
+    yarn install
     npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
     echo "Recorded latest contract addresses into ${WORKDIR}/dependency/zkbnb-contract/info/addresses.json"
     npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/register.js
@@ -56,16 +64,15 @@ function deployContracts() {
 
     mkdir -p ${WORKDIR}/configs/
     echo 'modify deployed contracts into zkbnb config ...'
-    cp -r ${WORKDIR}/../tools/dbinitializer/contractaddr.yaml.example ${WORKDIR}/configs/contractaddr.yaml
-
+    cp ${WORKDIR}/../tools/dbinitializer/contractaddr.yaml.example ${WORKDIR}/configs/contractaddr.yaml
     ZkBNBContractAddr=`cat ${WORKDIR}/dependency/zkbnb-contract/info/addresses.json  | jq -r '.zkbnbProxy'`
     sed -i -e "s/ZkBNBProxy: .*/ZkBNBProxy: ${ZkBNBContractAddr}/" ${WORKDIR}/configs/contractaddr.yaml
-
     GovernanceContractAddr=`cat ${WORKDIR}/dependency/zkbnb-contract/info/addresses.json  | jq -r '.governance'`
     sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${WORKDIR}/configs/contractaddr.yaml
-
     BUSDContractAddr=`cat ${WORKDIR}/dependency/zkbnb-contract/info/addresses.json  | jq -r '.BUSDToken'`
     sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${WORKDIR}/configs/contractaddr.yaml
+    DefaultNftFactoryAddr=`cat ${WORKDIR}/dependency/zkbnb-contract/info/addresses.json  | jq -r '.DefaultNftFactory'`
+    sed -i -e "s/DefaultNftFactory: .*/DefaultNftFactory: ${DefaultNftFactoryAddr}/" ${WORKDIR}/configs/contractaddr.yaml
 }
 
 CMD=$1

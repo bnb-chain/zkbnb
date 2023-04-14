@@ -532,7 +532,7 @@ func (m *defaultTxPoolModel) BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (e
 		return dbTx.Error
 	}
 	if int(dbTx.RowsAffected) != len(txs) {
-		logx.Errorf("BatchUpdateNftIndexOrCollectionId failed,rows affected not equal txs length,dbTx.RowsAffected:%s,len(txs):%s", int(dbTx.RowsAffected), len(txs))
+		logx.Errorf("BatchUpdateNftIndexOrCollectionId failed,rows affected not equal txs length,dbTx.RowsAffected:%d,len(txs):%d", int(dbTx.RowsAffected), len(txs))
 		return types.DbErrFailToUpdatePoolTx
 	}
 	return nil

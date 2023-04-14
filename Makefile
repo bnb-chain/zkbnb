@@ -32,7 +32,7 @@ integration-test:
 test: api-server
 	@echo "--> Running go test"
 	# `-p 1` for preventing race condition of some tests
-	@go test -p 1 ./...
+	@go test -v -p 1 ./...
 
 tools:
 	go install -u github.com/zeromicro/go-zero/tools/goctl@v1.4.0
