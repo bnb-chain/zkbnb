@@ -472,7 +472,7 @@ func (s *Sender) UpdateSentTxs() (err error) {
 			l1ExceptionSenderMetric.Set(float64(pendingTx.L2BlockHeight))
 			// It is critical to have any failed transactions
 			logx.Severef("unexpected failed tx: %v", txHash)
-			panic(fmt.Sprintf("unexpected failed tx: %v", txHash))
+			continue
 		}
 		l2MaxWaitingTimeMetric.Set(float64(0))
 		l1ExceptionSenderMetric.Set(float64(0))
