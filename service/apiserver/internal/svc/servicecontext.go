@@ -103,12 +103,12 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.TxPendingExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum, redisCache)
 
 	if err := prometheus.Register(sendTxMetrics); err != nil {
-		logx.Error("prometheus.Register sendTxHandlerMetrics error: %v", err)
+		logx.Errorf("prometheus.Register sendTxHandlerMetrics error: %s", err.Error())
 		return nil
 	}
 
 	if err := prometheus.Register(sendTxTotalMetrics); err != nil {
-		logx.Error("prometheus.Register sendTxTotalMetrics error: %v", err)
+		logx.Errorf("prometheus.Register sendTxTotalMetrics error: %s", err.Error())
 		return nil
 	}
 	common.NewIPFS(c.IpfsUrl)
