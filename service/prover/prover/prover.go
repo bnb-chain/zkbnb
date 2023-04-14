@@ -3,11 +3,13 @@ package prover
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark/constraint"
 	"github.com/prometheus/client_golang/prometheus"
+	"runtime"
 	"time"
 
 	"github.com/consensys/gnark/backend/groth16"
-	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -51,7 +53,7 @@ type Prover struct {
 	ProvingKeys        [][]groth16.ProvingKey
 	OptionalBlockSizes []int
 	SessionNames       []string
-	R1cs               []frontend.CompiledConstraintSystem
+	R1cs               []constraint.ConstraintSystem
 }
 
 var (
@@ -127,7 +129,7 @@ func NewProver(c config.Config) (*Prover, error) {
 	prover.OptionalBlockSizes = c.BlockConfig.OptionalBlockSizes
 	prover.ProvingKeys = make([][]groth16.ProvingKey, len(prover.OptionalBlockSizes))
 	prover.VerifyingKeys = make([]groth16.VerifyingKey, len(prover.OptionalBlockSizes))
-	prover.R1cs = make([]frontend.CompiledConstraintSystem, len(prover.OptionalBlockSizes))
+	prover.R1cs = make([]constraint.ConstraintSystem, len(prover.OptionalBlockSizes))
 	prover.SessionNames = make([]string, len(prover.OptionalBlockSizes))
 	for i := 0; i < len(prover.OptionalBlockSizes); i++ {
 		var blockConstraints circuit.BlockConstraints
@@ -144,7 +146,15 @@ func NewProver(c config.Config) (*Prover, error) {
 		// prover.R1cs[i], err = frontend.Compile(ecc.BN254, r1cs.NewBuilder, &blockConstraints, frontend.IgnoreUnconstrainedInputs())
 		// groth16.LazifyR1cs(prover.R1cs[i])
 		std.RegisterHints()
-		prover.R1cs[i], err = groth16.LoadR1CSFromFile(c.KeyPath[i])
+		nbConstraints, err := prove.LoadR1CSLen(c.KeyPath[i] + ".r1cslen")
+		if err != nil {
+			logx.Severe("r1cs nb constraints read error")
+			panic("r1cs nb constraints read error")
+		}
+
+		r1cs := groth16.NewCS(ecc.BN254)
+		r1cs.LoadFromSplitBinaryConcurrent(c.KeyPath[i], nbConstraints, c.BlockConfig.R1CSBatchSize, runtime.NumCPU())
+		prover.R1cs[i] = r1cs
 		if err != nil {
 			logx.Severe("r1cs init error")
 			panic("r1cs init error")
