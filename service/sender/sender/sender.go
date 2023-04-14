@@ -187,20 +187,9 @@ func NewSender(c sconfig.Config) *Sender {
 		panic("fatal error, failed to get the chainId from the l1 server, err:" + err.Error())
 	}
 
-	sendSignatureMode := c.ChainConfig.SendSignatureMode
-	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
-		s.commitAuthClient, err = rpc.NewAuthClient(c.AuthConfig.CommitBlockSk, chainId)
-		if err != nil {
-			logx.Severef("fatal error, failed to initiate commit authClient instance, err:%v", err)
-			panic("fatal error, failed to initiate commit authClient instance, err:" + err.Error())
-		}
-
-		s.verifyAuthClient, err = rpc.NewAuthClient(c.AuthConfig.VerifyBlockSk, chainId)
-		if err != nil {
-			logx.Severef("fatal error, failed to initiate verify authClient instance, err:%v", err)
-			panic("fatal error, failed to initiate verify authClient instance, err:" + err.Error())
-		}
-	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+	commitKeyId := c.KMSConfig.CommitKeyId
+	verifyKeyId := c.KMSConfig.VerifyKeyId
+	if len(commitKeyId) > 0 && len(verifyKeyId) > 0 {
 		s.commitKmsKeyClient, err = rpc.NewKMSKeyClient(s.kmsClient, c.KMSConfig.CommitKeyId, chainId)
 		if err != nil {
 			logx.Severef("fatal error, failed to initiate commit kmsKeyClient instance, err:%v", err)
@@ -213,8 +202,24 @@ func NewSender(c sconfig.Config) *Sender {
 			panic("fatal error, failed to initiate verify kmsKeyClient instance, err:" + err.Error())
 		}
 	} else {
-		logx.Severef("fatal error, sendSignatureMode can only be PrivateKeySignMode or KeyManageSignMode!")
-		panic("fatal error, sendSignatureMode can only be PrivateKeySignMode or KeyManageSignMode!")
+		commitBlockSk := c.AuthConfig.CommitBlockSk
+		verifyBlockSk := c.AuthConfig.VerifyBlockSk
+		if len(commitBlockSk) > 0 && len(verifyBlockSk) > 0 {
+			s.commitAuthClient, err = rpc.NewAuthClient(commitBlockSk, chainId)
+			if err != nil {
+				logx.Severef("fatal error, failed to initiate commit authClient instance, err:%v", err)
+				panic("fatal error, failed to initiate commit authClient instance, err:" + err.Error())
+			}
+
+			s.verifyAuthClient, err = rpc.NewAuthClient(verifyBlockSk, chainId)
+			if err != nil {
+				logx.Severef("fatal error, failed to initiate verify authClient instance, err:%v", err)
+				panic("fatal error, failed to initiate verify authClient instance, err:" + err.Error())
+			}
+		} else {
+			logx.Severef("fatal error, both kms keys and auth private keys not set in the environment variables!")
+			panic("fatal error, both kms keys and auth private keys not set in the environment variables!")
+		}
 	}
 
 	commitConstructor, err := s.GenerateConstructorForCommit()
@@ -709,7 +714,7 @@ func (s *Sender) GetCompressedBlocksForCommit(start int64) (blocksForCommit []*c
 		if totalTxCount < commitTxCountLimit {
 			return blocks, nil
 		}
-		
+
 		if maxCommitBlockCount > 1 {
 			maxCommitBlockCount--
 		}
@@ -719,6 +724,11 @@ func (s *Sender) GetCompressedBlocksForCommit(start int64) (blocksForCommit []*c
 func (s *Sender) ShouldCommitBlocks(lastBlock zkbnb.StorageStoredBlockInfo,
 	commitBlocksInfo []zkbnb.ZkBNBCommitBlockInfo, blocks []*compressedblock.CompressedBlock,
 	gasPrice *big.Int, gasLimit uint64, nonce uint64) bool {
+
+	// If CommitControlSwitch has been switched off, directly does not perform any control
+	if !sconfig.GetSenderConfig().CommitControlSwitch {
+		return true
+	}
 
 	// Judge the tx count waiting to be committed, if the tx count is greater
 	// than the maxCommitTxCount, commit the blocks directly
@@ -757,6 +767,11 @@ func (s *Sender) ShouldCommitBlocks(lastBlock zkbnb.StorageStoredBlockInfo,
 func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, verifyAndExecuteBlocksInfo []zkbnb.ZkBNBVerifyAndExecuteBlockInfo,
 	proofs []*big.Int, gasPrice *big.Int, gasLimit uint64, nonce uint64) bool {
 
+	// If VerifyControlSwitch has been switched off, directly does not perform any control
+	if !sconfig.GetSenderConfig().VerifyControlSwitch {
+		return true
+	}
+
 	// Judge the tx count waiting to be verified and executed, if the tx count is greater
 	// than the maxVerifyTxCount, verify and execute the blocks directly
 	maxVerifyTxCount := sconfig.GetSenderConfig().MaxVerifyTxCount
@@ -777,7 +792,7 @@ func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, verifyAndEx
 	// than the maxVerifyAvgUnitGas, abandon verify and execute operation for temporary
 	estimatedFee, err := s.zkbnbClient.EstimateVerifyAndExecuteWithNonce(verifyAndExecuteBlocksInfo, proofs, gasPrice, gasLimit, nonce)
 	if err != nil {
-		logx.Errorf("abandon commit block to l1, EstimateGas operation get some error:%s", err.Error())
+		logx.Errorf("abandon verify block to l1, EstimateGas operation get some error:%s", err.Error())
 		return false
 	}
 
@@ -852,41 +867,37 @@ func (s *Sender) CalculateTotalTxCountForBlock(blocks []*block.Block) uint64 {
 }
 
 func (s *Sender) GenerateConstructorForCommit() (zkbnb.TransactOptsConstructor, error) {
-	sendSignatureMode := s.config.ChainConfig.SendSignatureMode
-	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
-		return s.commitAuthClient, nil
-	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+	if s.commitKmsKeyClient != nil {
 		return s.commitKmsKeyClient, nil
+	} else if s.commitAuthClient != nil {
+		return s.commitAuthClient, nil
 	}
-	return nil, errors.New("sendSignatureMode can only be PrivateKeySignMode or KeyManageSignMode")
+	return nil, errors.New("both commitKmsKeyClient and commitAuthClient are all not initiated yet")
 }
 
 func (s *Sender) GenerateConstructorForVerifyAndExecute() (zkbnb.TransactOptsConstructor, error) {
-	sendSignatureMode := s.config.ChainConfig.SendSignatureMode
-	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
-		return s.verifyAuthClient, nil
-	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+	if s.verifyKmsKeyClient != nil {
 		return s.verifyKmsKeyClient, nil
+	} else if s.verifyAuthClient != nil {
+		return s.verifyAuthClient, nil
 	}
-	return nil, errors.New("sendSignatureMode can only be PrivateKeySignMode or KeyManageSignMode")
+	return nil, errors.New("both verifyKmsKeyClient and verifyAuthClient are all not initiated yet")
 }
 
 func (s *Sender) GetCommitAddress() common.Address {
-	sendSignatureMode := s.config.ChainConfig.SendSignatureMode
-	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
-		return s.commitAuthClient.GetL1Address()
-	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+	if s.commitKmsKeyClient != nil {
 		return s.commitKmsKeyClient.GetL1Address()
+	} else if s.commitAuthClient != nil {
+		return s.commitAuthClient.GetL1Address()
 	}
 	return [20]byte{}
 }
 
 func (s *Sender) GetVerifyAddress() common.Address {
-	sendSignatureMode := s.config.ChainConfig.SendSignatureMode
-	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
-		return s.verifyAuthClient.GetL1Address()
-	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+	if s.verifyKmsKeyClient != nil {
 		return s.verifyKmsKeyClient.GetL1Address()
+	} else if s.verifyAuthClient != nil {
+		return s.verifyAuthClient.GetL1Address()
 	}
 	return [20]byte{}
 }

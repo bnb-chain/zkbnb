@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	ApiServerAppId  = "ApiServerAppId"
+	ApiServerAppId  = "zkbnb-apiserver"
 	SystemConfigKey = "SystemConfig"
+	Namespace       = "application"
 )
 
 type TxPool struct {
@@ -54,24 +55,23 @@ type Config struct {
 	MemCache      MemCache
 }
 
-func InitSystemConfiguration(configFile string) Config {
-	config := Config{}
+func InitSystemConfiguration(config *Config, configFile string) error {
 	if err := InitSystemConfigFromEnvironment(config); err != nil {
 		logx.Errorf("Init system configuration from environment raise error:", err.Error())
 	} else {
 		logx.Infof("Init system configuration from environment Successfully")
-		return config
+		return nil
 	}
 	if err := InitSystemConfigFromConfigFile(config, configFile); err != nil {
 		logx.Errorf("Init system configuration from config file raise error:", err.Error())
 		panic("Init system configuration from config file raise error:" + err.Error())
 	} else {
 		logx.Infof("Init system configuration from config file Successfully")
-		return config
+		return nil
 	}
 }
 
-func InitSystemConfigFromEnvironment(c Config) error {
+func InitSystemConfigFromEnvironment(c *Config) error {
 	commonConfig, err := apollo.InitCommonConfig()
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func InitSystemConfigFromEnvironment(c Config) error {
 	c.Postgres = commonConfig.Postgres
 	c.CacheRedis = commonConfig.CacheRedis
 
-	systemConfigString, err := apollo.LoadApolloConfigFromEnvironment(ApiServerAppId, SystemConfigKey)
+	systemConfigString, err := apollo.LoadApolloConfigFromEnvironment(ApiServerAppId, Namespace, SystemConfigKey)
 	if err != nil {
 		return err
 	}
@@ -100,8 +100,8 @@ func InitSystemConfigFromEnvironment(c Config) error {
 	return nil
 }
 
-func InitSystemConfigFromConfigFile(c Config, configFile string) error {
-	conf.MustLoad(configFile, &c)
+func InitSystemConfigFromConfigFile(c *Config, configFile string) error {
+	conf.MustLoad(configFile, c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 	return nil

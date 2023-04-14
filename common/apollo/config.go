@@ -3,18 +3,20 @@ package apollo
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/apolloconfig/agollo/v4"
 	apollo "github.com/apolloconfig/agollo/v4/env/config"
 	"github.com/apolloconfig/agollo/v4/storage"
 	"github.com/zeromicro/go-zero/core/stores/cache"
+	"gorm.io/gorm/logger"
 	"os"
 )
 
 const (
-	CommonAppId = "CommonAppId"
-	Cluster     = "ApolloCluster"
-	Endpoint    = "ApolloEndpoint"
-	Namespace   = "ApolloNamespace"
+	CommonAppId     = "zkbnb-common"
+	Cluster         = "APOLLO_CLUSTER"
+	Endpoint        = "APOLLO_ENDPOINT"
+	CommonNamespace = "common.configuration"
 
 	CommonConfigKey = "CommonConfig"
 )
@@ -22,6 +24,7 @@ const (
 type Postgres struct {
 	MasterDataSource string
 	SlaveDataSource  string
+	LogLevel         logger.LogLevel `json:",optional"`
 	MaxIdle          int
 	MaxConn          int
 }
@@ -40,10 +43,9 @@ type CommonConfig struct {
 }
 
 var apolloClientMap = make(map[string]agollo.Client)
-var apolloConfigMap = make(map[string]*apollo.AppConfig)
 
 func InitCommonConfig() (*CommonConfig, error) {
-	if commonConfigString, err := LoadApolloConfigFromEnvironment(CommonAppId, CommonConfigKey); err != nil {
+	if commonConfigString, err := LoadApolloConfigFromEnvironment(CommonAppId, CommonNamespace, CommonConfigKey); err != nil {
 		return nil, err
 	} else {
 		// Convert the configuration value to the common config data
@@ -56,17 +58,16 @@ func InitCommonConfig() (*CommonConfig, error) {
 	}
 }
 
-func LoadApolloConfigFromEnvironment(appIdKey, configKey string) (string, error) {
+func LoadApolloConfigFromEnvironment(appId, namespace, configKey string) (string, error) {
 
 	// Initiate the apollo client instance for apollo configuration operation
-	apolloClient, err := InitApolloClientInstance(appIdKey)
+	apolloClient, err := InitApolloClientInstance(appId, namespace)
 	if err != nil {
 		return "", err
 	}
 
-	apolloConfig := apolloConfigMap[appIdKey]
 	// Get the latest common configuration from the apollo client
-	apolloCache := apolloClient.GetConfigCache(apolloConfig.NamespaceName)
+	apolloCache := apolloClient.GetConfigCache(namespace)
 	configObject, err := apolloCache.Get(configKey)
 	if err != nil {
 		return "", err
@@ -80,13 +81,10 @@ func LoadApolloConfigFromEnvironment(appIdKey, configKey string) (string, error)
 	return "", errors.New("configObject is not valid configuration value, configKey:" + configKey)
 }
 
-func InitApolloClientInstance(appIdKey string) (agollo.Client, error) {
-	if client := apolloClientMap[appIdKey]; client == nil {
+func InitApolloClientInstance(appId, namespace string) (agollo.Client, error) {
+	apolloClientKey := fmt.Sprintf("%s:%s", appId, namespace)
+	if client := apolloClientMap[apolloClientKey]; client == nil {
 		// Load and check all the apollo parameters from environment variables
-		appId := os.Getenv(appIdKey)
-		if len(appId) == 0 {
-			return nil, errors.New("appId is not set in environment variables")
-		}
 		cluster := os.Getenv(Cluster)
 		if len(cluster) == 0 {
 			return nil, errors.New("apolloCluster is not set in environment variables")
@@ -95,13 +93,9 @@ func InitApolloClientInstance(appIdKey string) (agollo.Client, error) {
 		if len(endpoint) == 0 {
 			return nil, errors.New("apolloEndpoint is not set in environment variables")
 		}
-		namespace := os.Getenv(Namespace)
-		if len(namespace) == 0 {
-			return nil, errors.New("apolloNamespace is not set in environment variables")
-		}
 
 		// Construct the apollo config for creating apollo client
-		apolloConfigMap[appIdKey] = &apollo.AppConfig{
+		apolloConfig := &apollo.AppConfig{
 			AppID:          appId,
 			Cluster:        cluster,
 			IP:             endpoint,
@@ -111,16 +105,19 @@ func InitApolloClientInstance(appIdKey string) (agollo.Client, error) {
 
 		// Create the apollo client here for getting the latest configuration
 		client, err := agollo.StartWithConfig(func() (*apollo.AppConfig, error) {
-			return apolloConfigMap[appIdKey], nil
+			return apolloConfig, nil
 		})
 		if err != nil {
 			return nil, err
 		}
-		apolloClientMap[appIdKey] = client
+		apolloClientMap[apolloClientKey] = client
 	}
-	return apolloClientMap[appIdKey], nil
+	return apolloClientMap[apolloClientKey], nil
 }
 
-func AddChangeListener(appIdKey string, listener storage.ChangeListener) {
-	apolloClientMap[appIdKey].AddChangeListener(listener)
+func AddChangeListener(appId, namespace string, listener storage.ChangeListener) {
+	apolloClientKey := fmt.Sprintf("%s:%s", appId, namespace)
+	if apolloClient, ok := apolloClientMap[apolloClientKey]; ok {
+		apolloClient.AddChangeListener(listener)
+	}
 }

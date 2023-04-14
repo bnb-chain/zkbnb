@@ -26,9 +26,13 @@ import (
 const GracefulShutdownTimeout = 5 * time.Second
 
 func Run(configFile string) error {
-	var c = config.InitSystemConfiguration(configFile)
-	ctx := svc.NewServiceContext(c)
+	c := config.Config{}
+	if err := config.InitSystemConfiguration(&c, configFile); err != nil {
+		logx.Severef("failed to initiate system configuration, %v", err)
+		panic("failed to initiate system configuration, err:" + err.Error())
+	}
 
+	ctx := svc.NewServiceContext(c)
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))

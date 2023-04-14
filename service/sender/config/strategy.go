@@ -3,20 +3,26 @@ package config
 import (
 	"encoding/json"
 	"github.com/apolloconfig/agollo/v4"
-	apollo "github.com/apolloconfig/agollo/v4/env/config"
 	"github.com/apolloconfig/agollo/v4/storage"
+	"github.com/bnb-chain/zkbnb/common/apollo"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-const SenderConfigKey = "SenderConfig"
+const (
+	SenderConfigKey = "SenderConfig"
+)
 
-var senderConfig *SenderConfig = &SenderConfig{}
+var senderConfig = &SenderConfig{}
+var senderUpdater = &SenderUpdater{}
 
 // Apollo client to get the sender configuration
 // so that it could be updated it from the apollo server side
 var apolloClient agollo.Client
 
 type SenderConfig struct {
+	CommitControlSwitch bool
+	VerifyControlSwitch bool
+
 	MaxCommitBlockCount uint64
 	CommitTxCountLimit  uint64
 
@@ -36,32 +42,20 @@ type SenderConfig struct {
 type SenderUpdater struct {
 }
 
-func InitApolloConfiguration(c Config) {
-	apolloConfig := &apollo.AppConfig{
-		AppID:          c.Apollo.AppID,
-		Cluster:        c.Apollo.Cluster,
-		IP:             c.Apollo.ApolloIp,
-		NamespaceName:  c.Apollo.Namespace,
-		IsBackupConfig: c.Apollo.IsBackupConfig,
-	}
+func InitSenderConfiguration(c Config) {
 
-	client, err := agollo.StartWithConfig(func() (*apollo.AppConfig, error) {
-		return apolloConfig, nil
-	})
+	//Add the apollo configuration updater listener for SenderConfig
+	apollo.AddChangeListener(SenderAppId, Namespace, senderUpdater)
+
+	newSenderConfig := &SenderConfig{}
+	newSenderConfigString, err := apollo.LoadApolloConfigFromEnvironment(SenderAppId, Namespace, SenderConfigKey)
 	if err != nil {
-		logx.Severef("Fail to start Apollo Client in Permission Control Configuration, Reason:%s", err.Error())
-		panic("Fail to start Apollo Client in Permission Control Configuration!")
-	}
-
-	apolloClient = client
-	senderUpdater := &SenderUpdater{}
-	apolloClient.AddChangeListener(senderUpdater)
-
-	apolloCache := apolloClient.GetConfigCache(apolloConfig.NamespaceName)
-	newSenderConfigObject, err := apolloCache.Get(SenderConfigKey)
-	if newSenderConfigObjectJson, ok := newSenderConfigObject.(string); ok {
-		newSenderConfig := &SenderConfig{}
-		err := json.Unmarshal([]byte(newSenderConfigObjectJson), newSenderConfig)
+		// If fails to initiate sender strategy configuration from apollo, directly switch it off
+		logx.Severef("Fail to Initiate Sender Configuration from the apollo server!")
+		newSenderConfig.CommitControlSwitch = false
+		newSenderConfig.VerifyControlSwitch = false
+	} else {
+		err := json.Unmarshal([]byte(newSenderConfigString), newSenderConfig)
 		if err != nil {
 			logx.Errorf("Fail to update SenderConfig from the apollo server, Reason:%s", err.Error())
 			panic("Fail to update SenderConfig from the apollo server, Reason:" + err.Error())

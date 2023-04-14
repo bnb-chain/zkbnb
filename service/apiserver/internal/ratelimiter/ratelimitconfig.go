@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	ApiServerAppId = "ApiServerAppId"
+	ApiServerAppId = "zkbnb-apiserver"
+	Namespace      = "application"
 )
 
 const (
@@ -15,6 +16,8 @@ const (
 	LimitTypeToken  = "LimitByToken"
 	LimitTypeBoth   = "LimitByBoth"
 )
+
+var rateLimitUpdater = &RateLimitUpdater{}
 
 type RedisConfig struct {
 	Address string
@@ -46,6 +49,7 @@ type RateLimitConfigItem struct {
 }
 
 type RateLimitConfig struct {
+	RateLimitSwitch  bool
 	RedisConfig      RedisConfig
 	DefaultRateLimit RateLimitConfigItem
 	PathRateLimitMap map[string]RateLimitConfigItem
@@ -74,28 +78,29 @@ func (c *RateLimitConfig) IsTokenLimitType(requestPath string) bool {
 }
 
 func LoadApolloRateLimitConfig() *RateLimitConfig {
-	rateLimitUpdater := &RateLimitUpdater{}
-	apollo.AddChangeListener(ApiServerAppId, rateLimitUpdater)
 
-	rateLimitConfigString, err := apollo.LoadApolloConfigFromEnvironment(ApiServerAppId, RateLimitConfigKey)
-	if err != nil {
-		logx.Severef("Fail to Initiate RateLimitConfig from the apollo server!")
-		panic("Fail to Initiate RateLimitConfig from the apollo server!")
-	}
+	//Add the apollo configuration updater listener for RateLimitConfig
+	apollo.AddChangeListener(ApiServerAppId, Namespace, rateLimitUpdater)
 
 	rateLimitConfig := &RateLimitConfig{}
-	err = json.Unmarshal([]byte(rateLimitConfigString), rateLimitConfig)
+	rateLimitConfigString, err := apollo.LoadApolloConfigFromEnvironment(ApiServerAppId, Namespace, RateLimitConfigKey)
 	if err != nil {
-		logx.Severef("Fail to unmarshal RateLimitConfig from the apollo server, Reason:%s", err.Error())
-		panic("Fail to unmarshal RateLimitConfig from the apollo server!")
-	}
+		// If fails to initiate rate limit configuration from apollo, directly switch it off
+		logx.Severef("Fail to Initiate RateLimitConfig from the apollo server!")
+		rateLimitConfig.RateLimitSwitch = false
+	} else {
+		err = json.Unmarshal([]byte(rateLimitConfigString), rateLimitConfig)
+		if err != nil {
+			logx.Severef("Fail to unmarshal RateLimitConfig from the apollo server, Reason:%s", err.Error())
+			panic("Fail to unmarshal RateLimitConfig from the apollo server!")
+		}
 
-	if err = rateLimitConfig.ValidateRateLimitConfig(); err != nil {
-		logx.Severef("Fail to validate RateLimitConfig from the apollo server, Reason:%s", err.Error())
-		panic("Fail to validate RateLimitConfig from the apollo server!")
-	}
+		if err = rateLimitConfig.ValidateRateLimitConfig(); err != nil {
+			logx.Severef("Fail to validate RateLimitConfig from the apollo server, Reason:%s", err.Error())
+			panic("Fail to validate RateLimitConfig from the apollo server!")
+		}
 
-	logx.Info("Load RateLimitConfig Successfully!")
+		logx.Info("Load RateLimitConfig Successfully!")
+	}
 	return rateLimitConfig
-
 }
