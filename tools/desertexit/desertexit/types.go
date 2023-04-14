@@ -98,7 +98,7 @@ type DesertVerifierNftExitData struct {
 	NftContentHash1     string
 	NftContentHash2     string
 	NftContentType      uint8
-	CreatorTreasuryRate int64
+	RoyaltyRate         int64
 	CollectionId        int64
 }
 

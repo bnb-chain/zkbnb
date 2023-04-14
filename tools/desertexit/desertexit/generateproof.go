@@ -421,7 +421,7 @@ func (c *GenerateProof) generateProof(blockHeight int64, accountIndex int64, nft
 			exitNftData.NftIndex = uint64(nftIndex)
 			exitNftData.CollectionId = nftInfo.CollectionId
 			exitNftData.CreatorAccountIndex = nftInfo.CreatorAccountIndex
-			exitNftData.CreatorTreasuryRate = nftInfo.RoyaltyRate
+			exitNftData.RoyaltyRate = nftInfo.RoyaltyRate
 			exitNftData.NftContentType = uint8(nftInfo.NftContentType)
 			exitNftData.OwnerAccountIndex = nftInfo.OwnerAccountIndex
 
