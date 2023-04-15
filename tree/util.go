@@ -23,7 +23,6 @@ import (
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	zkbnbtypes "github.com/bnb-chain/zkbnb/types"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	"github.com/consensys/gnark/backend/hint"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -45,8 +44,7 @@ func EmptyAccountNodeHash() []byte {
 	*/
 	zero := &fr.Element{0, 0, 0, 0}
 	NilAccountAssetRootElement := txtypes.FromBigIntToFr(new(big.Int).SetBytes(NilAccountAssetRoot))
-	//hash := poseidon.Poseidon(zero, zero, zero, zero, zero, NilAccountAssetRootElement).Bytes()
-	ele := hint.GMimcElements([]*fr.Element{zero, zero, zero, zero, zero, NilAccountAssetRootElement})
+	ele := GMimcElements([]*fr.Element{zero, zero, zero, zero, zero, NilAccountAssetRootElement})
 	bytes := ele.Bytes()
 	return bytes[:]
 }
@@ -57,8 +55,7 @@ func EmptyAccountAssetNodeHash() []byte {
 		offerCanceledOrFinalized
 	*/
 	zero := &fr.Element{0, 0, 0, 0}
-	//hash := poseidon.Poseidon(zero, zero).Bytes()
-	ele := hint.GMimcElements([]*fr.Element{zero, zero})
+	ele := GMimcElements([]*fr.Element{zero, zero})
 	bytes := ele.Bytes()
 	return bytes[:]
 }
@@ -72,8 +69,7 @@ func EmptyNftNodeHash() []byte {
 		collectionId
 	*/
 	zero := &fr.Element{0, 0, 0, 0}
-	//hash := poseidon.Poseidon(zero, zero, zero, zero, zero).Bytes()
-	ele := hint.GMimcElements([]*fr.Element{zero, zero, zero, zero, zero})
+	ele := GMimcElements([]*fr.Element{zero, zero, zero, zero, zero})
 	bytes := ele.Bytes()
 	return bytes[:]
 }
@@ -307,8 +303,7 @@ func ComputeAccountLeafHash(
 	e3 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(nonce))
 	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionNonce))
 	e5 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(assetRoot))
-	//hash := poseidon.Poseidon(e0, e1, e2, e3, e4, e5).Bytes()
-	ele := hint.GMimcElements([]*fr.Element{e0, e1, e2, e3, e4, e5})
+	ele := GMimcElements([]*fr.Element{e0, e1, e2, e3, e4, e5})
 	bytes := ele.Bytes()
 	logx.Infof("compute account leaf hash,blockHeight=%d,accountIndex=%d,l1Address=%s,pk=%s,nonce=%d,collectionNonce=%d,assetRoot=%s,hash=%s", blockHeight, accountIndex, l1Address, pk, nonce, collectionNonce, common.Bytes2Hex(assetRoot), common.Bytes2Hex(bytes[:]))
 	return bytes[:], nil
@@ -332,8 +327,7 @@ func ComputeAccountAssetLeafHash(
 		return nil, zkbnbtypes.AppErrInvalidBalanceString
 	}
 	e1 := txtypes.FromBigIntToFr(offerCanceledOrFinalizedBigInt)
-	//hash := poseidon.Poseidon(e0, e1).Bytes()
-	ele := hint.GMimcElements([]*fr.Element{e0, e1})
+	ele := GMimcElements([]*fr.Element{e0, e1})
 	bytes := ele.Bytes()
 	logx.Infof("compute account asset leaf hash,blockHeight=%d,accountIndex=%d,assetId=%d,balance=%s,offerCanceledOrFinalized=%s,hash=%s", blockHeight, accountIndex, assetId, balance, offerCanceledOrFinalized, common.Bytes2Hex(bytes[:]))
 	return bytes[:], nil
@@ -369,11 +363,11 @@ func ComputeNftAssetLeafHash(
 	var hash [32]byte
 	if e3 != nil {
 		//hash = poseidon.Poseidon(e0, e1, e2, e3, e4, e5).Bytes()
-		ele := hint.GMimcElements([]*fr.Element{e0, e1, e2, e3, e4, e5})
+		ele := GMimcElements([]*fr.Element{e0, e1, e2, e3, e4, e5})
 		hash = ele.Bytes()
 	} else {
 		//hash = poseidon.Poseidon(e0, e1, e2, e4, e5).Bytes()
-		ele := hint.GMimcElements([]*fr.Element{e0, e1, e2, e4, e5})
+		ele := GMimcElements([]*fr.Element{e0, e1, e2, e4, e5})
 		hash = ele.Bytes()
 	}
 	logx.Infof("compute nft asset leaf hash,blockHeight=%d,nftIndex=%d,creatorAccountIndex=%d,ownerAccountIndex=%d,nftContentHash=%s,creatorTreasuryRate=%d,collectionId=%d,hash=%s", blockHeight, nftIndex, creatorAccountIndex, ownerAccountIndex, nftContentHash, creatorTreasuryRate, collectionId, common.Bytes2Hex(hash[:]))
@@ -387,9 +381,8 @@ func ComputeStateRootHash(
 ) []byte {
 	e0 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(accountRoot))
 	e1 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(nftRoot))
-	//hash := poseidon.Poseidon(e0, e1).Bytes()
 
-	ele := hint.GMimcElements([]*fr.Element{e0, e1})
+	ele := GMimcElements([]*fr.Element{e0, e1})
 	hash := ele.Bytes()
 	return hash[:]
 }

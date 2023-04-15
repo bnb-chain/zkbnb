@@ -1,17 +1,20 @@
 package tree
 
 import (
-	"fmt"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	"github.com/consensys/gnark/backend/hint"
+	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
 )
 
-func TestGkrMimc(t *testing.T) {
-	element0 := new(fr.Element).SetBigInt(big.NewInt(0))
-	element1 := new(fr.Element).SetBigInt(big.NewInt(1))
-	ele := hint.GMimcElements([]*fr.Element{element0, element1})
-	res := ele.Bytes()
-	fmt.Printf("%x\n", res)
+func TestMIMCFrElements(t *testing.T) {
+	inputs := []*big.Int{big.NewInt(0), big.NewInt(1), big.NewInt(2)}
+	resEle := GMimcElements([]*fr.Element{txtypes.FromBigIntToFr(inputs[0]), txtypes.FromBigIntToFr(inputs[1]), txtypes.FromBigIntToFr(inputs[2])})
+	res := resEle.Bytes()
+	t.Logf("GMimcElements:%x\n", res[:])
+
+	resBytes := GMimcBytes(inputs[0].Bytes(), inputs[1].Bytes(), inputs[2].Bytes())
+	t.Logf("GMimcBytes:%x\n", resBytes)
+	assert.Equal(t, res[:], resBytes)
 }

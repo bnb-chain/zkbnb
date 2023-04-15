@@ -193,7 +193,7 @@ require (
 	github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20230302070022-85232f1ac10d
 	github.com/bnb-chain/zkbnb-eth-rpc v0.0.3
 	github.com/bnb-chain/zkbnb-smt v0.0.3-0.20221222120958-28d12ade0ecb
-	github.com/consensys/gnark v0.7.1
+	github.com/consensys/gnark v0.8.0
 	github.com/consensys/gnark-crypto v0.9.1
 	github.com/eko/gocache/v2 v2.3.1
 	github.com/ethereum/go-ethereum v1.11.2
@@ -208,14 +208,10 @@ require (
 )
 
 replace (
-	github.com/bnb-chain/zkbnb-crypto => github.com/qct/zkbnb-crypto v0.0.0-20230414125844-2dca49699f71
+	github.com/bnb-chain/zkbnb-crypto => github.com/qct/zkbnb-crypto v0.0.0-20230415090827-c13e84ced22d
+	github.com/bnb-chain/zkbnb-eth-rpc => github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230403192823-23498c95979c
+	github.com/bnb-chain/zkbnb-go-sdk => github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230414130144-12584462b5e2
 	github.com/bnb-chain/zkbnb-smt => github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1
-	github.com/consensys/gnark => github.com/qct/gnark v0.0.0-20230414105147-03b22f676235
-	github.com/consensys/gnark-crypto => github.com/bnb-chain/gnark-crypto v0.8.1-0.20230412061827-228166c33652
+	github.com/consensys/gnark => github.com/bnb-chain/gnark v0.7.2-0.20230414030551-8be7c648aadc
+	github.com/consensys/gnark-crypto => github.com/bnb-chain/gnark-crypto v0.8.1-0.20230412133626-30223a679fb7
 )
-
-replace github.com/bnb-chain/zkbnb-eth-rpc => github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230403192823-23498c95979c
-
-replace github.com/bnb-chain/zkbnb-go-sdk => github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230403103820-4062c22def5d
-
-//replace github.com/bnb-chain/zkbnb-crypto => github.com/15000785133/zkbnb-crypto v0.0.8-0.20230411114101-601578ac0a87
