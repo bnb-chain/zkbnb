@@ -42,8 +42,6 @@ cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RX
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 collectd.org v0.3.0/go.mod h1:A/8DzQBkF6abtvrT2j/AU/4tiBgJWYyh0y/oB/4MlWE=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/15000785133/zkbnb-crypto v0.0.8-0.20230414124024-a7e3680caba6 h1:+PrpSHQTrKfhKVLTRCFwRlf961+ttT5kAgd8fY2l5xk=
-github.com/15000785133/zkbnb-crypto v0.0.8-0.20230414124024-a7e3680caba6/go.mod h1:5Xcy84a8/uWl9CVgRDnQeHX65N5Ha7zN3f7yZ/lTO0I=
 github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230403192823-23498c95979c h1:ZAVls5ZjnEoVBUJFtngL5O3Qmf6VxqWbHv46bZgFkZY=
 github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230403192823-23498c95979c/go.mod h1:zZ9uTj1GJOc5OxgojQbA8TZjEQhESUnp4MEWOYk/OVs=
 github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230414130144-12584462b5e2 h1:LrM48BL7hBaa1v3EXobSy45u8h4eucQaeFB2i1v8Yyk=
@@ -170,10 +168,10 @@ github.com/bketelsen/crypt v0.0.4/go.mod h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqO
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
-github.com/bnb-chain/gnark v0.7.1-0.20230412065523-4d344ff30ab3 h1:Rv+cF4PjGq+OWwtzScWZKZ5P16+ZP1XtYeb8T6JZU9k=
-github.com/bnb-chain/gnark v0.7.1-0.20230412065523-4d344ff30ab3/go.mod h1:fmHUzzss1n32K3COWMvrQj7uo7GjIeIr1wXzjj5gmj8=
-github.com/bnb-chain/gnark-crypto v0.8.1-0.20230412061827-228166c33652 h1:M0T89FK94h8iDt12anZE4D6YCWHMUJbOANVnjtwif7A=
-github.com/bnb-chain/gnark-crypto v0.8.1-0.20230412061827-228166c33652/go.mod h1:a2DQL4+5ywF6safEeZFEPGRiiGbjzGFRUN2sg06VuU4=
+github.com/bnb-chain/gnark v0.7.2-0.20230414030551-8be7c648aadc h1:Fk1+2WqK/1crH/EcJV926uHY5tnBXxkWZDiCcLXuNOM=
+github.com/bnb-chain/gnark v0.7.2-0.20230414030551-8be7c648aadc/go.mod h1:fmHUzzss1n32K3COWMvrQj7uo7GjIeIr1wXzjj5gmj8=
+github.com/bnb-chain/gnark-crypto v0.8.1-0.20230412133626-30223a679fb7 h1:ME5Nif4WgGgWKH2omB6ybic5bsU22bHy43xBsgMBHgM=
+github.com/bnb-chain/gnark-crypto v0.8.1-0.20230412133626-30223a679fb7/go.mod h1:a2DQL4+5ywF6safEeZFEPGRiiGbjzGFRUN2sg06VuU4=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d h1:pVrfxiGfwelyab6n21ZBkbkmbevaf+WvMIiR7sr97hw=
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
@@ -1036,6 +1034,8 @@ github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINE
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+github.com/pkg/profile v1.7.0 h1:hnbDkaNWPCLMO9wGLdBFTIZvzDrDfBM2072E1S9gJkA=
+github.com/pkg/profile v1.7.0/go.mod h1:8Uer0jas47ZQMJ7VD+OHknK4YDY07LPUC6dEvqDjvNo=
 github.com/pkg/sftp v1.10.1/go.mod h1:lYOWFsE0bwd1+KfKJaKeuokY15vzFx25BLbzYYoAxZI=
 github.com/pkg/term v0.0.0-20180730021639-bffc007b7fd5/go.mod h1:eCbImbZ95eXtAUIbLAuAVnBnwf83mjf6QIVH8SHYwqQ=
 github.com/pmezard/go-difflib v0.0.0-20151028094244-d8ed2627bdf0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
@@ -1082,6 +1082,8 @@ github.com/prometheus/procfs v0.9.0/go.mod h1:+pB4zwohETzFnmlpe6yd2lSc+0/46IYZRB
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
 github.com/prometheus/tsdb v0.10.0 h1:If5rVCMTp6W2SiRAQFlbpJNgVlgMEd+U2GZckwK38ic=
 github.com/prometheus/tsdb v0.10.0/go.mod h1:oi49uRhEe9dPUTlS3JRZOwJuVi6tmh10QSgwXEyGCt4=
+github.com/qct/zkbnb-crypto v0.0.0-20230415090827-c13e84ced22d h1:jWgFAXjGhG2iYoa258fldZsVGIJa3WEjAdfRm9MG+J0=
+github.com/qct/zkbnb-crypto v0.0.0-20230415090827-c13e84ced22d/go.mod h1:zlXAUvsxBUJ9Le9z5xdqG9Ubrxs26hnNSW4Q+8WFd00=
 github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1 h1:eOCPSifBBQiQD0aGLlAoWoYUdI9aOJLC0zzo8RWAgek=
 github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1/go.mod h1:CHVooyzRRzTqcSUcUKJZlJ5QsOyyS3JPVyML7xU9/uQ=
 github.com/retailnext/hllpp v1.0.1-0.20180308014038-101a6d2f8b52/go.mod h1:RDpi1RftBQPUCDRw6SmxeaREsAaRKnOclghuzp/WRzc=

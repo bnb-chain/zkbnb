@@ -135,6 +135,7 @@ require (
 	github.com/pegasus-kv/thrift v0.13.0 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.7 // indirect
+	github.com/pkg/profile v1.7.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.39.0 // indirect

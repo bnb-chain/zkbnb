@@ -686,7 +686,6 @@ func (s *StateDB) SetAccountAndNftTree(stateDataCopy *StateDataCopy) error {
 	metrics.AccountTreeMultiSetGauge.Set(float64(time.Since(start).Milliseconds()))
 	accountTreeRoot := s.AccountTree.Root()
 	nftTreeRoot := s.NftTree.Root()
-	//hFunc := poseidon.NewPoseidon()
 	hFunc := tree.NewGMimc()
 	hFunc.Write(accountTreeRoot)
 	hFunc.Write(nftTreeRoot)

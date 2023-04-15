@@ -657,7 +657,6 @@ func verifyRollbackTableDataFunc(bc *BlockChain, curHeight int64) error {
 }
 
 func verifyRollbackTreesFunc(bc *BlockChain, currentBlock *block.Block) error {
-	//hFunc := poseidon.NewPoseidon()
 	hFunc := tree.NewGMimc()
 	hFunc.Write(bc.Statedb.AccountTree.Root())
 	hFunc.Write(bc.Statedb.NftTree.Root())

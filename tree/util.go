@@ -46,8 +46,8 @@ func EmptyAccountNodeHash() []byte {
 	zero := &fr.Element{0, 0, 0, 0}
 	NilAccountAssetRootElement := txtypes.FromBigIntToFr(new(big.Int).SetBytes(NilAccountAssetRoot))
 	ele := GMimcElements([]*fr.Element{zero, zero, zero, zero, zero, NilAccountAssetRootElement})
-	bytes := ele.Bytes()
-	return bytes[:]
+	hash := ele.Bytes()
+	return hash[:]
 }
 
 func EmptyAccountAssetNodeHash() []byte {
@@ -57,8 +57,8 @@ func EmptyAccountAssetNodeHash() []byte {
 	*/
 	zero := &fr.Element{0, 0, 0, 0}
 	ele := GMimcElements([]*fr.Element{zero, zero})
-	bytes := ele.Bytes()
-	return bytes[:]
+	hash := ele.Bytes()
+	return hash[:]
 }
 
 func EmptyNftNodeHash() []byte {
@@ -71,8 +71,8 @@ func EmptyNftNodeHash() []byte {
 	*/
 	zero := &fr.Element{0, 0, 0, 0}
 	ele := GMimcElements([]*fr.Element{zero, zero, zero, zero, zero})
-	bytes := ele.Bytes()
-	return bytes[:]
+	hash := ele.Bytes()
+	return hash[:]
 }
 
 func CommitAccountAndNftTree(
