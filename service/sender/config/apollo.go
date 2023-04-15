@@ -73,6 +73,7 @@ func InitApolloConfiguration(c Config) {
 			panic("Fail to validate SenderConfig from the apollo server!")
 		}
 		senderConfig = newSenderConfig
+		logx.Info("Initiate and load SenderConfig Successfully!")
 	}
 }
 
