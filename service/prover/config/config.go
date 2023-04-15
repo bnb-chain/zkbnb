@@ -28,13 +28,13 @@ type Config struct {
 
 func InitSystemConfiguration(config *Config, configFile string) error {
 	if err := InitSystemConfigFromEnvironment(config); err != nil {
-		logx.Errorf("Init system configuration from environment raise error:", err.Error())
+		logx.Errorf("Init system configuration from environment raise error: %v", err)
 	} else {
 		logx.Infof("Init system configuration from environment Successfully")
 		return nil
 	}
 	if err := InitSystemConfigFromConfigFile(config, configFile); err != nil {
-		logx.Errorf("Init system configuration from config file raise error:", err.Error())
+		logx.Errorf("Init system configuration from config file raise error: %v", err)
 		panic("Init system configuration from config file raise error:" + err.Error())
 	} else {
 		logx.Infof("Init system configuration from config file Successfully")

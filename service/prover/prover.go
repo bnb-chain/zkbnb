@@ -15,7 +15,7 @@ const GracefulShutdownTimeout = 30 * time.Second
 
 func Run(configFile string) error {
 	var c config.Config
-	if err := config.InitSystemConfigFromConfigFile(&c, configFile); err != nil {
+	if err := config.InitSystemConfiguration(&c, configFile); err != nil {
 		logx.Severef("failed to initiate system configuration, %v", err)
 		panic("failed to initiate system configuration, err:" + err.Error())
 	}
