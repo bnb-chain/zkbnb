@@ -40,7 +40,8 @@ var (
 )
 
 type Prover struct {
-	Config config.Config
+	running bool
+	Config  config.Config
 
 	RedisConn *redis.Redis
 
@@ -112,6 +113,7 @@ func NewProver(c config.Config) (*Prover, error) {
 	}))
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 	prover := &Prover{
+		running:           true,
 		Config:            c,
 		RedisConn:         redisConn,
 		DB:                db,
@@ -212,49 +214,40 @@ func NewProver(c config.Config) (*Prover, error) {
 }
 
 func (p *Prover) ProveBlock() error {
-	blockWitness, err := func() (*blockwitness.BlockWitness, error) {
-		lock := redislock.GetRedisLockByKey(p.RedisConn, RedisLockKey)
-		err := redislock.TryAcquireLock(lock)
-		if err != nil {
-			return nil, err
+	for {
+		if !p.running {
+			break
 		}
-		//nolint:errcheck
-		defer lock.Release()
+		blockWitness, err := p.getWitness()
+		if err != nil {
+			if err == types.DbErrNotFound {
+				time.Sleep(200 * time.Millisecond)
+				continue
+			}
+			return err
+		}
 
-		// Fetch unproved block witness.
-		blockWitness, err := p.BlockWitnessModel.GetLatestBlockWitness(p.OptionalBlockSizes)
+		logx.Infof("doProveBlock start, height=%d", blockWitness.Height)
+		err = p.doProveBlock(blockWitness)
 		if err != nil {
-			return nil, err
+			logx.Severef("doProveBlock failed, err %v,height=%d", err, blockWitness.Height)
+			// Recover block witness status.
+			res := p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusPublished)
+			if res != nil {
+				logx.Severef("revert block witness status failed, err %v,height=%d", res, blockWitness.Height)
+				panic("recover block witness status error " + res.Error())
+			}
+			l2ExceptionProofHeightMetrics.Set(float64(blockWitness.Height))
+			return err
 		}
-		// Update status of block witness.
-		err = p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusReceived)
-		if err != nil {
-			return nil, err
-		}
-		return blockWitness, nil
-	}()
-	if err != nil {
-		if err == types.DbErrNotFound {
-			return nil
-		}
-		return err
 	}
-	defer func() {
-		if err == nil {
-			return
-		}
+	return nil
+}
 
-		// Recover block witness status.
-		res := p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusPublished)
-		if res != nil {
-			logx.Errorf("revert block witness status failed, err %v", res)
-		}
-		l2ExceptionProofHeightMetrics.Set(float64(blockWitness.Height))
-	}()
-
+func (p *Prover) doProveBlock(blockWitness *blockwitness.BlockWitness) error {
 	// Parse crypto block.
 	var cryptoBlock *circuit.Block
-	err = json.Unmarshal([]byte(blockWitness.WitnessData), &cryptoBlock)
+	err := json.Unmarshal([]byte(blockWitness.WitnessData), &cryptoBlock)
 	if err != nil {
 		return err
 	}
@@ -307,7 +300,30 @@ func (p *Prover) ProveBlock() error {
 	return err
 }
 
+func (p *Prover) getWitness() (*blockwitness.BlockWitness, error) {
+	lock := redislock.GetRedisLockByKey(p.RedisConn, RedisLockKey)
+	err := redislock.TryAcquireLock(lock)
+	if err != nil {
+		return nil, err
+	}
+	//nolint:errcheck
+	defer lock.Release()
+
+	// Fetch unproved block witness.
+	blockWitness, err := p.BlockWitnessModel.GetLatestBlockWitness(p.OptionalBlockSizes)
+	if err != nil {
+		return nil, err
+	}
+	// Update status of block witness.
+	err = p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusReceived)
+	if err != nil {
+		return nil, err
+	}
+	return blockWitness, nil
+}
+
 func (p *Prover) Shutdown() {
+	p.running = false
 	sqlDB, err := p.DB.DB()
 	if err == nil && sqlDB != nil {
 		err = sqlDB.Close()

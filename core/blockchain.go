@@ -556,7 +556,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 }
 
 func verifyRollbackTableDataFunc(bc *BlockChain, curHeight int64) error {
-	logx.Infof("verify rollback start,height:%s", curHeight)
+	logx.Infof("verify rollback start,height:%d", curHeight)
 	blocks, err := bc.BlockModel.GetBlockByStatus([]int{block.StatusPacked})
 	if err != nil && err != types.DbErrNotFound {
 		return fmt.Errorf("get statusPacked block height failed: %s", err.Error())
@@ -662,7 +662,7 @@ func verifyRollbackTreesFunc(bc *BlockChain, currentBlock *block.Block) error {
 	hFunc.Write(bc.Statedb.AccountTree.Root())
 	hFunc.Write(bc.Statedb.NftTree.Root())
 	stateRoot := common.Bytes2Hex(hFunc.Sum(nil))
-	logx.Infof("smt tree stateRoot=%s equal currentBlock.StateRoot=%s,height:%s,AccountTree.Root=%s,NftTree.Root=%s", stateRoot, currentBlock.StateRoot, currentBlock.BlockHeight, common.Bytes2Hex(bc.Statedb.AccountTree.Root()), common.Bytes2Hex(bc.Statedb.NftTree.Root()))
+	logx.Infof("smt tree stateRoot=%s equal currentBlock.StateRoot=%s,height:%d,AccountTree.Root=%s,NftTree.Root=%s", stateRoot, currentBlock.StateRoot, currentBlock.BlockHeight, common.Bytes2Hex(bc.Statedb.AccountTree.Root()), common.Bytes2Hex(bc.Statedb.NftTree.Root()))
 	if stateRoot != currentBlock.StateRoot {
 		return fmt.Errorf("smt tree stateRoot=%s not equal currentBlock.StateRoot=%s,height:%d,AccountTree.Root=%s,NftTree.Root=%s", stateRoot, currentBlock.StateRoot, currentBlock.BlockHeight, common.Bytes2Hex(bc.Statedb.AccountTree.Root()), common.Bytes2Hex(bc.Statedb.NftTree.Root()))
 	}
@@ -814,7 +814,6 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 		logx.Infof("committer verify nonce start,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
 		if nonce != expectNonce {
 			logx.Infof("committer verify nonce failed,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
-			bc.Statedb.SetPendingNonceToRedisCache(accountIndex, expectNonce-1)
 			return types.AppErrInvalidNonce
 		} else {
 			logx.Infof("committer verify nonce success,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
@@ -928,7 +927,7 @@ func (bc *BlockChain) LoadAllAccounts(pool *ants.Pool) error {
 					bc.Statedb.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
 					bc.Statedb.L1AddressCache.Add(formatAccount.L1Address, accountInfo.AccountIndex)
 				}
-				logx.Infof("GetByNftIndexRange cost time %s", float64(time.Since(start).Milliseconds()))
+				logx.Infof("GetByNftIndexRange cost time %v", float64(time.Since(start)))
 				errChan <- nil
 			})
 		}(int64(i), toAccountIndex)
@@ -943,7 +942,7 @@ func (bc *BlockChain) LoadAllAccounts(pool *ants.Pool) error {
 			return fmt.Errorf("load all accounts failed:  %s", err.Error())
 		}
 	}
-	logx.Infof("load all accounts end. cost time %s", float64(time.Since(start).Milliseconds()))
+	logx.Infof("load all accounts end. cost time %v", float64(time.Since(start)))
 	return nil
 }
 
@@ -980,7 +979,7 @@ func (bc *BlockChain) LoadAllNfts(pool *ants.Pool) error {
 				for _, nftInfo := range nfts {
 					bc.Statedb.NftCache.Add(nftInfo.NftIndex, nftInfo)
 				}
-				logx.Infof("GetByNftIndexRange cost time %s", float64(time.Since(start).Milliseconds()))
+				logx.Infof("GetByNftIndexRange cost time %v", float64(time.Since(start)))
 				errChan <- nil
 			})
 		}(int64(i), toNftIndex)
@@ -995,6 +994,6 @@ func (bc *BlockChain) LoadAllNfts(pool *ants.Pool) error {
 			return fmt.Errorf("load all nfts failed:  %s", err.Error())
 		}
 	}
-	logx.Infof("load all nfts end. cost time %s", float64(time.Since(start).Milliseconds()))
+	logx.Infof("load all nfts end. cost time %v", float64(time.Since(start)))
 	return nil
 }

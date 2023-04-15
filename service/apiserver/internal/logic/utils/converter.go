@@ -1,40 +1,11 @@
 package utils
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
-	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
 func ConvertTx(tx *tx.Tx) *types.Tx {
-	toAccountIndex := int64(-1)
-
-	switch tx.TxType {
-	case types2.TxTypeMintNft:
-		txInfo, err := types2.ParseMintNftTxInfo(tx.TxInfo)
-		if err != nil {
-			logx.Errorf("parse mintNft tx failed: %s", err.Error())
-		} else {
-			toAccountIndex = txInfo.ToAccountIndex
-		}
-	case types2.TxTypeTransfer:
-		txInfo, err := types2.ParseTransferTxInfo(tx.TxInfo)
-		if err != nil {
-			logx.Errorf("parse transfer tx failed: %s", err.Error())
-		} else {
-			toAccountIndex = txInfo.ToAccountIndex
-		}
-	case types2.TxTypeTransferNft:
-		txInfo, err := types2.ParseTransferNftTxInfo(tx.TxInfo)
-		if err != nil {
-			logx.Errorf("parse transferNft tx failed: %s", err.Error())
-		} else {
-			toAccountIndex = txInfo.ToAccountIndex
-		}
-	}
-
 	// If tx.VerifyAt field has not been set yet,
 	// this field is set to zero by default for the front end
 	var verifyAt int64 = 0
@@ -63,6 +34,6 @@ func ConvertTx(tx *tx.Tx) *types.Tx {
 		ExpiredAt:      tx.ExpiredAt,
 		CreatedAt:      tx.CreatedAt.Unix(),
 		VerifyAt:       verifyAt,
-		ToAccountIndex: toAccountIndex,
+		ToAccountIndex: tx.ToAccountIndex,
 	}
 }

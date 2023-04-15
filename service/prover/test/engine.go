@@ -55,7 +55,7 @@ type engine struct {
 
 var _modulus big.Int // q stored as big.Int
 
-func (e *engine) AddGKRInputsAndOutputsMarks(inputs []frontend.Variable, outputs []frontend.Variable) {
+func (e *engine) AddGKRInputsAndOutputsMarks(inputs, outputs []frontend.Variable, initialHash frontend.Variable) {
 	//TODO implement me
 	panic("implement me")
 }

@@ -55,7 +55,7 @@ func Run(configFile string) error {
 		}
 		err = s.VerifyAndExecuteBlocks()
 		if err != nil {
-			logx.Error("failed to send verify transaction, %v", err)
+			logx.Errorf("failed to send verify transaction, %s", err.Error())
 		}
 	})
 	if err != nil {
@@ -73,6 +73,15 @@ func Run(configFile string) error {
 	if err != nil {
 		logx.Severef("failed to start the update send transaction task, %v", err)
 		panic("failed to start the update send transaction task, err:" + err.Error())
+	}
+
+	_, err = cronJob.AddFunc("@every 10s", func() {
+		logx.Info("========================= start monitor balance task =========================")
+		s.MonitorBalance()
+	})
+	if err != nil {
+		logx.Severef("failed to start the monitor balance task, %v", err)
+		panic("failed to start the monitor balance task, err:" + err.Error())
 	}
 
 	cronJob.Start()

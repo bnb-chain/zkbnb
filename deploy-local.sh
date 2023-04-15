@@ -14,11 +14,11 @@ ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 NETWORK_RPC_SYS_CONFIG_NAME=LocalTestNetworkRpc # BscTestNetworkRpc or LocalTestNetworkRpc
 BSC_TESTNET_RPC=HTTP://127.0.0.1:8545
-BSC_TESTNET_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+BSC_TESTNET_PRIVATE_KEY=2d92239525b6632b963f49d28411596512fab69052a1738e530a59617e433b81
 #use COMMIT_BLOCK_PRIVATE_KEY for submitting commit_block to bnb contract in sender application
 #use VERIFY_BLOCK_PRIVATE_KEY for submitting verify_block to bnb contract in sender application
-COMMIT_BLOCK_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-VERIFY_BLOCK_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+COMMIT_BLOCK_PRIVATE_KEY=
+VERIFY_BLOCK_PRIVATE_KEY=
 # security Council Members for upgrade approve
 # FOR TEST
 # generage by Mnemonic (account #17 ~ #19): giggle federal note disorder will close traffic air melody artefact taxi tissue
@@ -31,8 +31,13 @@ VALIDATORS=
 TREASURY_ACCOUNT_ADDRESS=
 # gas account address, the default value is the second validator's address
 GAS_ACCOUNT_ADDRESS=
+# commit  address, the default value is commit to bnb contract address
+COMMIT_ADDRESS=
+# verify  address, the default value is verify to bnb contract address
+VERIFY_ADDRESS=
+
 ZKBNB_OPTIONAL_BLOCK_SIZES=1,10
-ZKBNB_R1CS_BATCH_SIZE=10000
+ZKBNB_R1CS_BATCH_SIZE=100000
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
@@ -52,8 +57,8 @@ export PATH=$PATH:/usr/local/go/bin/
 cd ~
 rm -rf ${DEPLOY_PATH}-bak && mv ${DEPLOY_PATH} ${DEPLOY_PATH}-bak
 mkdir -p ${DEPLOY_PATH} && cd ${DEPLOY_PATH}
-git clone --branch bugfix/gnark-crypto-version  https://github.com/ruslangm/zkbnb-contract.git
-git clone --branch feat/sha256-v0.8.0-load-opt https://github.com/ruslangm/zkbnb-crypto.git
+git clone --branch qa https://github.com/bnb-chain/zkbnb-contract.git
+git clone --branch qa https://github.com/15000785133/zkbnb-crypto.git
 cp -r ${ZkBNB_REPO_PATH} ${DEPLOY_PATH}
 
 
@@ -62,7 +67,7 @@ if [ $flag = "new" ]; then
   echo "new crypto env"
   echo '2. start generate zkbnb.vk and zkbnb.pk'
   cd ${DEPLOY_PATH}
-  cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportSol -blocksizes=${ZKBNB_OPTIONAL_BLOCK_SIZES}
+  cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportSol -blocksizes=${ZKBNB_OPTIONAL_BLOCK_SIZES} -batchsize=${ZKBNB_R1CS_BATCH_SIZE}
   cd ${DEPLOY_PATH}
   mkdir -p $KEY_PATH
   cp -r ./zkbnb-crypto/circuit/solidity/* $KEY_PATH
@@ -126,6 +131,11 @@ sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${DEPLOY_PATH}/zkbnb
 
 DefaultNftFactoryAddr=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.DefaultNftFactory'`
 sed -i -e "s/DefaultNftFactory: .*/DefaultNftFactory: ${DefaultNftFactoryAddr}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+
+sed -i -e "s/CommitAddress: .*/CommitAddress: ${COMMIT_ADDRESS}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+
+sed -i -e "s/VerifyAddress: .*/VerifyAddress: ${VERIFY_ADDRESS}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+
 
  cd ${DEPLOY_PATH}/zkbnb/
  make api-server

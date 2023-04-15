@@ -136,7 +136,7 @@ func (m *defaultAccountHistoryModel) CreateAccountHistoriesInTransact(tx *gorm.D
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(histories)) {
-		logx.Errorf("CreateAccountHistories failed,rows affected not equal histories length,dbTx.RowsAffected:%s,len(histories):%s", int(dbTx.RowsAffected), len(histories))
+		logx.Errorf("CreateAccountHistories failed,rows affected not equal histories length,dbTx.RowsAffected:%d,len(histories):%d", int(dbTx.RowsAffected), len(histories))
 		return types.DbErrFailToCreateAccountHistory
 	}
 	return nil

@@ -18,6 +18,7 @@
 package tree
 
 import (
+	"context"
 	"github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
@@ -36,7 +37,7 @@ import (
 
 func EmptyAccountNodeHash() []byte {
 	/*
-		AccountNameHash
+		L1Address
 		PubKey
 		Nonce
 		CollectionNonce
@@ -65,7 +66,7 @@ func EmptyNftNodeHash() []byte {
 		creatorAccountIndex
 		ownerAccountIndex
 		nftContentHash
-		creatorTreasuryRate
+		royaltyRate
 		collectionId
 	*/
 	zero := &fr.Element{0, 0, 0, 0}
@@ -281,8 +282,7 @@ func ComputeAccountLeafHash(
 	nonce int64,
 	collectionNonce int64,
 	assetRoot []byte,
-	accountIndex int64,
-	blockHeight int64,
+	ctx context.Context,
 ) (hashVal []byte, err error) {
 	var e0 *fr.Element
 	if l1Address == "" {
@@ -304,17 +304,16 @@ func ComputeAccountLeafHash(
 	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionNonce))
 	e5 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(assetRoot))
 	ele := GMimcElements([]*fr.Element{e0, e1, e2, e3, e4, e5})
-	bytes := ele.Bytes()
-	logx.Infof("compute account leaf hash,blockHeight=%d,accountIndex=%d,l1Address=%s,pk=%s,nonce=%d,collectionNonce=%d,assetRoot=%s,hash=%s", blockHeight, accountIndex, l1Address, pk, nonce, collectionNonce, common.Bytes2Hex(assetRoot), common.Bytes2Hex(bytes[:]))
-	return bytes[:], nil
+	hash := ele.Bytes()
+	logx.WithContext(ctx).Infof("compute account leaf hash,l1Address=%s,pk=%s,nonce=%d,collectionNonce=%d,assetRoot=%s,hash=%s",
+		l1Address, pk, nonce, collectionNonce, common.Bytes2Hex(assetRoot), common.Bytes2Hex(hash[:]))
+	return hash[:], nil
 }
 
 func ComputeAccountAssetLeafHash(
 	balance string,
 	offerCanceledOrFinalized string,
-	accountIndex int64,
-	assetId int64,
-	blockHeight int64,
+	ctx context.Context,
 ) (hashVal []byte, err error) {
 	balanceBigInt, isValid := new(big.Int).SetString(balance, 10)
 	if !isValid {
@@ -328,19 +327,19 @@ func ComputeAccountAssetLeafHash(
 	}
 	e1 := txtypes.FromBigIntToFr(offerCanceledOrFinalizedBigInt)
 	ele := GMimcElements([]*fr.Element{e0, e1})
-	bytes := ele.Bytes()
-	logx.Infof("compute account asset leaf hash,blockHeight=%d,accountIndex=%d,assetId=%d,balance=%s,offerCanceledOrFinalized=%s,hash=%s", blockHeight, accountIndex, assetId, balance, offerCanceledOrFinalized, common.Bytes2Hex(bytes[:]))
-	return bytes[:], nil
+	hash := ele.Bytes()
+	logx.Infof("compute account asset leaf hash,balance=%s,offerCanceledOrFinalized=%s,hash=%s",
+		balance, offerCanceledOrFinalized, common.Bytes2Hex(hash[:]))
+	return hash[:], nil
 }
 
 func ComputeNftAssetLeafHash(
 	creatorAccountIndex int64,
 	ownerAccountIndex int64,
 	nftContentHash string,
-	creatorTreasuryRate int64,
+	royaltyRate int64,
 	collectionId int64,
-	nftIndex int64,
-	blockHeight int64,
+	ctx context.Context,
 ) (hashVal []byte, err error) {
 	e0 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(creatorAccountIndex))
 	e1 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(ownerAccountIndex))
@@ -358,19 +357,18 @@ func ComputeNftAssetLeafHash(
 		return nil, err
 	}
 
-	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(creatorTreasuryRate))
+	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(royaltyRate))
 	e5 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionId))
 	var hash [32]byte
 	if e3 != nil {
-		//hash = poseidon.Poseidon(e0, e1, e2, e3, e4, e5).Bytes()
 		ele := GMimcElements([]*fr.Element{e0, e1, e2, e3, e4, e5})
 		hash = ele.Bytes()
 	} else {
-		//hash = poseidon.Poseidon(e0, e1, e2, e4, e5).Bytes()
 		ele := GMimcElements([]*fr.Element{e0, e1, e2, e4, e5})
 		hash = ele.Bytes()
 	}
-	logx.Infof("compute nft asset leaf hash,blockHeight=%d,nftIndex=%d,creatorAccountIndex=%d,ownerAccountIndex=%d,nftContentHash=%s,creatorTreasuryRate=%d,collectionId=%d,hash=%s", blockHeight, nftIndex, creatorAccountIndex, ownerAccountIndex, nftContentHash, creatorTreasuryRate, collectionId, common.Bytes2Hex(hash[:]))
+	logx.WithContext(ctx).Infof("compute nft asset leaf hash,creatorAccountIndex=%d,ownerAccountIndex=%d,nftContentHash=%s,royaltyRate=%d,collectionId=%d,hash=%s",
+		creatorAccountIndex, ownerAccountIndex, nftContentHash, royaltyRate, collectionId, common.Bytes2Hex(hash[:]))
 
 	return hash[:], nil
 }

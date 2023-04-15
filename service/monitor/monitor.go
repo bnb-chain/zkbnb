@@ -60,7 +60,7 @@ func Run(configFile string) error {
 		}
 
 	}); err != nil {
-		logx.Severe("failed to start monitor governance block task, %v", err)
+		logx.Severef("failed to start monitor governance block task, %s", err.Error())
 		panic("failed to start monitor governance block task, err:" + err.Error())
 	}
 
@@ -71,7 +71,7 @@ func Run(configFile string) error {
 			logx.Severef("clean history blocks error, %v", err)
 		}
 	}); err != nil {
-		logx.Severe("failed to start clean history blocks, %v", err)
+		logx.Severef("failed to start clean history blocks, %s", err.Error())
 		panic("failed to start clean history blocks, err:" + err.Error())
 	}
 

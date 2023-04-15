@@ -80,8 +80,8 @@ type (
 		GetTxs(limit int64, offset int64, options ...GetTxOptionFunc) (txList []*Tx, err error)
 		GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txList []*Tx, err error)
 		GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
-		GetReplicateTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
 		GetTxByHash(txHash string) (tx *Tx, err error)
+		GetTxsByPoolTxIds(poolTxIds []int64) (txList []*Tx, err error)
 		GetTxsTotalCountBetween(from, to time.Time) (count int64, err error)
 		GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error)
 		UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus map[int64]int) error
@@ -107,6 +107,8 @@ type (
 		L1RequestId int64 `gorm:"-"`
 		// update pool tx account index
 		IsPartialUpdate bool `gorm:"-"`
+
+		IsNonceChanged bool `gorm:"-"`
 	}
 )
 
@@ -190,6 +192,17 @@ func (m *defaultTxModel) GetTxsByAccountIndex(accountIndex int64, limit int64, o
 	return txList, nil
 }
 
+func (m *defaultTxModel) GetTxsByPoolTxIds(poolTxIds []int64) (txList []*Tx, err error) {
+	dbTx := m.DB.Table(m.table).Where("pool_tx_id IN ? and deleted_at is null", poolTxIds)
+	dbTx = dbTx.Find(&txList)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return txList, nil
+}
+
 func (m *defaultTxModel) GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error) {
 	opt := &getTxOption{}
 	for _, f := range options {
@@ -207,31 +220,6 @@ func (m *defaultTxModel) GetTxsCountByAccountIndex(accountIndex int64, options .
 	} else if dbTx.RowsAffected == 0 {
 		return 0, nil
 	}
-	return count, nil
-}
-
-func (m *defaultTxModel) GetReplicateTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error) {
-	opt := &getTxOption{}
-	for _, f := range options {
-		f(opt)
-	}
-
-	var dbTx *gorm.DB
-	if len(opt.Types) > 0 {
-		dbTx = m.DB.Raw("select count(distinct tx.tx_hash) from pool_tx, tx where pool_tx.account_index = ? "+
-			"and pool_tx.tx_type in (?) and pool_tx.deleted_at is null and tx.account_index = ? "+
-			"and tx.tx_type in (?) and tx.deleted_at is null and pool_tx.tx_hash = tx.tx_hash", accountIndex, opt.Types, accountIndex, opt.Types).Count(&count)
-	} else {
-		dbTx = m.DB.Raw("select count(distinct tx.tx_hash) from pool_tx, tx where pool_tx.account_index = ? "+
-			"and pool_tx.deleted_at is null and tx.account_index = ? "+
-			"and tx.deleted_at is null and pool_tx.tx_hash = tx.tx_hash", accountIndex, accountIndex).Count(&count)
-	}
-	if dbTx.Error != nil {
-		return 0, types.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return 0, nil
-	}
-
 	return count, nil
 }
 
@@ -307,7 +295,7 @@ func (m *defaultTxModel) CreateTxs(txs []*Tx) error {
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(txs)) {
-		logx.Errorf("CreateTxs failed,rows affected not equal txs length,dbTx.RowsAffected:%s,len(txs):%s", int(dbTx.RowsAffected), len(txs))
+		logx.Errorf("CreateTxs failed,rows affected not equal txs length,dbTx.RowsAffected:%d,len(txs):%d", int(dbTx.RowsAffected), len(txs))
 		return types.DbErrFailToCreateTx
 	}
 	return nil

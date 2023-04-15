@@ -17,6 +17,7 @@ limitations under the License.
 package test
 
 import (
+	"errors"
 	"fmt"
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/frontend/schema"
@@ -34,6 +35,12 @@ import (
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"github.com/stretchr/testify/require"
+)
+
+var (
+	ErrCompilationNotDeterministic = errors.New("compilation is not deterministic")
+	ErrInvalidWitnessSolvedCS      = errors.New("invalid witness solved the constraint system")
+	ErrInvalidWitnessVerified      = errors.New("invalid witness resulted in a valid proof")
 )
 
 // Assert is a helper to test circuits
@@ -422,7 +429,7 @@ func (assert *Assert) compile(circuit frontend.Circuit, curveID ecc.ID, backendI
 	}
 
 	if !reflect.DeepEqual(ccs, _ccs) {
-		return nil, types.AppErrCompilationNotDeterministic
+		return nil, ErrCompilationNotDeterministic
 	}
 
 	// // add the compiled circuit to the cache

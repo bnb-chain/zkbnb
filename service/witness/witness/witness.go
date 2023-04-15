@@ -1,8 +1,10 @@
 package witness
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"gorm.io/plugin/dbresolver"
 	"time"
@@ -220,9 +222,10 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 
 	// scan each block
 	for _, block := range blocks {
-		logx.Infof("construct witness for block %d", block.BlockHeight)
+		ctx := log.NewCtxWithKV(log.BlockHeightContext, block.BlockHeight)
+		logx.WithContext(ctx).Infof("construct witness for block %d", block.BlockHeight)
 		// Step1: construct witness
-		blockWitness, err := w.constructBlockWitness(block, latestVerifiedBlockNr)
+		blockWitness, err := w.constructBlockWitness(block, latestVerifiedBlockNr, ctx)
 		if err != nil {
 			return fmt.Errorf("failed to construct block witness, block:%d, err: %v", block.BlockHeight, err)
 		}
@@ -243,7 +246,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 			// rollback trees
 			rollBackErr := tree.RollBackTrees(uint64(block.BlockHeight)-1, w.accountTree, w.assetTrees, w.nftTree)
 			if rollBackErr != nil {
-				logx.Errorf("unable to rollback trees %v", rollBackErr)
+				logx.WithContext(ctx).Errorf("unable to rollback trees %v", rollBackErr)
 			}
 			return fmt.Errorf("create unproved crypto block error, block:%d, err: %v", block.BlockHeight, err)
 		}
@@ -255,12 +258,13 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 
 func (w *Witness) RescheduleBlockWitness() {
 	nextBlockNumber, err := w.getNextWitnessToCheck()
+	ctx := log.NewCtxWithKV(log.BlockHeightContext, nextBlockNumber)
 	if err != nil {
-		logx.Errorf("failed to get next witness to check, err: %s", err.Error())
+		logx.WithContext(ctx).Errorf("failed to get next witness to check, err: %s", err.Error())
 	}
 	nextBlockWitness, err := w.blockWitnessModel.GetBlockWitnessByHeight(nextBlockNumber)
 	if err != nil && err != types.DbErrNotFound {
-		logx.Errorf("failed to get latest block witness, err: %s", err.Error())
+		logx.WithContext(ctx).Errorf("failed to get latest block witness, err: %s", err.Error())
 		return
 	}
 
@@ -282,10 +286,10 @@ func (w *Witness) RescheduleBlockWitness() {
 
 	// update block status to Published if it's timeout
 	if time.Now().After(nextBlockWitness.UpdatedAt.Add(UnprovedBlockWitnessTimeout)) {
-		logx.Infof("reschedule block %d", nextBlockWitness.Height)
+		logx.WithContext(ctx).Infof("reschedule block %d", nextBlockWitness.Height)
 		err := w.blockWitnessModel.UpdateBlockWitnessStatus(nextBlockWitness, blockwitness.StatusPublished)
 		if err != nil {
-			logx.Errorf("update unproved block status error, err: %s", err.Error())
+			logx.WithContext(ctx).Errorf("update unproved block status error, err: %s", err.Error())
 			return
 		}
 	}
@@ -322,7 +326,7 @@ func (w *Witness) getNextWitnessToCheck() (int64, error) {
 	return endToCheck + 1, nil
 }
 
-func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockNr int64) (*blockwitness.BlockWitness, error) {
+func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockNr int64, ctx context.Context) (*blockwitness.BlockWitness, error) {
 	var oldStateRoot, newStateRoot []byte
 	txsWitness := make([]*utils.TxWitness, 0, block.BlockSize)
 	// scan each transaction
@@ -331,7 +335,7 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 		return nil, err
 	}
 	for idx, tx := range block.Txs {
-		txWitness, err := w.helper.ConstructTxWitness(tx, uint64(latestVerifiedBlockNr))
+		txWitness, err := w.helper.ConstructTxWitness(tx, uint64(latestVerifiedBlockNr), ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -358,7 +362,7 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 
 	accountTreeRoot := w.accountTree.Root()
 	nftTreeRoot := w.nftTree.Root()
-	logx.Infof("witness account tree root=%s,nft tree root=%s", common.Bytes2Hex(accountTreeRoot), common.Bytes2Hex(nftTreeRoot))
+	logx.WithContext(ctx).Infof("witness account tree root=%s,nft tree root=%s", common.Bytes2Hex(accountTreeRoot), common.Bytes2Hex(nftTreeRoot))
 	newStateRoot = tree.ComputeStateRootHash(accountTreeRoot, nftTreeRoot)
 	newStateRootStr := common.Bytes2Hex(newStateRoot)
 	if newStateRootStr != block.StateRoot {

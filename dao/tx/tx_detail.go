@@ -83,7 +83,7 @@ func (m *defaultTxDetailModel) CreateTxDetails(txDetails []*TxDetail) error {
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(txDetails)) {
-		logx.Errorf("CreateTxDetails failed,rows affected not equal txDetails length,dbTx.RowsAffected:%s,len(txDetails):%s", int(dbTx.RowsAffected), len(txDetails))
+		logx.Errorf("CreateTxDetails failed,rows affected not equal txDetails length,dbTx.RowsAffected:%d,len(txDetails):%d", int(dbTx.RowsAffected), len(txDetails))
 		return types.DbErrFailToCreateTxDetail
 	}
 	return nil
