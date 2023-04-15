@@ -41,6 +41,7 @@ type (
 		GetAccountByIndexes(accountIndexes []int64) (accounts []*Account, err error)
 		GetConfirmedAccountByIndex(accountIndex int64) (account *Account, err error)
 		GetAccountByL1Address(l1Address string) (account *Account, err error)
+		GetAccountByL1Addresses(l1Addresses []string) (accounts []*Account, err error)
 		GetAccounts(limit int, offset int64) (accounts []*Account, err error)
 		GetAccountsTotalCount() (count int64, err error)
 		UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
@@ -125,6 +126,16 @@ func (m *defaultAccountModel) GetAccountByL1Address(l1Address string) (account *
 		return nil, types.DbErrNotFound
 	}
 	return account, nil
+}
+
+func (m *defaultAccountModel) GetAccountByL1Addresses(l1Addresses []string) (accounts []*Account, err error) {
+	dbTx := m.DB.Table(m.table).Where("l1_address in ?", l1Addresses).Find(&accounts)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return accounts, nil
 }
 
 func (m *defaultAccountModel) GetAccounts(limit int, offset int64) (accounts []*Account, err error) {

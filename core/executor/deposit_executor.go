@@ -45,6 +45,11 @@ func (e *DepositExecutor) SetTxInfo(info *txtypes.DepositTxInfo) {
 	e.TxInfo = info
 }
 
+func (e *DepositExecutor) PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	txInfo := e.TxInfo
+	addressMap[txInfo.L1Address] = true
+}
+
 func (e *DepositExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo

@@ -293,6 +293,20 @@ func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, erro
 	return formatAccount, nil
 }
 
+func (s *StateDB) isAccountExistInCache(accountIndex int64) bool {
+	_, exist := s.StateCache.GetPendingAccount(accountIndex)
+	if exist {
+		return true
+	}
+
+	_, exist = s.AccountCache.Get(accountIndex)
+	if exist {
+		return true
+	}
+
+	return false
+}
+
 // GetAccountByL1Address get the account by l1 address.
 // Firstly, try to find the account in the current state cache, it iterates the pending
 // account map, not performance friendly, please take care when use this API.
@@ -352,6 +366,20 @@ func (s *StateDB) GetAccountByL1Address(l1Address string) (*types.AccountInfo, e
 	return formatAccount, nil
 }
 
+func (s *StateDB) isAddressExistInCache(l1Address string) bool {
+	_, exist := s.StateCache.GetPendingAccountL1AddressMap(l1Address)
+	if exist {
+		return true
+	}
+
+	_, exist = s.L1AddressCache.Get(l1Address)
+	if exist {
+		return true
+	}
+
+	return false
+}
+
 func (s *StateDB) GetNft(nftIndex int64) (*nft.L2Nft, error) {
 	pending, exist := s.StateCache.GetPendingNft(nftIndex)
 	if exist {
@@ -369,6 +397,18 @@ func (s *StateDB) GetNft(nftIndex int64) (*nft.L2Nft, error) {
 	}
 	s.NftCache.Add(nftIndex, nft)
 	return nft, nil
+}
+
+func (s *StateDB) isNftExistInCache(nftIndex int64) bool {
+	_, exist := s.StateCache.GetPendingNft(nftIndex)
+	if exist {
+		return true
+	}
+	_, exist = s.NftCache.Get(nftIndex)
+	if exist {
+		return true
+	}
+	return false
 }
 
 // MarkGasAccountAsPending will mark gas account as pending account. Putting gas account is pending
@@ -961,6 +1001,66 @@ func (c *StateDB) GetMaxPoolTxIdFinished() uint {
 	c.maxPoolTxIdFinishedLock.RLock()
 	defer c.maxPoolTxIdFinishedLock.RUnlock()
 	return c.maxPoolTxIdFinished
+}
+
+func (c *StateDB) PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	var nftIndexList []int64
+	for nftIndex, _ := range nftIndexMap {
+		if c.isNftExistInCache(nftIndex) {
+			continue
+		}
+		nftIndexList = append(nftIndexList, nftIndex)
+	}
+	if len(nftIndexList) > 0 {
+		nftAssets, err := c.chainDb.L2NftModel.GetNftsByNftIndexes(nftIndexList)
+		if err != nil {
+			for _, nftAsset := range nftAssets {
+				c.NftCache.Add(nftAsset.NftIndex, nftAsset)
+
+				accountIndexMap[nftAsset.OwnerAccountIndex] = true
+				accountIndexMap[nftAsset.CreatorAccountIndex] = true
+			}
+		}
+	}
+
+	var accountIndexList []int64
+	for accountIndex, _ := range accountIndexMap {
+		if c.isAccountExistInCache(accountIndex) {
+			continue
+		}
+		accountIndexList = append(accountIndexList, accountIndex)
+	}
+	if len(accountIndexList) > 0 {
+		accounts, err := c.chainDb.AccountModel.GetAccountByIndexes(accountIndexList)
+		if err != nil {
+			c.syncToMemCache(accounts)
+		}
+	}
+
+	var addressList []string
+	for address, _ := range addressMap {
+		if c.isAddressExistInCache(address) {
+			continue
+		}
+		addressList = append(addressList, address)
+	}
+	if len(addressList) > 0 {
+		accounts, err := c.chainDb.AccountModel.GetAccountByL1Addresses(addressList)
+		if err != nil {
+			c.syncToMemCache(accounts)
+		}
+	}
+}
+
+func (c *StateDB) syncToMemCache(accounts []*account.Account) {
+	for _, accountInfo := range accounts {
+		formatAccount, err := chain.ToFormatAccountInfo(accountInfo)
+		if err != nil {
+			continue
+		}
+		c.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
+		c.L1AddressCache.Add(formatAccount.L1Address, accountInfo.AccountIndex)
+	}
 }
 
 func (s *StateDB) Close() {

@@ -673,6 +673,10 @@ func (bc *BlockChain) ApplyTransaction(tx *tx.Tx) error {
 	return bc.processor.Process(tx)
 }
 
+func (bc *BlockChain) PreApplyTransaction(tx *tx.Tx, accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	bc.processor.PreProcess(tx, accountIndexMap, nftIndexMap, addressMap)
+}
+
 func (bc *BlockChain) InitNewBlock() (*block.Block, error) {
 	newBlock := bc.rollbackBlockMap[bc.currentBlock.BlockHeight+1]
 	if newBlock == nil {

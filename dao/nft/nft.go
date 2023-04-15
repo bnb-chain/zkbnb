@@ -34,6 +34,7 @@ type (
 		CreateL2NftTable() error
 		DropL2NftTable() error
 		GetNft(nftIndex int64) (nftAsset *L2Nft, err error)
+		GetNftsByNftIndexes(nftIndexes []int64) (nftAssets []*L2Nft, err error)
 		GetLatestNftIndex() (nftIndex int64, err error)
 		GetNftsByAccountIndex(accountIndex, limit, offset int64) (nfts []*L2Nft, err error)
 		GetNftsCountByAccountIndex(accountIndex int64) (int64, error)
@@ -92,6 +93,16 @@ func (m *defaultL2NftModel) GetNft(nftIndex int64) (nftAsset *L2Nft, err error) 
 		return nil, types.DbErrNotFound
 	}
 	return nftAsset, nil
+}
+
+func (m *defaultL2NftModel) GetNftsByNftIndexes(nftIndexes []int64) (nftAssets []*L2Nft, err error) {
+	dbTx := m.DB.Table(m.table).Where("nftIndexes in ?", nftIndexes).Find(&nftAssets)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return nftAssets, nil
 }
 
 func (m *defaultL2NftModel) GetLatestNftIndex() (nftIndex int64, err error) {

@@ -46,6 +46,19 @@ func NewAtomicMatchExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxE
 	}, nil
 }
 
+func (e *AtomicMatchExecutor) PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	txInfo := e.TxInfo
+	accountIndexMap[txInfo.AccountIndex] = true
+	accountIndexMap[txInfo.BuyOffer.AccountIndex] = true
+	accountIndexMap[txInfo.SellOffer.AccountIndex] = true
+	accountIndexMap[txInfo.GasAccountIndex] = true
+	accountIndexMap[types.ProtocolAccount] = true
+	accountIndexMap[txInfo.BuyOffer.ChannelAccountIndex] = true
+	accountIndexMap[txInfo.SellOffer.ChannelAccountIndex] = true
+
+	nftIndexMap[txInfo.SellOffer.NftIndex] = true
+}
+
 func (e *AtomicMatchExecutor) Prepare() error {
 	txInfo := e.TxInfo
 

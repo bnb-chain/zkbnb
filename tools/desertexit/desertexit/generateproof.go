@@ -5,6 +5,7 @@ import (
 	"fmt"
 	types2 "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/prove"
@@ -149,6 +150,12 @@ func (c *GenerateProof) executeBlockFunc(desertExitBlock *desertexit.DesertExitB
 	}
 
 	txInfos, err := chain.ParsePubDataForDesert(desertExitBlock.PubData)
+	if err != nil {
+		return err
+	}
+
+	c.preLoadAccountAndNft(txInfos)
+
 	for _, txInfo := range txInfos {
 		err := core.NewDesertProcessor(c.bc).Process(txInfo)
 		if err != nil {
@@ -214,6 +221,16 @@ func (c *GenerateProof) executeBlockFunc(desertExitBlock *desertexit.DesertExitB
 	}
 
 	return nil
+}
+
+func (c *GenerateProof) preLoadAccountAndNft(txInfos []txtypes.TxInfo) {
+	var accountIndexMap map[int64]bool
+	var nftIndexMap map[int64]bool
+	var addressMap map[string]bool
+	for _, txInfo := range txInfos {
+		core.NewDesertProcessor(c.bc).PreProcess(txInfo, accountIndexMap, nftIndexMap, addressMap)
+	}
+	c.bc.Statedb.PreLoadAccountAndNft(accountIndexMap, nftIndexMap, addressMap)
 }
 
 func (c *GenerateProof) saveToDb(desertExitBlock *desertexit.DesertExitBlock) error {
