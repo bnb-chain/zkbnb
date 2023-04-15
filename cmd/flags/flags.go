@@ -121,4 +121,9 @@ var (
 		Usage: "height",
 		Value: 0,
 	}
+	RollbackBlockHeightFlag = &cli.Int64Flag{
+		Name:  "height",
+		Usage: "height",
+		Value: 0,
+	}
 )
