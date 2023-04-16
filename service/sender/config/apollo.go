@@ -74,7 +74,7 @@ func InitApolloConfiguration(c Config) {
 			panic("Fail to validate SenderConfig from the apollo server!")
 		}
 		senderConfig = newSenderConfig
-		logx.Info("Initiate and load SenderConfig Successfully!")
+		logx.Infof("Initiate and load SenderConfig Successfully!")
 		logx.Info("SenderConfig:", newSenderConfigObjectJson)
 	}
 }
@@ -102,7 +102,7 @@ func (u *SenderUpdater) OnChange(event *storage.ChangeEvent) {
 			return
 		}
 		senderConfig = newSenderConfig
-		logx.Info("Update SenderConfig Successfully!")
+		logx.Info("Update SenderConfig Successfully:", newSenderConfigObjectJson)
 	}
 }
 

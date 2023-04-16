@@ -1117,6 +1117,9 @@ func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 	if c.maxTxsPerBlock == 8 {
 		txCountLimitPerBlock = 1
 	}
+
+	logx.Infof("Txs count is:", len(c.bc.Statedb.Txs), " and txCountLimitPerBlock is:", txCountLimitPerBlock)
+
 	if len(c.bc.Statedb.Txs) >= txCountLimitPerBlock {
 		return true
 	}
