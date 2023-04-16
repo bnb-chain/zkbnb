@@ -1105,21 +1105,19 @@ func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 			return true
 		}
 		return false
-	}
+	}*/
 
 	var now = time.Now()
-	if (len(c.bc.Statedb.Txs) > 0 && now.Unix()-curBlock.CreatedAt.Unix() >= int64(c.maxCommitterInterval)) ||
-		len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
+	if len(c.bc.Statedb.Txs) > 0 && now.Unix()-curBlock.CreatedAt.Unix() >= int64(c.maxCommitterInterval) {
 		return true
-	}*/
+	}
 
 	txCountLimitPerBlock := c.maxTxsPerBlock/2 + 1
 	if c.maxTxsPerBlock == 8 {
 		txCountLimitPerBlock = 1
 	}
 
-	logx.Infof("Txs count is:", len(c.bc.Statedb.Txs), " and txCountLimitPerBlock is:", txCountLimitPerBlock)
-
+	logx.Infof("Txs count is:%d and txCountLimitPerBlock is:%d", len(c.bc.Statedb.Txs), txCountLimitPerBlock)
 	if len(c.bc.Statedb.Txs) >= txCountLimitPerBlock {
 		return true
 	}
