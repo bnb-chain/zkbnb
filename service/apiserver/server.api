@@ -73,12 +73,25 @@ type (
 		Total    uint32           `json:"total"`
 		Accounts []*SimpleAccount `json:"accounts"`
 	}
+
+	Permission {
+		ResultCode
+		Permit bool `json:"permit"`
+	}
 )
 
 type (
 	ReqGetAccount {
 		By    string `form:"by,options=index|l1_address"`
 		Value string `form:"value"`
+	}
+)
+
+type (
+	ReqGetPermission {
+		By     string `form:"by,options=index|l1_address"`
+		Value  string `form:"value"`
+		TxType uint32 `form:"tx_type"`
 	}
 )
 
@@ -94,6 +107,10 @@ service server-api {
 	@doc "Get account by account's l1_address, index"
 	@handler GetAccount
 	get /api/v1/account (ReqGetAccount) returns (Account)
+	
+	@doc "Get permission by account's l1_address, index and tx_type"
+	@handler GetPermission
+	get /api/v1/permission (ReqGetPermission) returns (Permission)
 }
 
 /* ========================= Asset =========================*/

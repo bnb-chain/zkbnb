@@ -39,6 +39,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/api/v1/account",
 				Handler: account.GetAccountHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/permission",
+				Handler: account.GetPermissionHandler(serverCtx),
+			},
 		},
 	)
 
