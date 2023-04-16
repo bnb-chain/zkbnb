@@ -5,6 +5,7 @@ import (
 	"github.com/bnb-chain/zkbnb/tools/desertexit"
 	"github.com/bnb-chain/zkbnb/tools/query"
 	"github.com/bnb-chain/zkbnb/tools/revertblock"
+	"github.com/bnb-chain/zkbnb/tools/rollback"
 	"github.com/bnb-chain/zkbnb/tools/rollbackwitnesssmt"
 	"os"
 	"runtime"
@@ -244,6 +245,29 @@ func main() {
 						cCtx.String(flags.AmountFlag.Name), cCtx.String(flags.NftIndexListFlag.Name),
 						cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.PrivateKeyFlag.Name),
 						cCtx.String(flags.ProofFlag.Name), cCtx.String(flags.TokenFlag.Name))
+				},
+			},
+			{
+				Name:  "rollback",
+				Usage: "Run rollback service",
+				Flags: []cli.Flag{
+					flags.ConfigFlag,
+					flags.RollbackBlockHeightFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.RollbackBlockHeightFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+
+					err := rollback.RollbackAll(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RollbackBlockHeightFlag.Name))
+					if err != nil {
+						logx.Severe(err)
+						return err
+					}
+					return nil
 				},
 			},
 			{

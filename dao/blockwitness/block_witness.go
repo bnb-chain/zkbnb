@@ -46,6 +46,7 @@ type (
 		GetLatestReceivedBlockWitness(blockSizes []int) (witness *BlockWitness, err error)
 		CreateBlockWitness(witness *BlockWitness) error
 		UpdateBlockWitnessStatusByHeight(height int64) error
+		DeleteGreaterOrEqualToHeight(height int64) error
 	}
 
 	defaultBlockWitnessModel struct {
@@ -154,6 +155,16 @@ func (m *defaultBlockWitnessModel) UpdateBlockWitnessStatusByHeight(height int64
 		return types.DbErrFailToUpdateTx
 	}
 	return nil
+}
+
+func (m *defaultBlockWitnessModel) DeleteGreaterOrEqualToHeight(height int64) error {
+	return m.DB.Transaction(func(tx *gorm.DB) error {
+		dbTx := tx.Table(m.table).Unscoped().Where("height >= ?", height).Delete(&BlockWitness{})
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		return nil
+	})
 }
 
 func ToStringArr(nums []int) []string {

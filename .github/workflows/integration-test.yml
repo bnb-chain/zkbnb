@@ -1,16 +1,15 @@
-name: Integration Test on Runner
+name: zkBNB Integration Test
 
 on:
   pull_request:
     branches:
-      - master
-      - develop
+      - qa
 env:
-  L1_ENDPOINT: https://data-seed-prebsc-1-s1.binance.org:8545
+  L1_ENDPOINT: https://data-seed-prebsc-2-s2.binance.org:8545
   L2_ENDPOINT: http://localhost:8888
 
 jobs:
-  deploy:
+  deploy-zkBNB:
     runs-on: self-hosted
     permissions:
       issues: write
@@ -19,63 +18,68 @@ jobs:
       - name: deploy new zkbnb on runner
         if: ${{ !contains(github.event.pull_request.body, '/skip-integration-test') }}
         run: |
-          echo 'fetch zkbnb repo'
+          echo ">>> Fetch zkbnb repo"
           export PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
           echo Pull requests $PR_NUMBER
           
+          
           cd ~
           sudo rm -rf ./zkbnb
-          git clone https://github.com/bnb-chain/zkbnb.git
-          echo "Integration tests run on commit id: $GITHUB_SHA"
+          git clone https://github.com/15000785133/zkbnb.git
+          echo ">>> Integration tests run on commit id: $GITHUB_SHA"
           cd ./zkbnb
           git fetch origin pull/$PR_NUMBER/head:$GITHUB_SHA
           git checkout $GITHUB_SHA
 
-          echo "start deploy new zkbnb"
+          echo ">>> Start deploy new zkbnb"
           sudo bash ./deployment/tool/generate_api.sh
           go mod tidy
           docker image prune -f
           make docker-image
           sudo mkdir -p ./deployment/.zkbnb
-          sudo cp /server/test.keyfile/* ./deployment/.zkbnb
-          source <(sudo cat /server/.env)
+          sudo cp ~/test.keyfile/* ./deployment/.zkbnb
+          source <(sudo cat ~/.env)
           blockNr=$(sudo bash ./deployment/tool/tool.sh blockHeight)
-          sudo BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY} bash ./deployment/tool/tool.sh all
+          
+          sudo BSC_TESTNET_RPC=${BSC_TESTNET_RPC} \
+            BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY} \
+            COMMIT_BLOCK_PRIVATE_KEY=${COMMIT_BLOCK_PRIVATE_KEY} \
+            VERIFY_BLOCK_PRIVATE_KEY=${VERIFY_BLOCK_PRIVATE_KEY} \
+            VALIDATORS=${VALIDATORS} \
+            SECURITY_COUNCIL_MEMBERS_NUMBER_1=${SECURITY_COUNCIL_MEMBERS_NUMBER_1} \
+            SECURITY_COUNCIL_MEMBERS_NUMBER_2=${SECURITY_COUNCIL_MEMBERS_NUMBER_2} \
+            SECURITY_COUNCIL_MEMBERS_NUMBER_3=${SECURITY_COUNCIL_MEMBERS_NUMBER_3} \
+            bash ./deployment/tool/tool.sh all
+          
           sudo bash ./deployment/docker-compose/docker-compose.sh down
-          sudo bash ./deployment/docker-compose/docker-compose.sh up $blockNr
-          echo "Contract addresses"
+          sudo COMMIT_BLOCK_PRIVATE_KEY=${COMMIT_BLOCK_PRIVATE_KEY} \
+            VERIFY_BLOCK_PRIVATE_KEY=${VERIFY_BLOCK_PRIVATE_KEY} \
+            bash ./deployment/docker-compose/docker-compose.sh up $blockNr
+          echo ">>> Contract addresses"
           cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json
-          echo "Waiting 3m for the initialization tx to be verified"
+          echo ">>> Waiting 3m for the initialization tx to be verified"
           sleep 3m # Waiting for the initialization tx to be verified
-          echo "end deploy"
-      - name: run integration test
-        if: ${{ !contains(github.event.pull_request.body, '/skip-integration-test') }}
-        run: |
-          source <(sudo cat /server/.env)
-          export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
-          export ZkBNB=$(sudo cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json  | jq -r '.zkbnbProxy')
-          export AssetGov=$(sudo cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json  | jq -r '.assetGovernance')
-          export TestLogLevel=2
-          export L1EndPoint=$L1_ENDPOINT
-          export L2EndPoint=$L2_ENDPOINT
-          export GovKey=${BSC_TESTNET_PRIVATE_KEY}
-          
-          cd /tmp && sudo rm -rf ./zkbnb-integration-test
-          git clone --branch main https://github.com/bnb-chain/zkbnb-integration-test.git
-          cd ./zkbnb-integration-test/tests
-          
-          echo '1. start TestSetupSuite'
-          go test -v -failfast  -run TestSetupSuite -timeout 30m
-          
-          echo '2. start L1 && L2 test'
-          go test -v -failfast -parallel 2 -run TestL.*Suite  -timeout 30m
+          echo ">>> End deploy"
 
-      - name: notification via slack
-        if: cancelled() == false
-        run: |
-          export SLACK_WEBHOOK_URL=`sudo cat /home/ec2-user/actions-runner/slack-config.json | jq -r '.slack'`
-          export JOB_STATUS=${{ job.status }}
-          export ZkBNB=`sudo cat /home/ec2-user/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json | jq -r '.zkbnbProxy'`
-          export AssetGov=`sudo cat /home/ec2-user/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json | jq -r '.assetGovernance'`
-          curl -X POST $SLACK_WEBHOOK_URL --header 'Content-Type: application/json' \
-          --data-raw '{ "author": "@'$GITHUB_ACTOR'", "status": "'$JOB_STATUS'", "ref": "'$GITHUB_REF'", "event": "'$GITHUB_EVENT_NAME'", "url": "'$GITHUB_SERVER_URL'/'$GITHUB_REPOSITORY'/commit/'$GITHUB_SHA'/checks", "ZkBNBContract": "'$ZkBNB'", "AssetGovContract": "'$AssetGov'" }'
+  integration-test:
+    runs-on: self-hosted
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+     - name: run integration test
+       if: ${{ !contains(github.event.pull_request.body, '/skip-integration-test') }}
+       run: |
+         source <(sudo cat ~/.env)
+         export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin:/usr/local/bin
+         
+         cd /tmp && sudo rm -rf ./zkbnb-integration-test
+         git clone --branch integration-cicd https://${GH_PAT}@github.com/bnb-chain/zkbnb-integration-test.git
+         cd ./zkbnb-integration-test && go mod tidy
+         
+         echo ">>>Start TestSetupSuite"
+         ZkBNBGovernanceKey=${BSC_TESTNET_PRIVATE_KEY} \
+           L1EndPoint=${L1_ENDPOINT} \
+           L2EndPoint=${L2_ENDPOINT} \
+           TestLogLevel=2 \
+           go test -v -failfast -parallel 8 ./tests/integration/.../... --test.run '.*Suite' -testify.m "Test_01_batchToken"  -timeout 60m

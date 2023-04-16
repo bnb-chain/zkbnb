@@ -54,7 +54,7 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		logx.Severe("failed to start the sync nft index server task, %v", err)
+		logx.Severef("failed to start the sync nft index server task, %s", err.Error())
 		panic("failed to start the sync nft index server task, err:" + err.Error())
 	}
 

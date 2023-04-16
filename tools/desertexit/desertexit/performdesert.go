@@ -153,7 +153,7 @@ func (m *PerformDesert) PerformDesertNft(performDesertNftData PerformDesertNftDa
 			NftContentHash1:     nftContentHash1,
 			NftContentHash2:     nftContentHash2,
 			NftContentType:      nftExitData.NftContentType,
-			CreatorTreasuryRate: uint16(nftExitData.CreatorTreasuryRate),
+			CreatorTreasuryRate: uint16(nftExitData.RoyaltyRate),
 			CollectionId:        uint16(nftExitData.CollectionId),
 		})
 	}

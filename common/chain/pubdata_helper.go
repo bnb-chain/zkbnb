@@ -456,6 +456,7 @@ func ParseMintNftPubDataForDesert(pubData []byte) (txInfo txtypes.TxInfo, err er
 	offset := 1
 	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
 	offset, toAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, toAddress := common2.ReadAddress(pubData, offset)
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
 
@@ -471,6 +472,7 @@ func ParseMintNftPubDataForDesert(pubData []byte) (txInfo txtypes.TxInfo, err er
 	txInfo = &txtypes.MintNftTxInfo{
 		CreatorAccountIndex: int64(creatorAccountIndex),
 		ToAccountIndex:      int64(toAccountIndex),
+		ToL1Address:         toAddress,
 		NftIndex:            nftIndex,
 		GasAccountIndex:     types.GasAccount,
 		GasFeeAssetId:       int64(gasFeeAssetId),

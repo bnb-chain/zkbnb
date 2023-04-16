@@ -3,11 +3,13 @@ package prover
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark/constraint"
 	"github.com/prometheus/client_golang/prometheus"
+	"runtime"
 	"time"
 
 	"github.com/consensys/gnark/backend/groth16"
-	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -38,7 +40,8 @@ var (
 )
 
 type Prover struct {
-	Config config.Config
+	running bool
+	Config  config.Config
 
 	RedisConn *redis.Redis
 
@@ -50,7 +53,7 @@ type Prover struct {
 	ProvingKeys        [][]groth16.ProvingKey
 	OptionalBlockSizes []int
 	SessionNames       []string
-	R1cs               []frontend.CompiledConstraintSystem
+	R1cs               []constraint.ConstraintSystem
 }
 
 var (
@@ -110,6 +113,7 @@ func NewProver(c config.Config) (*Prover, error) {
 	}))
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 	prover := &Prover{
+		running:           true,
 		Config:            c,
 		RedisConn:         redisConn,
 		DB:                db,
@@ -125,7 +129,7 @@ func NewProver(c config.Config) (*Prover, error) {
 	prover.OptionalBlockSizes = c.BlockConfig.OptionalBlockSizes
 	prover.ProvingKeys = make([][]groth16.ProvingKey, len(prover.OptionalBlockSizes))
 	prover.VerifyingKeys = make([]groth16.VerifyingKey, len(prover.OptionalBlockSizes))
-	prover.R1cs = make([]frontend.CompiledConstraintSystem, len(prover.OptionalBlockSizes))
+	prover.R1cs = make([]constraint.ConstraintSystem, len(prover.OptionalBlockSizes))
 	prover.SessionNames = make([]string, len(prover.OptionalBlockSizes))
 	for i := 0; i < len(prover.OptionalBlockSizes); i++ {
 		var blockConstraints circuit.BlockConstraints
@@ -142,7 +146,15 @@ func NewProver(c config.Config) (*Prover, error) {
 		// prover.R1cs[i], err = frontend.Compile(ecc.BN254, r1cs.NewBuilder, &blockConstraints, frontend.IgnoreUnconstrainedInputs())
 		// groth16.LazifyR1cs(prover.R1cs[i])
 		std.RegisterHints()
-		prover.R1cs[i], err = groth16.LoadR1CSFromFile(c.KeyPath[i])
+		nbConstraints, err := prove.LoadR1CSLen(c.KeyPath[i] + ".r1cslen")
+		if err != nil {
+			logx.Severe("r1cs nb constraints read error")
+			panic("r1cs nb constraints read error")
+		}
+
+		r1cs := groth16.NewCS(ecc.BN254)
+		r1cs.LoadFromSplitBinaryConcurrent(c.KeyPath[i], nbConstraints, c.BlockConfig.R1CSBatchSize, runtime.NumCPU())
+		prover.R1cs[i] = r1cs
 		if err != nil {
 			logx.Severe("r1cs init error")
 			panic("r1cs init error")
@@ -201,49 +213,40 @@ func NewProver(c config.Config) (*Prover, error) {
 }
 
 func (p *Prover) ProveBlock() error {
-	blockWitness, err := func() (*blockwitness.BlockWitness, error) {
-		lock := redislock.GetRedisLockByKey(p.RedisConn, RedisLockKey)
-		err := redislock.TryAcquireLock(lock)
-		if err != nil {
-			return nil, err
+	for {
+		if !p.running {
+			break
 		}
-		//nolint:errcheck
-		defer lock.Release()
+		blockWitness, err := p.getWitness()
+		if err != nil {
+			if err == types.DbErrNotFound {
+				time.Sleep(200 * time.Millisecond)
+				continue
+			}
+			return err
+		}
 
-		// Fetch unproved block witness.
-		blockWitness, err := p.BlockWitnessModel.GetLatestBlockWitness(p.OptionalBlockSizes)
+		logx.Infof("doProveBlock start, height=%d", blockWitness.Height)
+		err = p.doProveBlock(blockWitness)
 		if err != nil {
-			return nil, err
+			logx.Severef("doProveBlock failed, err %v,height=%d", err, blockWitness.Height)
+			// Recover block witness status.
+			res := p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusPublished)
+			if res != nil {
+				logx.Severef("revert block witness status failed, err %v,height=%d", res, blockWitness.Height)
+				panic("recover block witness status error " + res.Error())
+			}
+			l2ExceptionProofHeightMetrics.Set(float64(blockWitness.Height))
+			return err
 		}
-		// Update status of block witness.
-		err = p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusReceived)
-		if err != nil {
-			return nil, err
-		}
-		return blockWitness, nil
-	}()
-	if err != nil {
-		if err == types.DbErrNotFound {
-			return nil
-		}
-		return err
 	}
-	defer func() {
-		if err == nil {
-			return
-		}
+	return nil
+}
 
-		// Recover block witness status.
-		res := p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusPublished)
-		if res != nil {
-			logx.Errorf("revert block witness status failed, err %v", res)
-		}
-		l2ExceptionProofHeightMetrics.Set(float64(blockWitness.Height))
-	}()
-
+func (p *Prover) doProveBlock(blockWitness *blockwitness.BlockWitness) error {
 	// Parse crypto block.
 	var cryptoBlock *circuit.Block
-	err = json.Unmarshal([]byte(blockWitness.WitnessData), &cryptoBlock)
+	err := json.Unmarshal([]byte(blockWitness.WitnessData), &cryptoBlock)
 	if err != nil {
 		return err
 	}
@@ -296,7 +299,30 @@ func (p *Prover) ProveBlock() error {
 	return err
 }
 
+func (p *Prover) getWitness() (*blockwitness.BlockWitness, error) {
+	lock := redislock.GetRedisLockByKey(p.RedisConn, RedisLockKey)
+	err := redislock.TryAcquireLock(lock)
+	if err != nil {
+		return nil, err
+	}
+	//nolint:errcheck
+	defer lock.Release()
+
+	// Fetch unproved block witness.
+	blockWitness, err := p.BlockWitnessModel.GetLatestBlockWitness(p.OptionalBlockSizes)
+	if err != nil {
+		return nil, err
+	}
+	// Update status of block witness.
+	err = p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusReceived)
+	if err != nil {
+		return nil, err
+	}
+	return blockWitness, nil
+}
+
 func (p *Prover) Shutdown() {
+	p.running = false
 	sqlDB, err := p.DB.DB()
 	if err == nil && sqlDB != nil {
 		err = sqlDB.Close()

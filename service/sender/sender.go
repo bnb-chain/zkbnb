@@ -55,7 +55,7 @@ func Run(configFile string) error {
 		}
 		err = s.VerifyAndExecuteBlocks()
 		if err != nil {
-			logx.Error("failed to send verify transaction, %v", err)
+			logx.Errorf("failed to send verify transaction, %s", err.Error())
 		}
 	})
 	if err != nil {

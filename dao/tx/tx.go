@@ -295,7 +295,7 @@ func (m *defaultTxModel) CreateTxs(txs []*Tx) error {
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(txs)) {
-		logx.Errorf("CreateTxs failed,rows affected not equal txs length,dbTx.RowsAffected:%s,len(txs):%s", int(dbTx.RowsAffected), len(txs))
+		logx.Errorf("CreateTxs failed,rows affected not equal txs length,dbTx.RowsAffected:%d,len(txs):%d", int(dbTx.RowsAffected), len(txs))
 		return types.DbErrFailToCreateTx
 	}
 	return nil

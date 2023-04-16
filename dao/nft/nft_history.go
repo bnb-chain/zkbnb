@@ -129,7 +129,7 @@ func (m *defaultL2NftHistoryModel) CreateNftHistoriesInTransact(tx *gorm.DB, his
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(histories)) {
-		logx.Errorf("CreateNftHistoriesInTransact failed,rows affected not equal histories length,dbTx.RowsAffected:%s,len(histories):%s", int(dbTx.RowsAffected), len(histories))
+		logx.Errorf("CreateNftHistoriesInTransact failed,rows affected not equal histories length,dbTx.RowsAffected:%d,len(histories):%d", int(dbTx.RowsAffected), len(histories))
 		return types.DbErrFailToCreateNftHistory
 	}
 	return nil

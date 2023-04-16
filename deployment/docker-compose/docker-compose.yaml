@@ -14,11 +14,9 @@ services:
         volumes:
           - $BASEDIR/configs:/server/configs
         depends_on:
-          database:
-            condition: service_healthy
-          redis:
-            condition: service_healthy
-    
+          - database
+          - redis
+
     prover:
         container_name: prover
         image: ghcr.io/bnb-chain/zkbnb

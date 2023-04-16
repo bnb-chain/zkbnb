@@ -15,6 +15,7 @@ var senderConfig *SenderConfig = &SenderConfig{}
 // Apollo client to get the sender configuration
 // so that it could be updated it from the apollo server side
 var apolloClient agollo.Client
+var senderUpdater *SenderUpdater
 
 type SenderConfig struct {
 	MaxCommitBlockCount uint64
@@ -54,7 +55,7 @@ func InitApolloConfiguration(c Config) {
 	}
 
 	apolloClient = client
-	senderUpdater := &SenderUpdater{}
+	senderUpdater = &SenderUpdater{}
 	apolloClient.AddChangeListener(senderUpdater)
 
 	apolloCache := apolloClient.GetConfigCache(apolloConfig.NamespaceName)
@@ -73,10 +74,15 @@ func InitApolloConfiguration(c Config) {
 			panic("Fail to validate SenderConfig from the apollo server!")
 		}
 		senderConfig = newSenderConfig
+		logx.Info("Initiate and load SenderConfig Successfully!")
+		logx.Info("SenderConfig:", newSenderConfigObjectJson)
 	}
 }
 
 func (u *SenderUpdater) OnChange(event *storage.ChangeEvent) {
+
+	logx.Info("Get updates from apollo server")
+
 	configChange := event.Changes[SenderConfigKey]
 	if configChange == nil {
 		return
