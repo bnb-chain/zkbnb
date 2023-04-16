@@ -733,9 +733,15 @@ func (s *Sender) ShouldCommitBlocks(lastBlock zkbnb.StorageStoredBlockInfo,
 		return true
 	}
 
+	if len(blocks) > 5 {
+		return true
+	}
+
+	return false
+
 	// Judge the average tx gas consumption for the committing operation, if the average tx gas consumption is greater
 	// than the maxCommitAvgUnitGas, abandon commit operation for temporary
-	estimatedFee, err := s.zkbnbClient.EstimateCommitGasWithNonce(lastBlock, commitBlocksInfo, gasPrice, gasLimit, nonce)
+	/*estimatedFee, err := s.zkbnbClient.EstimateCommitGasWithNonce(lastBlock, commitBlocksInfo, gasPrice, gasLimit, nonce)
 	if err != nil {
 		logx.WithContext(ctx).Errorf("abandon commit block to l1, EstimateGas operation get some error:%s", err.Error())
 		return false
@@ -748,7 +754,7 @@ func (s *Sender) ShouldCommitBlocks(lastBlock zkbnb.StorageStoredBlockInfo,
 			",MaxCommitAvgUnitGas:", maxCommitAvgUnitGas)
 		return false
 	}
-	return true
+	return true*/
 }
 
 func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, verifyAndExecuteBlocksInfo []zkbnb.ZkBNBVerifyAndExecuteBlockInfo,
@@ -770,9 +776,15 @@ func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, verifyAndEx
 		return true
 	}
 
+	if len(blocks) > 5 {
+		return true
+	}
+
+	return false
+
 	// Judge the average tx gas consumption for the verifying and executing operation, if the average tx gas consumption is greater
 	// than the maxVerifyAvgUnitGas, abandon verify and execute operation for temporary
-	estimatedFee, err := s.zkbnbClient.EstimateVerifyAndExecuteWithNonce(verifyAndExecuteBlocksInfo, proofs, gasPrice, gasLimit, nonce)
+	/*estimatedFee, err := s.zkbnbClient.EstimateVerifyAndExecuteWithNonce(verifyAndExecuteBlocksInfo, proofs, gasPrice, gasLimit, nonce)
 	if err != nil {
 		logx.WithContext(ctx).Errorf("abandon commit block to l1, EstimateGas operation get some error:%s", err.Error())
 		return false
@@ -785,7 +797,7 @@ func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, verifyAndEx
 			",MaxVerifyAvgUnitGas:", maxVerifyAvgUnitGas)
 		return false
 	}
-	return true
+	return true*/
 }
 
 func (s *Sender) GetBlocksForVerifyAndExecute(start int64) (blocks []*block.Block, err error) {
