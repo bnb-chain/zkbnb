@@ -285,7 +285,7 @@ func (c *Committer) executeTxFunc() error {
 			subPendingTxs = nil
 		} else {
 			pendingTxs = c.getPoolTxsFromQueue()
-			c.preLoadAccountAndNft(pendingTxs)
+			//c.preLoadAccountAndNft(pendingTxs)
 		}
 
 		for len(pendingTxs) == 0 {
@@ -299,7 +299,7 @@ func (c *Committer) executeTxFunc() error {
 
 			time.Sleep(100 * time.Millisecond)
 			pendingTxs = c.getPoolTxsFromQueue()
-			c.preLoadAccountAndNft(pendingTxs)
+			//c.preLoadAccountAndNft(pendingTxs)
 		}
 
 		pendingDeletePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
