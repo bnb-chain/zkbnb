@@ -38,6 +38,12 @@ func NewWithdrawExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExec
 	}, nil
 }
 
+func (e *WithdrawExecutor) PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	txInfo := e.TxInfo
+	accountIndexMap[txInfo.FromAccountIndex] = true
+	accountIndexMap[txInfo.GasAccountIndex] = true
+}
+
 func (e *WithdrawExecutor) Prepare() error {
 	txInfo := e.TxInfo
 

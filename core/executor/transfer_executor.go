@@ -39,6 +39,13 @@ func NewTransferExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExec
 	}, nil
 }
 
+func (e *TransferExecutor) PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	txInfo := e.TxInfo
+	accountIndexMap[txInfo.FromAccountIndex] = true
+	accountIndexMap[txInfo.GasAccountIndex] = true
+	addressMap[txInfo.ToL1Address] = true
+}
+
 func (e *TransferExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo
