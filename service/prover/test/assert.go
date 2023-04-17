@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/frontend/schema"
+	"github.com/bnb-chain/zkbnb/types"
 	"reflect"
 	"strings"
 	"testing"
@@ -388,7 +389,7 @@ func (assert *Assert) fuzzer(fuzzer filler, circuit, w frontend.Circuit, b backe
 func (assert *Assert) getCircuitAddr(circuit frontend.Circuit) (uintptr, error) {
 	vCircuit := reflect.ValueOf(circuit)
 	if vCircuit.Kind() != reflect.Ptr {
-		return 0, errors.New("frontend.Circuit methods must be defined on pointer receiver")
+		return 0, types.AppErrCircuitMethodDefErr
 	}
 	return vCircuit.Pointer(), nil
 }
@@ -424,7 +425,7 @@ func (assert *Assert) compile(circuit frontend.Circuit, curveID ecc.ID, backendI
 
 	_ccs, err := frontend.Compile(curveID.ScalarField(), newBuilder, circuit, compileOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrCompilationNotDeterministic, err)
+		return nil, fmt.Errorf("%w: %v", types.AppErrCompilationNotDeterministic, err)
 	}
 
 	if !reflect.DeepEqual(ccs, _ccs) {
@@ -460,7 +461,6 @@ func (assert *Assert) options(opts ...TestingOption) testingConfig {
 }
 
 // ensure the error is nil, else fails the test
-// ensure the error is set, else fails the test
 func (assert *Assert) mustError(err error, backendID backend.ID, curve ecc.ID, w witness.Witness, lazyS func() *schema.Schema) {
 	if err != nil {
 		return

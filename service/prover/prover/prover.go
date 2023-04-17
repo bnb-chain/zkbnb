@@ -146,6 +146,7 @@ func NewProver(c config.Config) (*Prover, error) {
 		// prover.R1cs[i], err = frontend.Compile(ecc.BN254, r1cs.NewBuilder, &blockConstraints, frontend.IgnoreUnconstrainedInputs())
 		// groth16.LazifyR1cs(prover.R1cs[i])
 		std.RegisterHints()
+
 		nbConstraints, err := prove.LoadR1CSLen(c.KeyPath[i] + ".r1cslen")
 		if err != nil {
 			logx.Severe("r1cs nb constraints read error")

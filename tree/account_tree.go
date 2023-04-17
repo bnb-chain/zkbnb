@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/log"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/panjf2000/ants/v2"
 	"hash"
 	"strconv"
@@ -153,10 +152,10 @@ func InitAccountTree(
 		}
 		_, err = accountTree.CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
-			logx.WithContext(ctxLog).Errorf("unable to commit account tree: %s,newVersion:%s,tree.LatestVersion:%s", err.Error(), uint64(newVersion), uint64(accountTree.LatestVersion()))
+			logx.WithContext(ctxLog).Errorf("unable to commit account tree: %s,newVersion:%d,tree.LatestVersion:%d", err.Error(), uint64(newVersion), uint64(accountTree.LatestVersion()))
 			return nil, nil, err
 		}
-		logx.WithContext(ctxLog).Infof("reloadAccountTree end. cost time %s", float64(time.Since(start).Milliseconds()))
+		logx.WithContext(ctxLog).Infof("reloadAccountTree end. cost time %v", time.Since(start))
 		return accountTree, accountAssetTrees, nil
 	}
 
@@ -217,7 +216,7 @@ func reloadAccountTreeFromRDB(
 		}
 		accountInfoList, err = accountModel.GetAccountByIndexes(accountIndexList)
 		if err != nil {
-			logx.WithContext(ctx).Errorf("unable to get account by account index list: %s,accountIndexList:%s", err.Error(), accountIndexList)
+			logx.WithContext(ctx).Errorf("unable to get account by account index list: %s,accountIndexList:%d", err.Error(), accountIndexList)
 			return nil, err
 		}
 		accountInfoDbMap := make(map[int64]*account.Account, 0)
@@ -227,7 +226,7 @@ func reloadAccountTreeFromRDB(
 		for _, accountHistory := range accountHistories {
 			accountInfo := accountInfoDbMap[accountHistory.AccountIndex]
 			if accountInfo == nil {
-				logx.WithContext(ctx).Errorf("unable to get account by account index: %s,AccountIndex:%s", err.Error(), accountHistory.AccountIndex)
+				logx.WithContext(ctx).Errorf("unable to get account by account index: %s,AccountIndex:%d", err.Error(), accountHistory.AccountIndex)
 				return nil, err
 			}
 			accountInfo.Nonce = accountHistory.Nonce
@@ -275,7 +274,7 @@ func reloadAccountTreeFromRDB(
 		}
 		_, err = accountAssetTrees.Get(accountInfo.AccountIndex).CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
-			logx.WithContext(ctx).Errorf("unable to CommitWithNewVersion asset to tree: %s,newVersion:%s,tree.LatestVersion:%s", err.Error(), uint64(newVersion), uint64(accountAssetTrees.Get(accountInfo.AccountIndex).LatestVersion()))
+			logx.WithContext(ctx).Errorf("unable to CommitWithNewVersion asset to tree: %s,newVersion:%d,tree.LatestVersion:%d", err.Error(), uint64(newVersion), uint64(accountAssetTrees.Get(accountInfo.AccountIndex).LatestVersion()))
 			return nil, err
 		}
 		accountHashVal, err := AccountToNode(
@@ -331,7 +330,7 @@ func AccountToNode(
 }
 
 func NewMemAccountAssetTree() (tree bsmt.SparseMerkleTree, err error) {
-	return bsmt.NewBNBSparseMerkleTree(bsmt.NewHasherPool(func() hash.Hash { return poseidon.NewPoseidon() }),
+	return bsmt.NewBNBSparseMerkleTree(bsmt.NewHasherPool(func() hash.Hash { return NewGMimc() }),
 		memory.NewMemoryDB(), AssetTreeHeight, NilAccountAssetNodeHash)
 }
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Preparation: Install following tools when you first run this script!!!
-# GOBIN=/usr/local/bin/ go install  github.com/zeromicro/go-zero/tools/goctl@latest
+# GOBIN=/usr/local/bin/ go install  github.com/zeromicro/go-zero/tools/goctl@1.5.1
 # yum install jq -y
 # npm install pm2 -g
 # You should install nodejs above v14

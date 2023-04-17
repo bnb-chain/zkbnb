@@ -21,6 +21,7 @@ import (
 	"github.com/bnb-chain/zkbnb/common/utils"
 	"github.com/consensys/gnark-crypto/field/pool"
 	"github.com/consensys/gnark/test"
+	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 	"path/filepath"
 	"reflect"
@@ -53,6 +54,11 @@ type engine struct {
 }
 
 var _modulus big.Int // q stored as big.Int
+
+func (e *engine) AddGKRInputsAndOutputsMarks(inputs, outputs []frontend.Variable, initialHash frontend.Variable) {
+	//TODO implement me
+	panic("implement me")
+}
 
 // IsSolved returns an error if the test execution engine failed to execute the given circuit
 // with provided witness as input.
@@ -95,9 +101,6 @@ func (e *engine) modulus() *big.Int {
 }
 
 func (e *engine) RecordConstraintsForLazy(key string, finished bool, s *[]frontend.Variable) {
-}
-
-func (e *engine) AddGKRInputsAndOutputsMarks(inputs []frontend.Variable, outputs []frontend.Variable) {
 }
 
 func (e *engine) Add(i1, i2 frontend.Variable, in ...frontend.Variable) frontend.Variable {
@@ -467,7 +470,8 @@ func copyWitness(to, from frontend.Circuit) {
 		return nil
 	}
 	if _, err := schema.Walk(from, tVariable, collectHandler); err != nil {
-		panic(err)
+		logx.Severef("failed to parse circuit data, %v", err)
+		panic("failed to parse circuit data, err:" + err.Error())
 	}
 
 	i := 0

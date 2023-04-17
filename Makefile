@@ -35,7 +35,7 @@ test: api-server
 	@go test -v -p 1 ./...
 
 tools:
-	go install -u github.com/zeromicro/go-zero/tools/goctl@v1.4.0
+	go install github.com/zeromicro/go-zero/tools/goctl@v1.5.1
 
 build: api-server build-only
 

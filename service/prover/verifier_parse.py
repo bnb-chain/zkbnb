@@ -1,5 +1,6 @@
 import sys
 
+
 def find_and_delete_func(func_name, lines):
     first_line = 0
     last_line = 0
@@ -7,7 +8,7 @@ def find_and_delete_func(func_name, lines):
         if lines[nu].count(func_name):
             first_line = nu
             current_brace = 1
-            for j in range(first_line+1, len(lines)):
+            for j in range(first_line + 1, len(lines)):
                 if lines[j].count("{"):
                     current_brace += 1
                 if lines[j].count("}"):
@@ -16,7 +17,7 @@ def find_and_delete_func(func_name, lines):
                     last_line = j
                     break
             break
-    lines = lines[:first_line] + lines[last_line+1:]
+    lines = lines[:first_line] + lines[last_line + 1:]
     print("function name ", func_name, "first line ", first_line, " last line ", last_line)
     return lines, first_line
 
