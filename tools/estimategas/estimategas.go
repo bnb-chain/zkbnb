@@ -66,12 +66,12 @@ func EstimateGas(configFile string, fromHeight int64, toHeight int64, maxBlockCo
 
 	err = EstimateCommitBlockGas(ctx, cli, zkBNBClient, fromHeight, toHeight, maxBlockCount)
 	if err != nil {
-		return err
+		logx.Errorf("failed to EstimateCommitBlockGas, %v", err)
 	}
 
 	err = EstimateVerifyBlockGas(ctx, cli, zkBNBClient, fromHeight, toHeight, maxBlockCount)
 	if err != nil {
-		return err
+		logx.Errorf("failed to EstimateVerifyBlockGas, %v", err)
 	}
 
 	logx.Infof("estimate gas success")
