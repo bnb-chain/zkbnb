@@ -18,12 +18,10 @@ package test
 
 import (
 	"crypto/rand"
+	"github.com/consensys/gnark/constraint"
 	"sync"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark-crypto/kzg"
-	"github.com/consensys/gnark/constraint"
-
 	kzg_bls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377/fr/kzg"
 	kzg_bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381/fr/kzg"
 	kzg_bls24315 "github.com/consensys/gnark-crypto/ecc/bls24-315/fr/kzg"
@@ -31,9 +29,8 @@ import (
 	kzg_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	kzg_bw6633 "github.com/consensys/gnark-crypto/ecc/bw6-633/fr/kzg"
 	kzg_bw6761 "github.com/consensys/gnark-crypto/ecc/bw6-761/fr/kzg"
+	"github.com/consensys/gnark-crypto/kzg"
 )
-
-const srsCachedSize = (1 << 14) + 3
 
 // NewKZGSRS uses ccs nb variables and nb constraints to initialize a kzg srs
 // for sizes < 2¹⁵, returns a pre-computed cached SRS
@@ -45,10 +42,6 @@ func NewKZGSRS(ccs constraint.ConstraintSystem) (kzg.SRS, error) {
 	sizeSystem := nbConstraints + ccs.GetNbPublicVariables()
 	kzgSize := ecc.NextPowerOfTwo(uint64(sizeSystem)) + 3
 
-	if kzgSize <= srsCachedSize {
-		return getCachedSRS(ccs)
-	}
-
 	return newKZGSRS(ecc.BN254, kzgSize)
 
 }
@@ -58,23 +51,6 @@ var lock sync.Mutex
 
 func init() {
 	srsCache = make(map[ecc.ID]kzg.SRS)
-}
-func getCachedSRS(ccs constraint.ConstraintSystem) (kzg.SRS, error) {
-	lock.Lock()
-	defer lock.Unlock()
-
-	curveID := ecc.BN254
-
-	if srs, ok := srsCache[curveID]; ok {
-		return srs, nil
-	}
-
-	srs, err := newKZGSRS(curveID, srsCachedSize)
-	if err != nil {
-		return nil, err
-	}
-	srsCache[curveID] = srs
-	return srs, nil
 }
 
 func newKZGSRS(curve ecc.ID, kzgSize uint64) (kzg.SRS, error) {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/dgraph-io/ristretto"
 	"github.com/panjf2000/ants/v2"
 	"gorm.io/plugin/dbresolver"
@@ -658,7 +657,7 @@ func verifyRollbackTableDataFunc(bc *BlockChain, curHeight int64) error {
 }
 
 func verifyRollbackTreesFunc(bc *BlockChain, currentBlock *block.Block) error {
-	hFunc := poseidon.NewPoseidon()
+	hFunc := tree.NewGMimc()
 	hFunc.Write(bc.Statedb.AccountTree.Root())
 	hFunc.Write(bc.Statedb.NftTree.Root())
 	stateRoot := common.Bytes2Hex(hFunc.Sum(nil))

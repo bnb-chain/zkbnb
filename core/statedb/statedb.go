@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/log"
 	"github.com/bnb-chain/zkbnb/common/metrics"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/dgraph-io/ristretto"
 	"strconv"
 	"sync"
@@ -687,7 +686,7 @@ func (s *StateDB) SetAccountAndNftTree(stateDataCopy *StateDataCopy) error {
 	metrics.AccountTreeMultiSetGauge.Set(float64(time.Since(start).Milliseconds()))
 	accountTreeRoot := s.AccountTree.Root()
 	nftTreeRoot := s.NftTree.Root()
-	hFunc := poseidon.NewPoseidon()
+	hFunc := tree.NewGMimc()
 	hFunc.Write(accountTreeRoot)
 	hFunc.Write(nftTreeRoot)
 	logx.Infof("committer smt blockHeight=%d, account tree root=%s,nft tree root=%s", stateDataCopy.CurrentBlock.BlockHeight, common.Bytes2Hex(accountTreeRoot), common.Bytes2Hex(nftTreeRoot))

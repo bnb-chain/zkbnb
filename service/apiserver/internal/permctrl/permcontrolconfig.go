@@ -15,6 +15,10 @@ const (
 	PermissionControlConfigKey = "PermissionControlConfig"
 )
 
+// Permission control configuration initialized from the apollo server
+// And for permission control both in permcontrol and permcheck logic
+var permissionControlConfig *PermissionControlConfig
+
 // Apollo client to get the permission control configuration
 // so that it could be updated it from the apollo server side
 var apolloClient agollo.Client
@@ -41,6 +45,12 @@ func (c *PermissionControlConfig) GetPermissionControlConfigItem(txType uint32) 
 	} else {
 		return c.DefaultPermissionControlConfigItem
 	}
+}
+
+func InitPermissionControl(config config.Config) {
+	// Get the permission control configuration from the Apollo server
+	permissionControlConfig = LoadApolloPermissionControlConfig(config)
+	logx.Infof("Initiate Permission Control Facility Successfully!")
 }
 
 func LoadApolloPermissionControlConfig(config config.Config) *PermissionControlConfig {
