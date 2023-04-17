@@ -71,6 +71,7 @@ type (
 		GetBlockByStatus(statuses []int) (blocks []*Block, err error)
 		GetLatestHeight(statuses []int) (height int64, err error)
 		UpdateBlockToProposingInTransact(tx *gorm.DB, blockHeights []int64) error
+		UpdateGreaterOrEqualHeight(blockHeight int64, targetBlockStatus int64) error
 	}
 
 	defaultBlockModel struct {
@@ -477,6 +478,16 @@ func (m *defaultBlockModel) UpdateBlockToProposingInTransact(tx *gorm.DB, blockH
 		"committed_at":                         0,
 		"account_indexes":                      "[]",
 		"nft_indexes":                          "[]",
+	})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	return nil
+}
+
+func (m *defaultBlockModel) UpdateGreaterOrEqualHeight(blockHeight int64, targetBlockStatus int64) error {
+	dbTx := m.DB.Model(&Block{}).Select("BlockStatus").Where("block_height >= ? and block_status != ?", blockHeight, StatusVerifiedAndExecuted).Updates(map[string]interface{}{
+		"block_status": targetBlockStatus,
 	})
 	if dbTx.Error != nil {
 		return dbTx.Error

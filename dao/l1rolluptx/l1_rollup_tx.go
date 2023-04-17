@@ -45,6 +45,7 @@ type (
 		GetL1RollupTxsByStatus(txStatus int) (txs []*L1RollupTx, err error)
 		GetL1RollupTxsByHash(hash string) (txs []*L1RollupTx, err error)
 		DeleteL1RollupTx(tx *L1RollupTx) error
+		DeleteGreaterOrEqualToHeight(height int64, txType uint8) error
 		UpdateL1RollupTxsStatusInTransact(tx *gorm.DB, txs []*L1RollupTx) error
 		GetLatestByNonce(l1Nonce int64, txType int64) (tx *L1RollupTx, err error)
 	}
@@ -63,7 +64,7 @@ type (
 		// txVerification type: commit / verify
 		TxType uint8 `gorm:"index:idx_tx_status"`
 		// layer-2 block height
-		L2BlockHeight int64
+		L2BlockHeight int64 `gorm:"index:l2_block_height"`
 		// gas price
 		GasPrice int64
 		//l1 nonce
@@ -128,6 +129,16 @@ func (m *defaultL1RollupTxModel) DeleteL1RollupTx(rollupTx *L1RollupTx) error {
 		}
 		if dbTx.RowsAffected == 0 {
 			return types.DbErrFailToDeleteL1RollupTx
+		}
+		return nil
+	})
+}
+
+func (m *defaultL1RollupTxModel) DeleteGreaterOrEqualToHeight(height int64, txType uint8) error {
+	return m.DB.Transaction(func(tx *gorm.DB) error {
+		dbTx := tx.Table(m.table).Unscoped().Where("l2_block_height >= ? and tx_type= ?", height, txType).Delete(&L1RollupTx{})
+		if dbTx.Error != nil {
+			return dbTx.Error
 		}
 		return nil
 	})
