@@ -4,11 +4,7 @@ Postgres:
 
 ChainConfig:
   NetworkRPCSysConfigName: LocalTestNetworkRpc
-  MaxWaitingTime: 120   #s
-  ConfirmBlocksCount: 0
   #  NetworkRPCSysConfigName: BscTestNetworkRpc
-  RevertBlockSk: 3f242374e0d7580e8c52a75790493539e514268ebc2e441e61cb5b86d5077698
-  GasLimit: 5000000
-  GasPrice: 0
+  CommitBlockSk: 3f242374e0d7580e8c52a75790493539e514268ebc2e441e61cb5b86d5077698
 
 
