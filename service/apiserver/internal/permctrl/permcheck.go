@@ -27,11 +27,11 @@ func (p *PermissionCheck) CheckPermission(l1Address string, txType uint32) (bool
 	permissionControlItem := permissionControlConfig.GetPermissionControlConfigItem(txType)
 	if permissionControlItem.PermissionControlType == ControlByWhitelist {
 		if ok := containElement(l1Address, permissionControlItem.ControlWhiteList); !ok {
-			return false, types.AppErrPermissionForbidden
+			return false, types.AppErrPermissionControl
 		}
 	} else if permissionControlItem.PermissionControlType == ControlByBlacklist {
 		if ok := containElement(l1Address, permissionControlItem.ControlBlackList); ok {
-			return false, types.AppErrPermissionForbidden
+			return false, types.AppErrPermissionControl
 		}
 	}
 	return true, nil

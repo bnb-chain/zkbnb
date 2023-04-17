@@ -170,6 +170,7 @@ var (
 
 	// PermissionControl
 	AppErrPermissionForbidden = NewBusinessError(23100, "Something went wrong, please try a different account or counterparty account!")
+	AppErrPermissionControl   = NewBusinessError(23101, "Due to operation strategy, only whitelisted users are able to register zkBNB from now!")
 
 	// General System Error
 	AppErrInvalidGasAsset     = NewBusinessError(25003, "invalid gas asset")
