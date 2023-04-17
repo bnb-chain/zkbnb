@@ -323,7 +323,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	ctx := log.NewCtxWithKV(log.BlockHeightContext, l2BlockHeight)
 
 	// get last block info
-	lastStoredBlockInfo := defaultBlockHeader()
+	lastStoredBlockInfo := DefaultBlockHeader()
 	if lastHandledTx != nil {
 		lastHandledBlockInfo, err := s.blockModel.GetBlockByHeight(lastHandledTx.L2BlockHeight)
 		if err != nil {

@@ -55,7 +55,7 @@ var (
 	zkbnbLogBlocksRevertSigHash      = crypto.Keccak256Hash(zkbnbLogBlocksRevertSig)
 )
 
-func defaultBlockHeader() zkbnb.StorageStoredBlockInfo {
+func DefaultBlockHeader() zkbnb.StorageStoredBlockInfo {
 	var (
 		pendingOnChainOperationsHash [32]byte
 		stateRoot                    [32]byte

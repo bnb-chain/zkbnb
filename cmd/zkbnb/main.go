@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/tools/desertexit"
+	"github.com/bnb-chain/zkbnb/tools/estimategas"
 	"github.com/bnb-chain/zkbnb/tools/query"
 	"github.com/bnb-chain/zkbnb/tools/revertblock"
 	"github.com/bnb-chain/zkbnb/tools/rollback"
@@ -308,6 +309,36 @@ func main() {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
 					err := rollbackwitnesssmt.RollbackWitnessSmt(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RevertBlockHeightFlag.Name))
+					if err != nil {
+						logx.Severe(err)
+						return err
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "estimategas",
+				Usage: "Run estimategas service",
+				Flags: []cli.Flag{
+					flags.ConfigFlag,
+					flags.EstimateGasFromHeightFlag,
+					flags.EstimateGasToHeightFlag,
+					flags.EstimateGasMaxBlockCountFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.EstimateGasFromHeightFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.EstimateGasToHeightFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.EstimateGasMaxBlockCountFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					err := estimategas.EstimateGas(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.EstimateGasFromHeightFlag.Name), cCtx.Int64(flags.EstimateGasToHeightFlag.Name), cCtx.Int64(flags.EstimateGasMaxBlockCountFlag.Name))
 					if err != nil {
 						logx.Severe(err)
 						return err
