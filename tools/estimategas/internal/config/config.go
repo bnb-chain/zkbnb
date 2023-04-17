@@ -11,7 +11,6 @@ type Config struct {
 	ChainConfig struct {
 		NetworkRPCSysConfigName string
 		CommitBlockSk           string
-		GasLimit                uint64
 	}
 	LogConf logx.LogConf
 }

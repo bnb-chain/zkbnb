@@ -3,6 +3,7 @@ package svc
 import (
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/compressedblock"
+	"github.com/bnb-chain/zkbnb/dao/proof"
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tools/estimategas/internal/config"
@@ -19,6 +20,7 @@ type ServiceContext struct {
 	SysConfigModel       sysconfig.SysConfigModel
 	CompressedBlockModel compressedblock.CompressedBlockModel
 	TxModel              tx.TxModel
+	ProofModel           proof.ProofModel
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -38,5 +40,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		SysConfigModel:       sysconfig.NewSysConfigModel(db),
 		CompressedBlockModel: compressedblock.NewCompressedBlockModel(db),
 		TxModel:              tx.NewTxModel(db),
+		ProofModel:           proof.NewProofModel(db),
 	}
 }
