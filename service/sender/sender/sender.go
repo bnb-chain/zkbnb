@@ -696,6 +696,9 @@ func (s *Sender) GetCompressedBlocksForCommit(start int64) (blocksForCommit []*c
 	maxCommitBlockCount := sconfig.GetSenderConfig().MaxCommitBlockCount
 	var totalTxCount uint64 = 0
 	for {
+
+		logx.Infof("GetCompressedBlocksForCommit: start:%d, maxCommitBlockCount:%d", start, maxCommitBlockCount)
+
 		blocks, err := s.compressedBlockModel.GetCompressedBlocksBetween(start,
 			start+int64(maxCommitBlockCount))
 		if err != nil && err != types.DbErrNotFound {
@@ -817,6 +820,9 @@ func (s *Sender) GetBlocksForVerifyAndExecute(start int64) (blocks []*block.Bloc
 	maxVerifyBlockCount := sconfig.GetSenderConfig().MaxVerifyBlockCount
 	var totalTxCount uint64 = 0
 	for {
+
+		logx.Infof("GetBlocksForVerifyAndExecute: start:%d, maxVerifyBlockCount:%d", start, maxVerifyBlockCount)
+
 		blocks, err := s.blockModel.GetCommittedBlocksBetween(start,
 			start+int64(maxVerifyBlockCount))
 		if err != nil && err != types.DbErrNotFound {
