@@ -697,13 +697,12 @@ func (s *Sender) GetCompressedBlocksForCommit(start int64) (blocksForCommit []*c
 	var totalTxCount uint64 = 0
 	for {
 
-		logx.Infof("GetCompressedBlocksForCommit: start:%d, maxCommitBlockCount:%d", start, maxCommitBlockCount)
-
-		blocks, err := s.compressedBlockModel.GetCompressedBlocksBetween(start,
-			start+int64(maxCommitBlockCount))
+		blocks, err := s.compressedBlockModel.GetCompressedBlocksBetween(start, start+int64(maxCommitBlockCount))
 		if err != nil && err != types.DbErrNotFound {
 			return nil, fmt.Errorf("failed to get compress block err: %v", err)
 		}
+
+		logx.Infof("GetCompressedBlocksForCommit: start:%d, maxCommitBlockCount:%d, result block count:%d", start, maxCommitBlockCount, len(blocks))
 
 		totalTxCount = s.CalculateTotalTxCountForCompressBlock(blocks)
 		if totalTxCount < commitTxCountLimit {
@@ -821,13 +820,12 @@ func (s *Sender) GetBlocksForVerifyAndExecute(start int64) (blocks []*block.Bloc
 	var totalTxCount uint64 = 0
 	for {
 
-		logx.Infof("GetBlocksForVerifyAndExecute: start:%d, maxVerifyBlockCount:%d", start, maxVerifyBlockCount)
-
-		blocks, err := s.blockModel.GetCommittedBlocksBetween(start,
-			start+int64(maxVerifyBlockCount))
+		blocks, err := s.blockModel.GetCommittedBlocksBetween(start, start+int64(maxVerifyBlockCount))
 		if err != nil && err != types.DbErrNotFound {
 			return nil, fmt.Errorf("unable to get blocks to prove, err: %v", err)
 		}
+
+		logx.Infof("GetBlocksForVerifyAndExecute: start:%d, maxVerifyBlockCount:%d, result block count:", start, maxVerifyBlockCount, len(blocks))
 
 		totalTxCount = s.CalculateTotalTxCountForBlock(blocks)
 		if totalTxCount < verifyTxCountLimit {
