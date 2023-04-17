@@ -722,6 +722,10 @@ func (s *Sender) ShouldCommitBlocks(lastBlock zkbnb.StorageStoredBlockInfo,
 	maxCommitTxCount := sconfig.GetSenderConfig().MaxCommitTxCount
 	totalTxCount := s.CalculateTotalTxCountForCompressBlock(blocks)
 	if totalTxCount > maxCommitTxCount {
+
+		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because totalTxCount > maxCommitTxCount,"+
+			"totalTxCount:%d, maxCommitTxCount:%d", totalTxCount, maxCommitTxCount)
+
 		return true
 	}
 
@@ -730,18 +734,16 @@ func (s *Sender) ShouldCommitBlocks(lastBlock zkbnb.StorageStoredBlockInfo,
 	maxCommitBlockInterval := sconfig.GetSenderConfig().MaxCommitBlockInterval
 	commitBlockInterval := s.CalculateBlockIntervalForCompressedBlock(blocks)
 	if commitBlockInterval > int64(maxCommitBlockInterval) {
+
+		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because commitBlockInterval > maxCommitBlockInterval,"+
+			"commitBlockInterval:%d, maxCommitBlockInterval:%d", commitBlockInterval, maxCommitBlockInterval)
+
 		return true
 	}
-
-	if len(blocks) > 5 {
-		return true
-	}
-
-	return false
 
 	// Judge the average tx gas consumption for the committing operation, if the average tx gas consumption is greater
 	// than the maxCommitAvgUnitGas, abandon commit operation for temporary
-	/*estimatedFee, err := s.zkbnbClient.EstimateCommitGasWithNonce(lastBlock, commitBlocksInfo, gasPrice, gasLimit, nonce)
+	estimatedFee, err := s.zkbnbClient.EstimateCommitGasWithNonce(lastBlock, commitBlocksInfo, gasPrice, gasLimit, nonce)
 	if err != nil {
 		logx.WithContext(ctx).Errorf("abandon commit block to l1, EstimateGas operation get some error:%s", err.Error())
 		return false
@@ -754,7 +756,11 @@ func (s *Sender) ShouldCommitBlocks(lastBlock zkbnb.StorageStoredBlockInfo,
 			",MaxCommitAvgUnitGas:", maxCommitAvgUnitGas)
 		return false
 	}
-	return true*/
+
+	logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because unitGas <= maxCommitAvgUnitGas,"+
+		"unitGas:%d, maxCommitAvgUnitGas:%d", unitGas, maxCommitAvgUnitGas)
+
+	return true
 }
 
 func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, verifyAndExecuteBlocksInfo []zkbnb.ZkBNBVerifyAndExecuteBlockInfo,
@@ -765,6 +771,10 @@ func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, verifyAndEx
 	maxVerifyTxCount := sconfig.GetSenderConfig().MaxVerifyTxCount
 	totalTxCount := s.CalculateTotalTxCountForBlock(blocks)
 	if totalTxCount > maxVerifyTxCount {
+
+		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because totalTxCount > maxVerifyTxCount,"+
+			"totalTxCount:%d, maxVerifyTxCount:%d", totalTxCount, maxVerifyTxCount)
+
 		return true
 	}
 
@@ -773,18 +783,16 @@ func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, verifyAndEx
 	maxVerifyBlockInterval := sconfig.GetSenderConfig().MaxVerifyBlockInterval
 	verifyBlockInterval := s.CalculateBlockIntervalForBlock(blocks)
 	if verifyBlockInterval > int64(maxVerifyBlockInterval) {
+
+		logx.WithContext(ctx).Infof("Should verify blocks to l1 network, because verifyBlockInterval > maxVerifyBlockInterval,"+
+			"verifyBlockInterval:%d, maxVerifyBlockInterval:%d", verifyBlockInterval, maxVerifyBlockInterval)
+
 		return true
 	}
-
-	if len(blocks) > 5 {
-		return true
-	}
-
-	return false
 
 	// Judge the average tx gas consumption for the verifying and executing operation, if the average tx gas consumption is greater
 	// than the maxVerifyAvgUnitGas, abandon verify and execute operation for temporary
-	/*estimatedFee, err := s.zkbnbClient.EstimateVerifyAndExecuteWithNonce(verifyAndExecuteBlocksInfo, proofs, gasPrice, gasLimit, nonce)
+	estimatedFee, err := s.zkbnbClient.EstimateVerifyAndExecuteWithNonce(verifyAndExecuteBlocksInfo, proofs, gasPrice, gasLimit, nonce)
 	if err != nil {
 		logx.WithContext(ctx).Errorf("abandon commit block to l1, EstimateGas operation get some error:%s", err.Error())
 		return false
@@ -797,7 +805,11 @@ func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, verifyAndEx
 			",MaxVerifyAvgUnitGas:", maxVerifyAvgUnitGas)
 		return false
 	}
-	return true*/
+
+	logx.WithContext(ctx).Infof("Should verify blocks to l1 network, because unitGas <= maxVerifyAvgUnitGas,"+
+		"unitGas:%d, maxVerifyAvgUnitGas:%d", unitGas, maxVerifyAvgUnitGas)
+
+	return true
 }
 
 func (s *Sender) GetBlocksForVerifyAndExecute(start int64) (blocks []*block.Block, err error) {
