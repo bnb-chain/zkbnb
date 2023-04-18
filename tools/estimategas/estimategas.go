@@ -146,14 +146,14 @@ func EstimateVerifyBlockGas(ctx *svc.ServiceContext, cli *rpc.ProviderClient, zk
 			return fmt.Errorf("unable to convert blocks to commit block infos: %v", err)
 		}
 
-		blockProofs, err := ctx.ProofModel.GetProofsBetween(blocks[0].BlockHeight, blocks[blockCount].BlockHeight)
+		blockProofs, err := ctx.ProofModel.GetProofsBetween(blocks[0].BlockHeight, blocks[blockCount-1].BlockHeight)
 		if err != nil {
 			if err == types.DbErrNotFound {
 				return nil
 			}
 			return fmt.Errorf("unable to get proofs, err: %v", err)
 		}
-		if len(blockProofs) != len(blocks) {
+		if len(blockProofs) != len(blocks[0:blockCount]) {
 			return types.AppErrRelatedProofsNotReady
 		}
 		// add sanity check
