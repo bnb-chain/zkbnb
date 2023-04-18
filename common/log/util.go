@@ -16,11 +16,13 @@ const (
 
 func UpdateCtxWithKV(ctx context.Context, keyValues ...interface{}) context.Context {
 	if len(keyValues)%2 != 0 {
-		logx.Error("UpdateCtxWithKV: odd number of arguments, context won't be updated")
 		return ctx
 	}
 	for i := 0; i < len(keyValues); i += 2 {
-		ctx = logx.ContextWithFields(ctx, logx.Field(keyValues[i].(string), keyValues[i+1]))
+		key, ok := keyValues[i].(string)
+		if ok {
+			ctx = logx.ContextWithFields(ctx, logx.Field(key, keyValues[i+1]))
+		}
 	}
 	return ctx
 }
@@ -28,11 +30,13 @@ func UpdateCtxWithKV(ctx context.Context, keyValues ...interface{}) context.Cont
 func NewCtxWithKV(keyValues ...interface{}) context.Context {
 	ctx := context.Background()
 	if len(keyValues)%2 != 0 {
-		logx.Error("NewCtxWithKV: odd number of arguments, context won't be updated")
 		return ctx
 	}
 	for i := 0; i < len(keyValues); i += 2 {
-		ctx = logx.ContextWithFields(ctx, logx.Field(keyValues[i].(string), keyValues[i+1]))
+		key, ok := keyValues[i].(string)
+		if ok {
+			ctx = logx.ContextWithFields(ctx, logx.Field(key, keyValues[i+1]))
+		}
 	}
 	return ctx
 }
