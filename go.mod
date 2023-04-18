@@ -4,8 +4,10 @@ go 1.18
 
 require (
 	github.com/apolloconfig/agollo/v4 v4.2.1
+	github.com/aws/aws-sdk-go-v2 v1.17.8
 	github.com/aws/aws-sdk-go-v2/config v1.18.15
 	github.com/aws/aws-sdk-go-v2/service/kms v1.20.7
+	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.19.3
 	github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/gin-gonic/gin v1.8.1
@@ -33,11 +35,10 @@ require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/XiaoMi/pegasus-go-client v0.0.0-20210427083443-f3b6b08bc4c2 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.17.6 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.15 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.23 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.30 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.24 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.32 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.26 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.31 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.23 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.12.4 // indirect

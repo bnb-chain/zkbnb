@@ -7,6 +7,8 @@ import (
 	"github.com/apolloconfig/agollo/v4"
 	apollo "github.com/apolloconfig/agollo/v4/env/config"
 	"github.com/apolloconfig/agollo/v4/storage"
+	"github.com/bnb-chain/zkbnb/common/secret"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"gorm.io/gorm/logger"
 	"os"
@@ -59,6 +61,9 @@ func InitCommonConfig() (*CommonConfig, error) {
 }
 
 func LoadApolloConfigFromEnvironment(appId, namespace, configKey string) (string, error) {
+
+	secretString := secret.LoadSecretString("zkbnb-qa-pgsql")
+	logx.Infof("pgsql database connection:", secretString)
 
 	// Initiate the apollo client instance for apollo configuration operation
 	apolloClient, err := InitApolloClientInstance(appId, namespace)
