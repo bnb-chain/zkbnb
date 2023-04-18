@@ -235,7 +235,7 @@ func EstimateVerifyBlockGas(ctx *svc.ServiceContext, cli *rpc.ProviderClient, zk
 		return fmt.Errorf("failed to get compress block err: %v", err)
 	}
 
-	blocks, err := ctx.BlockModel.GetPendingBlocksBetween(fromHeight,
+	blocks, err := ctx.BlockModel.GetPendingBlocksBetweenWithoutTx(fromHeight,
 		toHeight)
 	if err != nil && err != types.DbErrNotFound {
 		return fmt.Errorf("unable to get blocks, err: %v", err)
@@ -308,7 +308,7 @@ func VerifyBlocks(ctx *svc.ServiceContext, cli *rpc.ProviderClient, zkBNBClient 
 		return fmt.Errorf("failed to get compress block err: %v", err)
 	}
 
-	blocks, err := ctx.BlockModel.GetPendingBlocksBetween(fromHeight,
+	blocks, err := ctx.BlockModel.GetPendingBlocksBetweenWithoutTx(fromHeight,
 		toHeight)
 	if err != nil && err != types.DbErrNotFound {
 		return fmt.Errorf("unable to get blocks, err: %v", err)
