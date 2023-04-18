@@ -19,7 +19,6 @@ package sender
 import (
 	"encoding/json"
 	"github.com/bnb-chain/zkbnb/common/log"
-	"github.com/bnb-chain/zkbnb/dao/tx"
 	"math/big"
 	"sort"
 	"strings"
@@ -74,7 +73,7 @@ func defaultBlockHeader() zkbnb.StorageStoredBlockInfo {
 	}
 }
 
-func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.CompressedBlock, txModel tx.TxModel) (commitBlocks []zkbnb.ZkBNBCommitBlockInfo, err error) {
+func (s *Sender) ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.CompressedBlock) (commitBlocks []zkbnb.ZkBNBCommitBlockInfo, err error) {
 	for _, oBlock := range oBlocks {
 		var newStateRoot [32]byte
 		var pubDataOffsets []uint32
@@ -85,7 +84,7 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.Compres
 			logx.WithContext(ctx).Errorf("[ConvertBlocksForCommitToCommitBlockInfos] unable to unmarshal: %s", err.Error())
 			return nil, err
 		}
-		txList, err := txModel.GetOnChainTxsByHeight(oBlock.BlockHeight)
+		txList, err := s.txModel.GetOnChainTxsByHeight(oBlock.BlockHeight)
 		if err != nil {
 			logx.WithContext(ctx).Errorf("get on chain txs by height failed: %s", err.Error())
 			return nil, err
