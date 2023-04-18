@@ -24,6 +24,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/bnb-chain/zkbnb/common/log"
 	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/dgraph-io/ristretto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/shopspring/decimal"
@@ -109,7 +110,8 @@ var (
 )
 
 type Sender struct {
-	config sconfig.Config
+	config  sconfig.Config
+	goCache *ristretto.Cache
 
 	// Client
 	client             *rpc.ProviderClient
@@ -145,8 +147,27 @@ func NewSender(c sconfig.Config) *Sender {
 		c.ChainConfig.MaxGasPriceIncreasePercentage = 50
 	}
 
+	cache, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1000000,
+		MaxCost:     100000,
+		BufferItems: 64, // official recommended value
+
+		// Called when setting cost to 0 in `Set/SetWithTTL`
+		Cost: func(value interface{}) int64 {
+			return 1
+		},
+		OnEvict: func(item *ristretto.Item) {
+			//logx.Infof("OnEvict %d, %d, %v, %v", item.Key, item.Cost, item.Value, item.Expiration)
+		},
+	})
+	if err != nil {
+		logx.Severe("MemCache init failed")
+		panic("MemCache init failed")
+	}
+
 	s := &Sender{
 		config:               c,
+		goCache:              cache,
 		db:                   db,
 		blockModel:           block.NewBlockModel(db),
 		compressedBlockModel: compressedblock.NewCompressedBlockModel(db),
@@ -466,12 +487,24 @@ func (s *Sender) UpdateSentTxs() (err error) {
 		}
 		if receipt.Status == 0 {
 			// Should direct mark tx deleted
-			logx.Infof("delete timeout l1 rollup tx, tx_hash=%s", pendingTx.L1TxHash)
-			//nolint:errcheck
-			s.l1RollupTxModel.DeleteL1RollupTx(pendingTx)
 			l1ExceptionSenderMetric.Set(float64(pendingTx.L2BlockHeight))
-			// It is critical to have any failed transactions
-			logx.Severef("unexpected failed tx: %v", txHash)
+			logx.Severef("Transaction failed to execute on L1: %v", txHash)
+			cacheKey := fmt.Sprintf("%s-%d-%d", SentBlockToL1ErrorPrefix, pendingTx.TxType, pendingTx.L2BlockHeight)
+			retryCount := int64(0)
+			cacheValue, found := s.goCache.Get(cacheKey)
+			if found {
+				retryCount = cacheValue.(int64)
+				if retryCount > 5 {
+					logx.Severef("Commit to L1 has been retried %d times, no more retries,txHash=%s,L2BlockHeight=%d", retryCount, txHash, pendingTx.L2BlockHeight)
+					continue
+				}
+				s.goCache.SetWithTTL(cacheKey, retryCount+1, 0, time.Minute*30)
+			} else {
+				s.goCache.SetWithTTL(cacheKey, 1, 0, time.Minute*30)
+			}
+			logx.Infof("Commit to L1 has been retried %d times,txHash=%s,L2BlockHeight=%d", retryCount, txHash, pendingTx.L2BlockHeight)
+			logx.Infof("delete timeout l1 rollup tx, tx_hash=%s", pendingTx.L1TxHash)
+			s.l1RollupTxModel.DeleteL1RollupTx(pendingTx)
 			continue
 		}
 		l2MaxWaitingTimeMetric.Set(float64(0))
