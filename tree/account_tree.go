@@ -56,7 +56,7 @@ func InitAccountTree(
 	accountTree bsmt.SparseMerkleTree, accountAssetTrees *AssetTreeCache, err error,
 ) {
 	var maxAccountIndex int64
-	ctxLog := log.NewCtxWithKV(ctx, log.BlockHeightContext, blockHeight)
+	ctxLog := log.NewCtxWithKV(log.BlockHeightContext, blockHeight)
 	if fromHistory {
 		maxAccountIndex, err = accountHistoryModel.GetMaxAccountIndex(blockHeight)
 		if err != nil && err != types.DbErrNotFound {
