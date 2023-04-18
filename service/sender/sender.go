@@ -16,12 +16,17 @@ const GracefulShutdownTimeout = 10 * time.Second
 
 func Run(configFile string) error {
 	var c config.Config
+	if err := config.InitSystemConfiguration(&c, configFile); err != nil {
+		logx.Severef("failed to initiate system configuration, %v", err)
+		panic("failed to initiate system configuration, err:" + err.Error())
+	}
+
 	conf.MustLoad(configFile, &c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
 	//Initiate the apollo configuration
-	config.InitApolloConfiguration(c)
+	config.InitSenderConfiguration(c)
 	//Initiate the Prometheus Monitor Facility
 	sender.InitPrometheusFacility()
 

@@ -3,9 +3,13 @@ package permctrl
 import (
 	"encoding/json"
 	"github.com/apolloconfig/agollo/v4"
-	apollo "github.com/apolloconfig/agollo/v4/env/config"
-	"github.com/bnb-chain/zkbnb/service/apiserver/internal/config"
+	"github.com/bnb-chain/zkbnb/common/apollo"
 	"github.com/zeromicro/go-zero/core/logx"
+)
+
+const (
+	ApiServerAppId = "zkbnb-apiserver"
+	Namespace      = "application"
 )
 
 const (
@@ -22,6 +26,7 @@ var permissionControlConfig *PermissionControlConfig
 // Apollo client to get the permission control configuration
 // so that it could be updated it from the apollo server side
 var apolloClient agollo.Client
+var permControlUpdater = &PermControlUpdater{}
 
 type PermissionControlItem struct {
 	PermissionControlType string
@@ -35,10 +40,6 @@ type PermissionControlConfig struct {
 	TxTypePermissionControlConfigItemMap map[uint32]PermissionControlItem
 }
 
-func (c *PermissionControlConfig) ValidatePermissionControlConfig() error {
-	return nil
-}
-
 func (c *PermissionControlConfig) GetPermissionControlConfigItem(txType uint32) PermissionControlItem {
 	if item, ok := c.TxTypePermissionControlConfigItemMap[txType]; ok {
 		return item
@@ -47,44 +48,26 @@ func (c *PermissionControlConfig) GetPermissionControlConfigItem(txType uint32) 
 	}
 }
 
-func InitPermissionControl(config config.Config) {
+func InitPermissionControl() {
 	// Get the permission control configuration from the Apollo server
-	permissionControlConfig = LoadApolloPermissionControlConfig(config)
+	permissionControlConfig = LoadApolloPermissionControlConfig()
 	logx.Infof("Initiate Permission Control Facility Successfully!")
 }
 
-func LoadApolloPermissionControlConfig(config config.Config) *PermissionControlConfig {
+func LoadApolloPermissionControlConfig() *PermissionControlConfig {
 
-	apolloConfig := &apollo.AppConfig{
-		AppID:          config.Apollo.AppID,
-		Cluster:        config.Apollo.Cluster,
-		IP:             config.Apollo.ApolloIp,
-		NamespaceName:  config.Apollo.Namespace,
-		IsBackupConfig: config.Apollo.IsBackupConfig,
-	}
+	//Add the apollo configuration updater listener for PermissionConfig
+	apollo.AddChangeListener(ApiServerAppId, Namespace, permControlUpdater)
 
-	client, err := agollo.StartWithConfig(func() (*apollo.AppConfig, error) {
-		return apolloConfig, nil
-	})
+	permissionControlConfig := &PermissionControlConfig{}
+	permissionControlConfigString, err := apollo.LoadApolloConfigFromEnvironment(ApiServerAppId, Namespace, PermissionControlConfigKey)
 	if err != nil {
-		logx.Severef("Fail to start Apollo Client in Permission Control Configuration, Reason:%s", err.Error())
-		panic("Fail to start Apollo Client in Permission Control Configuration!")
-	}
+		// If fails to initiate permission control config from apollo, directly switch this off
+		logx.Severef("Fail to Initiate PermissionControlConfig from the apollo server!")
+		permissionControlConfig.SwitchPermissionControlConfig = false
+	} else {
 
-	apolloClient = client
-
-	permControlUpdater := &PermControlUpdater{}
-	apolloClient.AddChangeListener(permControlUpdater)
-
-	apolloCache := apolloClient.GetConfigCache(apolloConfig.NamespaceName)
-	permissionControlConfigObject, err := apolloCache.Get(PermissionControlConfigKey)
-	if err != nil {
-		logx.Severef("Fail to get PermissionControlConfig from the apollo server, Reason:%s", err.Error())
-		panic("Fail to get PermissionControlConfig from the apollo server!")
-	}
-	if permissionControlConfigString, ok := permissionControlConfigObject.(string); ok {
-		permissionControlConfig := &PermissionControlConfig{}
-		err := json.Unmarshal([]byte(permissionControlConfigString), permissionControlConfig)
+		err = json.Unmarshal([]byte(permissionControlConfigString), permissionControlConfig)
 		if err != nil {
 			logx.Severef("Fail to unmarshal PermissionControlConfig from the apollo server, Reason:%s", err.Error())
 			panic("Fail to unmarshal PermissionControlConfig from the apollo server!")
@@ -96,9 +79,10 @@ func LoadApolloPermissionControlConfig(config config.Config) *PermissionControlC
 		}
 
 		logx.Info("Load PermissionControlConfig Successfully!")
-		return permissionControlConfig
-	} else {
-		logx.Severef("Fail to Initiate PermissionControlConfig from the apollo server!")
-		panic("Fail to Initiate PermissionControlConfig from the apollo server!")
 	}
+	return permissionControlConfig
+}
+
+func (c *PermissionControlConfig) ValidatePermissionControlConfig() error {
+	return nil
 }

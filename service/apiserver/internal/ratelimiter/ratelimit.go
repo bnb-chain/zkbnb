@@ -2,7 +2,6 @@ package ratelimiter
 
 import (
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/cache"
-	"github.com/bnb-chain/zkbnb/service/apiserver/internal/config"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 	"github.com/shirou/gopsutil/host"
@@ -72,11 +71,11 @@ func RateLimitHandler(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func InitRateLimitControl(svcCtx *svc.ServiceContext, config config.Config) {
+func InitRateLimitControl(svcCtx *svc.ServiceContext) {
 
 	memCache = svcCtx.MemCache
 	localhostID = InitLocalhostConfiguration()
-	rateLimitConfig := LoadApolloRateLimitConfig(config)
+	rateLimitConfig := LoadApolloRateLimitConfig()
 
 	RefreshRateLimitControl(rateLimitConfig)
 

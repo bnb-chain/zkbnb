@@ -2,6 +2,7 @@ package apiserver
 
 import (
 	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/config"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/logic/info"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/permctrl"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/ratelimiter"
@@ -9,7 +10,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 	"github.com/zeromicro/go-zero/rest"
@@ -19,7 +19,6 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	swagger "github.com/swaggo/gin-swagger"
 
-	"github.com/bnb-chain/zkbnb/service/apiserver/internal/config"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/handler"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 )
@@ -27,13 +26,13 @@ import (
 const GracefulShutdownTimeout = 5 * time.Second
 
 func Run(configFile string) error {
-	var c config.Config
-	conf.MustLoad(configFile, &c)
-	logx.MustSetup(c.LogConf)
-	logx.DisableStat()
+	c := config.Config{}
+	if err := config.InitSystemConfiguration(&c, configFile); err != nil {
+		logx.Severef("failed to initiate system configuration, %v", err)
+		panic("failed to initiate system configuration, err:" + err.Error())
+	}
 
 	ctx := svc.NewServiceContext(c)
-
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
@@ -95,14 +94,14 @@ func Run(configFile string) error {
 
 	// Initiate the rate limit control
 	// configuration from Apollo server side
-	ratelimiter.InitRateLimitControl(ctx, c)
+	ratelimiter.InitRateLimitControl(ctx)
 
 	// Add the rate limit control handler
 	server.Use(ratelimiter.RateLimitHandler)
 
 	// Initiate the permission control
 	// configuration from Apollo server side
-	permctrl.InitPermissionControl(c)
+	permctrl.InitPermissionControl()
 
 	// Register the server and the context
 	handler.RegisterHandlers(server, ctx)
