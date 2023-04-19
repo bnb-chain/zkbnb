@@ -97,6 +97,8 @@ func LoadPostgresqlConfig() (*Postgres, error) {
 		return nil, err
 	}
 
+	logx.Infof("masterDataMap:%v", masterDataMap)
+
 	masterUsername := masterDataMap[Username]
 	masterPassword := masterDataMap[Password]
 	masterEngine := masterDataMap[Engine]
@@ -115,6 +117,9 @@ func LoadPostgresqlConfig() (*Postgres, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	logx.Infof("slaveDataMap:%v", slaveDataMap)
+
 	slaveUsername := slaveDataMap[Username]
 	slavePassword := slaveDataMap[Password]
 	slaveEngine := slaveDataMap[Engine]
