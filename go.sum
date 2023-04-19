@@ -46,8 +46,8 @@ github.com/15000785133/zkbnb-crypto v0.0.8-0.20230419115132-7064c667baff h1:UYKt
 github.com/15000785133/zkbnb-crypto v0.0.8-0.20230419115132-7064c667baff/go.mod h1:zlXAUvsxBUJ9Le9z5xdqG9Ubrxs26hnNSW4Q+8WFd00=
 github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230403192823-23498c95979c h1:ZAVls5ZjnEoVBUJFtngL5O3Qmf6VxqWbHv46bZgFkZY=
 github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230403192823-23498c95979c/go.mod h1:zZ9uTj1GJOc5OxgojQbA8TZjEQhESUnp4MEWOYk/OVs=
-github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230414130144-12584462b5e2 h1:LrM48BL7hBaa1v3EXobSy45u8h4eucQaeFB2i1v8Yyk=
-github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230414130144-12584462b5e2/go.mod h1:lObhuvNHXlKdyhWStTX8K20AO+lzbRifBe76IwQBqic=
+github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230419121257-8a1ad12ef62f h1:LAfPZib6KjAXWwpxTonFW9KXNvnYITSK/K44X8eVqPc=
+github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230419121257-8a1ad12ef62f/go.mod h1:D2AHcZZV+t5mx0yYZ3Rp88Ly8Gzon+Yq/dk69xccnqk=
 github.com/AndreasBriese/bbloom v0.0.0-20190306092124-e2d15f34fcf9/go.mod h1:bOvUY6CB00SOBii9/FifXqc0awNKxLFCL/+pkDPuyl8=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v0.21.1/go.mod h1:fBF9PQNqB8scdgpZ3ufzaLntG0AG7C1WjPMsiFOmfHM=
 github.com/Azure/azure-sdk-for-go/sdk/internal v0.8.3/go.mod h1:KLF4gFr6DcKFZwSuH8w8yEK6DpFl3LP5rhdvAb7Yz5I=
