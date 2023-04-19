@@ -78,15 +78,19 @@ func InitRateLimitControl(svcCtx *svc.ServiceContext) {
 	rateLimitConfig := LoadApolloRateLimitConfig()
 
 	RefreshRateLimitControl(rateLimitConfig)
-
-	logx.Info("Initiate RateLimit Control Facility Successfully!")
 }
 
 func RefreshRateLimitControl(rateLimitConfig *RateLimitConfig) {
-	redisInstance = InitRateLimitRedisInstance(rateLimitConfig.RedisConfig.Address)
+	if rateLimitConfig.RateLimitSwitch {
+		redisInstance = InitRateLimitRedisInstance(rateLimitConfig.RedisConfig.Address)
 
-	periodRateLimiter = InitRateLimitControlByPeriod(localhostID, rateLimitConfig, redisInstance)
-	tokenRateLimiter = InitRateLimitControlByToken(localhostID, rateLimitConfig, redisInstance)
+		periodRateLimiter = InitRateLimitControlByPeriod(localhostID, rateLimitConfig, redisInstance)
+		tokenRateLimiter = InitRateLimitControlByToken(localhostID, rateLimitConfig, redisInstance)
+
+		logx.Info("Initiate RateLimit Control Facility Successfully!")
+	} else {
+		logx.Info("RateLimitSwitch is Off, Do Not Initiate RateLimit Control Facility!")
+	}
 }
 
 func InitLocalhostConfiguration() string {
