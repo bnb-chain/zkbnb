@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 	"os"
 )
@@ -35,8 +36,12 @@ func LoadSecretData(secretName string) (map[string]string, error) {
 	}
 
 	resultMap := make(map[string]string)
-	err = json.Unmarshal(result.SecretBinary, &resultMap)
+	secretBytes := []byte(*result.SecretString)
+	err = json.Unmarshal(secretBytes, &resultMap)
 	if err != nil {
+
+		logx.Errorf("result.SecretString:%s", *result.SecretString)
+
 		return nil, err
 	}
 
