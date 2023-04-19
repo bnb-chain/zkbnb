@@ -8,6 +8,7 @@ import (
 	apollo "github.com/apolloconfig/agollo/v4/env/config"
 	"github.com/apolloconfig/agollo/v4/storage"
 	"github.com/bnb-chain/zkbnb/common/secret"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"gorm.io/gorm/logger"
 	"os"
@@ -121,6 +122,8 @@ func LoadPostgresqlConfig() (*Postgres, error) {
 	}
 	slaveConnectionString := fmt.Sprintf(DBConnectionFormat, slaveHost, slaveUsername, slavePassword, slaveDbname, slavePort)
 	postgres.SlaveDataSource = slaveConnectionString
+
+	logx.Info("Load Postgresql database connection configuration from the secret manager successfully")
 
 	return postgres, nil
 }
