@@ -141,4 +141,9 @@ var (
 		Usage: "maxBlockCount",
 		Value: 0,
 	}
+	SendToL1Flag = &cli.Int64Flag{
+		Name:  "sendToL1",
+		Usage: "sendToL1",
+		Value: 0,
+	}
 )

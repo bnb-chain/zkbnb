@@ -324,6 +324,7 @@ func main() {
 					flags.EstimateGasFromHeightFlag,
 					flags.EstimateGasToHeightFlag,
 					flags.EstimateGasMaxBlockCountFlag,
+					flags.SendToL1Flag,
 				},
 				Action: func(cCtx *cli.Context) error {
 					if !cCtx.IsSet(flags.EstimateGasFromHeightFlag.Name) {
@@ -338,10 +339,19 @@ func main() {
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
+
 					err := estimategas.EstimateGas(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.EstimateGasFromHeightFlag.Name), cCtx.Int64(flags.EstimateGasToHeightFlag.Name), cCtx.Int64(flags.EstimateGasMaxBlockCountFlag.Name))
 					if err != nil {
 						logx.Severe(err)
 						return err
+					}
+
+					if cCtx.Int64(flags.SendToL1Flag.Name) > 0 {
+						err := estimategas.Send(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.EstimateGasFromHeightFlag.Name), cCtx.Int64(flags.EstimateGasToHeightFlag.Name), cCtx.Int64(flags.SendToL1Flag.Name))
+						if err != nil {
+							logx.Severe(err)
+							return err
+						}
 					}
 					return nil
 				},

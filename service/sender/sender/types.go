@@ -40,6 +40,7 @@ import (
 const (
 	EventNameBlockCommit       = "BlockCommit"
 	EventNameBlockVerification = "BlockVerification"
+	SentBlockToL1ErrorPrefix   = "SentBlockToL1ErrorPrefix" // key for cache: SentBlockToL1ErrorPrefix
 )
 
 var (
