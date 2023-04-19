@@ -47,6 +47,12 @@ func NewFullExitNftExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxE
 	}, nil
 }
 
+func (e *FullExitNftExecutor) PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	txInfo := e.TxInfo
+	accountIndexMap[txInfo.AccountIndex] = true
+	nftIndexMap[txInfo.NftIndex] = true
+}
+
 func (e *FullExitNftExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo

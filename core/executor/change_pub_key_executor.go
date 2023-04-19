@@ -42,6 +42,12 @@ func NewChangePubKeyExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (Tx
 	}, nil
 }
 
+func (e *ChangePubKeyExecutor) PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	txInfo := e.TxInfo
+	accountIndexMap[txInfo.AccountIndex] = true
+	accountIndexMap[txInfo.GasAccountIndex] = true
+}
+
 func (e *ChangePubKeyExecutor) Prepare() error {
 	txInfo := e.TxInfo
 

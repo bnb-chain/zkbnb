@@ -15,10 +15,12 @@ import (
 )
 
 type Processor interface {
+	PreProcess(tx *tx.Tx, accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool)
 	Process(tx *tx.Tx) error
 }
 
 type ProcessorForDesert interface {
+	PreProcess(txInfo txtypes.TxInfo, accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool)
 	Process(txInfo txtypes.TxInfo) error
 }
 
@@ -29,6 +31,13 @@ type CommitProcessor struct {
 func NewCommitProcessor(bc *BlockChain) Processor {
 	return &CommitProcessor{
 		bc: bc,
+	}
+}
+
+func (p *CommitProcessor) PreProcess(tx *tx.Tx, accountMap map[int64]bool, nftMap map[int64]bool, addressMap map[string]bool) {
+	executor, err := executor.NewTxExecutor(p.bc, tx)
+	if err == nil {
+		executor.PreLoadAccountAndNft(accountMap, nftMap, addressMap)
 	}
 }
 
@@ -121,6 +130,9 @@ func NewDesertProcessor(bc *BlockChain) ProcessorForDesert {
 	}
 }
 
+func (p *APIProcessor) PreProcess(tx *tx.Tx, accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+}
+
 func (p *APIProcessor) Process(tx *tx.Tx) error {
 	executor, err := executor.NewTxExecutor(p.bc, tx)
 	if err != nil {
@@ -142,6 +154,13 @@ func (p *APIProcessor) Process(tx *tx.Tx) error {
 		return mappingExecutedErrors(err)
 	}
 	return nil
+}
+
+func (p *DesertProcessor) PreProcess(txInfo txtypes.TxInfo, accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	executor, err := executor.NewTxExecutorForDesert(p.bc, txInfo)
+	if err == nil {
+		executor.PreLoadAccountAndNft(accountIndexMap, nftIndexMap, addressMap)
+	}
 }
 
 func (p *DesertProcessor) Process(txInfo txtypes.TxInfo) error {

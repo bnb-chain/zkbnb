@@ -20,6 +20,7 @@ type IBlockchain interface {
 }
 
 type TxExecutor interface {
+	PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool)
 	Prepare() error
 	VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 	ApplyTransaction() error

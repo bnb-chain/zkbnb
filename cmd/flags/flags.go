@@ -126,4 +126,19 @@ var (
 		Usage: "height",
 		Value: 0,
 	}
+	EstimateGasFromHeightFlag = &cli.Int64Flag{
+		Name:  "fromHeight",
+		Usage: "fromHeight",
+		Value: 0,
+	}
+	EstimateGasToHeightFlag = &cli.Int64Flag{
+		Name:  "toHeight",
+		Usage: "toHeight",
+		Value: 0,
+	}
+	EstimateGasMaxBlockCountFlag = &cli.Int64Flag{
+		Name:  "maxBlockCount",
+		Usage: "maxBlockCount",
+		Value: 0,
+	}
 )

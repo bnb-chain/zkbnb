@@ -701,7 +701,7 @@ func (s *Sender) PrepareLastHandledTx(txType int64) (*l1rolluptx.L1RollupTx, err
 
 func (s *Sender) PrepareLastStoredBlockInfo(lastHandledTx *l1rolluptx.L1RollupTx) (zkbnb.StorageStoredBlockInfo, error) {
 	// get last block info
-	lastStoredBlockInfo := defaultBlockHeader()
+	lastStoredBlockInfo := DefaultBlockHeader()
 	if lastHandledTx != nil {
 		lastHandledBlockInfo, err := s.blockModel.GetBlockByHeight(lastHandledTx.L2BlockHeight)
 		if err != nil {

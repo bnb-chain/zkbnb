@@ -41,6 +41,13 @@ func NewMintNftExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecu
 	}, nil
 }
 
+func (e *MintNftExecutor) PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	txInfo := e.TxInfo
+	accountIndexMap[txInfo.CreatorAccountIndex] = true
+	accountIndexMap[txInfo.GasAccountIndex] = true
+	addressMap[txInfo.ToL1Address] = true
+}
+
 func (e *MintNftExecutor) Prepare() error {
 	txInfo := e.TxInfo
 	if !e.isDesertExit {

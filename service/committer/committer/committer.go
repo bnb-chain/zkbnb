@@ -285,6 +285,7 @@ func (c *Committer) executeTxFunc() error {
 			subPendingTxs = nil
 		} else {
 			pendingTxs = c.getPoolTxsFromQueue()
+			//c.preLoadAccountAndNft(pendingTxs)
 		}
 
 		for len(pendingTxs) == 0 {
@@ -298,6 +299,7 @@ func (c *Committer) executeTxFunc() error {
 
 			time.Sleep(100 * time.Millisecond)
 			pendingTxs = c.getPoolTxsFromQueue()
+			//c.preLoadAccountAndNft(pendingTxs)
 		}
 
 		pendingDeletePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
@@ -1100,25 +1102,15 @@ func (c *Committer) createNewBlock(curBlock *block.Block) error {
 
 func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 	//After the rollback, re-execute tx and form a block  based on the block size,because curBlock.CreatedAt does not change
-	/*if c.bc.Statedb.NeedRestoreExecutedTxs() {
+	if c.bc.Statedb.NeedRestoreExecutedTxs() {
 		if len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
 			return true
 		}
 		return false
-	}*/
-
+	}
 	var now = time.Now()
-	if len(c.bc.Statedb.Txs) > 0 && now.Unix()-curBlock.CreatedAt.Unix() >= int64(c.maxCommitterInterval) {
-		return true
-	}
-
-	txCountLimitPerBlock := c.maxTxsPerBlock/2 + 1
-	if c.maxTxsPerBlock == 8 {
-		txCountLimitPerBlock = 1
-	}
-
-	logx.Infof("Txs count is:%d and txCountLimitPerBlock is:%d", len(c.bc.Statedb.Txs), txCountLimitPerBlock)
-	if len(c.bc.Statedb.Txs) >= txCountLimitPerBlock {
+	if (len(c.bc.Statedb.Txs) > 0 && now.Unix()-curBlock.CreatedAt.Unix() >= int64(c.maxCommitterInterval)) ||
+		len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
 		return true
 	}
 
@@ -1152,6 +1144,16 @@ func (c *Committer) getLatestExecutedRequestId() (int64, error) {
 		return -1, nil
 	}
 	return latestTx.L1RequestId, nil
+}
+
+func (c *Committer) preLoadAccountAndNft(txs []*tx.Tx) {
+	var accountIndexMap map[int64]bool
+	var nftIndexMap map[int64]bool
+	var addressMap map[string]bool
+	for _, poolTx := range txs {
+		c.bc.PreApplyTransaction(poolTx, accountIndexMap, nftIndexMap, addressMap)
+	}
+	c.bc.Statedb.PreLoadAccountAndNft(accountIndexMap, nftIndexMap, addressMap)
 }
 
 func (c *Committer) PendingTxNum() {
