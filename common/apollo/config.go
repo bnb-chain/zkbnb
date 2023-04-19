@@ -63,7 +63,7 @@ func InitCommonConfig() (*CommonConfig, error) {
 func LoadApolloConfigFromEnvironment(appId, namespace, configKey string) (string, error) {
 
 	secretString := secret.LoadSecretString("zkbnb-qa-pgsql")
-	logx.Infof("pgsql database connection:", secretString)
+	logx.Infof("pgsql database connection:%s", secretString)
 
 	// Initiate the apollo client instance for apollo configuration operation
 	apolloClient, err := InitApolloClientInstance(appId, namespace)
