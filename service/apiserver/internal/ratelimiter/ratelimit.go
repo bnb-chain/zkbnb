@@ -28,6 +28,8 @@ var localhostID string
 var redisInstance *redis.Redis
 var memCache *cache.MemCache
 
+var rateLimitConfig *RateLimitConfig
+
 var periodRateLimiter *PeriodRateLimiter
 var tokenRateLimiter *TokenRateLimiter
 
@@ -40,6 +42,13 @@ type RateLimitController func(*RateLimitParam, RateLimitController) error
 
 func RateLimitHandler(next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
+
+		// If rateLimitConfig has not been set or RateLimitSwitch has been set to false
+		// Do not perform any rate limit control and do the following process directly
+		if rateLimitConfig == nil || !rateLimitConfig.RateLimitSwitch {
+			next(writer, request)
+			return
+		}
 
 		// Parse the form before reading the parameter
 		request.ParseForm()
@@ -75,12 +84,13 @@ func InitRateLimitControl(svcCtx *svc.ServiceContext) {
 
 	memCache = svcCtx.MemCache
 	localhostID = InitLocalhostConfiguration()
-	rateLimitConfig := LoadApolloRateLimitConfig()
+	newRateLimitConfig := LoadApolloRateLimitConfig()
 
-	RefreshRateLimitControl(rateLimitConfig)
+	RefreshRateLimitControl(newRateLimitConfig)
 }
 
-func RefreshRateLimitControl(rateLimitConfig *RateLimitConfig) {
+func RefreshRateLimitControl(newRateLimitConfig *RateLimitConfig) {
+	rateLimitConfig = newRateLimitConfig
 	if rateLimitConfig.RateLimitSwitch {
 		redisInstance = InitRateLimitRedisInstance(rateLimitConfig.RedisConfig.Address)
 
