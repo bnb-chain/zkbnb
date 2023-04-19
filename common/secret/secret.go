@@ -6,14 +6,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
-	"github.com/zeromicro/go-zero/core/logx"
-	"log"
 	"os"
 )
 
 const (
-	DefaultVersionStage = "AWSCURRENT"
-	AwsRegion           = "AWS_REGION"
+	VersionStage = "AWSCURRENT"
+	AwsRegion    = "AWS_REGION"
 )
 
 func LoadSecretData(secretName string) (map[string]string, error) {
@@ -21,13 +19,13 @@ func LoadSecretData(secretName string) (map[string]string, error) {
 	awsRegion := os.Getenv(AwsRegion)
 	config, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(awsRegion))
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	secretManager := secretsmanager.NewFromConfig(config)
 	input := &secretsmanager.GetSecretValueInput{
 		SecretId:     aws.String(secretName),
-		VersionStage: aws.String(DefaultVersionStage),
+		VersionStage: aws.String(VersionStage),
 	}
 
 	result, err := secretManager.GetSecretValue(context.TODO(), input)
@@ -39,12 +37,7 @@ func LoadSecretData(secretName string) (map[string]string, error) {
 	secretBytes := []byte(*result.SecretString)
 	err = json.Unmarshal(secretBytes, &resultMap)
 
-	logx.Errorf("result.SecretString:%s", *result.SecretString)
-
 	if err != nil {
-
-		logx.Errorf("result.SecretString:%s, err:%v", *result.SecretString, err)
-
 		return nil, err
 	}
 

@@ -66,18 +66,12 @@ func InitCommonConfig() (*CommonConfig, error) {
 		commonConfig := &CommonConfig{}
 		err := json.Unmarshal([]byte(commonConfigString), commonConfig)
 		if err != nil {
-
-			logx.Errorf("Load Common Configuration raise err:%v", err)
-
 			return nil, err
 		}
 
 		// Load the postgresql connection parameter from the secret manager
 		postgresql, err := LoadPostgresqlConfig()
 		if err != nil {
-
-			logx.Errorf("LoadPostgresqlConfig raise err:%v", err)
-
 			return nil, err
 		}
 		commonConfig.Postgres.MasterDataSource = postgresql.MasterDataSource
@@ -97,8 +91,6 @@ func LoadPostgresqlConfig() (*Postgres, error) {
 		return nil, err
 	}
 
-	logx.Infof("masterDataMap:%v", masterDataMap)
-
 	masterUsername := masterDataMap[Username]
 	masterPassword := masterDataMap[Password]
 	masterEngine := masterDataMap[Engine]
@@ -117,8 +109,6 @@ func LoadPostgresqlConfig() (*Postgres, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	logx.Infof("slaveDataMap:%v", slaveDataMap)
 
 	slaveUsername := slaveDataMap[Username]
 	slavePassword := slaveDataMap[Password]
