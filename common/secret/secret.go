@@ -38,9 +38,12 @@ func LoadSecretData(secretName string) (map[string]string, error) {
 	resultMap := make(map[string]string)
 	secretBytes := []byte(*result.SecretString)
 	err = json.Unmarshal(secretBytes, &resultMap)
+
+	logx.Errorf("result.SecretString:%s", *result.SecretString)
+
 	if err != nil {
 
-		logx.Errorf("result.SecretString:%s", *result.SecretString)
+		logx.Errorf("result.SecretString:%s, err:%v", *result.SecretString, err)
 
 		return nil, err
 	}
