@@ -63,18 +63,18 @@ func LoadApolloPermissionControlConfig() *PermissionControlConfig {
 	permissionControlConfigString, err := apollo.LoadApolloConfigFromEnvironment(ApiServerAppId, Namespace, PermissionControlConfigKey)
 	if err != nil {
 		// If fails to initiate permission control config from apollo, directly switch this off
-		logx.Severef("Fail to Initiate PermissionControlConfig from the apollo server!")
+		logx.Errorf("Fail to Initiate PermissionControlConfig from the apollo server!")
 		permissionControlConfig.SwitchPermissionControlConfig = false
 	} else {
 
 		err = json.Unmarshal([]byte(permissionControlConfigString), permissionControlConfig)
 		if err != nil {
-			logx.Severef("Fail to unmarshal PermissionControlConfig from the apollo server, Reason:%s", err.Error())
+			logx.Errorf("Fail to unmarshal PermissionControlConfig from the apollo server, Reason:%s", err.Error())
 			panic("Fail to unmarshal PermissionControlConfig from the apollo server!")
 		}
 
 		if err = permissionControlConfig.ValidatePermissionControlConfig(); err != nil {
-			logx.Severef("Fail to validate PermissionControlConfig from the apollo server, Reason:%s", err.Error())
+			logx.Errorf("Fail to validate PermissionControlConfig from the apollo server, Reason:%s", err.Error())
 			panic("Fail to validate PermissionControlConfig from the apollo server!")
 		}
 

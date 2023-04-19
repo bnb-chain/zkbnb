@@ -86,17 +86,17 @@ func LoadApolloRateLimitConfig() *RateLimitConfig {
 	rateLimitConfigString, err := apollo.LoadApolloConfigFromEnvironment(ApiServerAppId, Namespace, RateLimitConfigKey)
 	if err != nil {
 		// If fails to initiate rate limit configuration from apollo, directly switch it off
-		logx.Severef("Fail to Initiate RateLimitConfig from the apollo server!")
+		logx.Errorf("Fail to Initiate RateLimitConfig from the apollo server!")
 		rateLimitConfig.RateLimitSwitch = false
 	} else {
 		err = json.Unmarshal([]byte(rateLimitConfigString), rateLimitConfig)
 		if err != nil {
-			logx.Severef("Fail to unmarshal RateLimitConfig from the apollo server, Reason:%s", err.Error())
+			logx.Errorf("Fail to unmarshal RateLimitConfig from the apollo server, Reason:%s", err.Error())
 			panic("Fail to unmarshal RateLimitConfig from the apollo server!")
 		}
 
 		if err = rateLimitConfig.ValidateRateLimitConfig(); err != nil {
-			logx.Severef("Fail to validate RateLimitConfig from the apollo server, Reason:%s", err.Error())
+			logx.Errorf("Fail to validate RateLimitConfig from the apollo server, Reason:%s", err.Error())
 			panic("Fail to validate RateLimitConfig from the apollo server!")
 		}
 
