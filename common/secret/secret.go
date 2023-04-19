@@ -2,10 +2,12 @@ package secret
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"log"
+	"os"
 )
 
 const (
@@ -13,28 +15,30 @@ const (
 	AwsRegion           = "AWS_REGION"
 )
 
-func LoadSecretString(secretName string) string {
+func LoadSecretData(secretName string) (map[string]string, error) {
 
-	config, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("ap-northeast-1"))
+	awsRegion := os.Getenv(AwsRegion)
+	config, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(awsRegion))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Create Secrets Manager client
-	svc := secretsmanager.NewFromConfig(config)
+	secretManager := secretsmanager.NewFromConfig(config)
 	input := &secretsmanager.GetSecretValueInput{
 		SecretId:     aws.String(secretName),
 		VersionStage: aws.String(DefaultVersionStage),
 	}
 
-	result, err := svc.GetSecretValue(context.TODO(), input)
+	result, err := secretManager.GetSecretValue(context.TODO(), input)
 	if err != nil {
-		// For a list of exceptions thrown, see
-		// https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
-		log.Fatal(err.Error())
+		return nil, err
 	}
 
-	// Decrypts secret using the associated KMS key.
-	var secretString = *result.SecretString
-	return secretString
+	resultMap := make(map[string]string)
+	err = json.Unmarshal(result.SecretBinary, &resultMap)
+	if err != nil {
+		return nil, err
+	}
+
+	return resultMap, nil
 }

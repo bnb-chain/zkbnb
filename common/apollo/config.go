@@ -8,7 +8,6 @@ import (
 	apollo "github.com/apolloconfig/agollo/v4/env/config"
 	"github.com/apolloconfig/agollo/v4/storage"
 	"github.com/bnb-chain/zkbnb/common/secret"
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"gorm.io/gorm/logger"
 	"os"
@@ -21,14 +20,26 @@ const (
 	CommonNamespace = "common.configuration"
 
 	CommonConfigKey = "CommonConfig"
+
+	MasterSecretKey = "MASTER_SECRET_KEY"
+	SlaveSecretKey  = "SLAVE_SECRET_KEY"
+
+	DBConnectionFormat = "host=%s user=%s password=%s dbname=%s port=%s sslmode=disable"
+
+	Username = "username"
+	Password = "password"
+	Engine   = "engine"
+	Dbname   = "dbname"
+	Host     = "host"
+	Port     = "port"
 )
 
 type Postgres struct {
-	MasterDataSource string
-	SlaveDataSource  string
+	MasterDataSource string          `json:",optional"`
+	SlaveDataSource  string          `json:",optional"`
 	LogLevel         logger.LogLevel `json:",optional"`
-	MaxIdle          int
-	MaxConn          int
+	MaxIdle          int             `json:",optional"`
+	MaxConn          int             `json:",optional"`
 }
 
 type Apollo struct {
@@ -56,15 +67,65 @@ func InitCommonConfig() (*CommonConfig, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// Load the postgresql connection parameter from the secret manager
+		postgresql, err := LoadPostgresqlConfig()
+		if err != nil {
+			return nil, err
+		}
+		commonConfig.Postgres.MasterDataSource = postgresql.MasterDataSource
+		commonConfig.Postgres.SlaveDataSource = postgresql.SlaveDataSource
+
 		return commonConfig, nil
 	}
 }
 
+func LoadPostgresqlConfig() (*Postgres, error) {
+	masterSecretKey := os.Getenv(MasterSecretKey)
+	slaveSecretKey := os.Getenv(SlaveSecretKey)
+
+	postgres := &Postgres{}
+	masterDataMap, err := secret.LoadSecretData(masterSecretKey)
+	if err != nil {
+		return nil, err
+	}
+
+	masterUsername := masterDataMap[Username]
+	masterPassword := masterDataMap[Password]
+	masterEngine := masterDataMap[Engine]
+	masterDbname := masterDataMap[Dbname]
+	masterHost := masterDataMap[Host]
+	masterPort := masterDataMap[Port]
+
+	if len(masterUsername) == 0 || len(masterPassword) == 0 || len(masterEngine) == 0 ||
+		len(masterDbname) == 0 || len(masterHost) == 0 || len(masterPort) == 0 {
+		return nil, errors.New("master datasource configuration is not correct in secret manager, please check it again")
+	}
+	masterConnectionString := fmt.Sprintf(DBConnectionFormat, masterHost, masterUsername, masterPassword, masterDbname, masterPort)
+	postgres.MasterDataSource = masterConnectionString
+
+	slaveDataMap, err := secret.LoadSecretData(slaveSecretKey)
+	if err != nil {
+		return nil, err
+	}
+	slaveUsername := slaveDataMap[Username]
+	slavePassword := slaveDataMap[Password]
+	slaveEngine := slaveDataMap[Engine]
+	slaveDbname := slaveDataMap[Dbname]
+	slaveHost := slaveDataMap[Host]
+	slavePort := slaveDataMap[Port]
+
+	if len(slaveUsername) == 0 || len(slavePassword) == 0 || len(slaveEngine) == 0 ||
+		len(slaveDbname) == 0 || len(slaveHost) == 0 || len(slavePort) == 0 {
+		return nil, errors.New("slave datasource configuration is not correct in secret manager, please check it again")
+	}
+	slaveConnectionString := fmt.Sprintf(DBConnectionFormat, slaveHost, slaveUsername, slavePassword, slaveDbname, slavePort)
+	postgres.SlaveDataSource = slaveConnectionString
+
+	return postgres, nil
+}
+
 func LoadApolloConfigFromEnvironment(appId, namespace, configKey string) (string, error) {
-
-	secretString := secret.LoadSecretString("zkbnb-qa-pgsql")
-	logx.Infof("pgsql database connection:%s", secretString)
-
 	// Initiate the apollo client instance for apollo configuration operation
 	apolloClient, err := InitApolloClientInstance(appId, namespace)
 	if err != nil {
