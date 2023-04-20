@@ -2,21 +2,25 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/bnb-chain/zkbnb/common/apollo"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
+	"os"
+	"strconv"
 )
 
 const (
-	MonitorAppId    = "zkbnb-monitor"
-	SystemConfigKey = "SystemConfig"
-	Namespace       = "application"
+	MonitorAppId       = "zkbnb-monitor"
+	SystemConfigKey    = "SystemConfig"
+	Namespace          = "application"
+	StartL1BlockHeight = "START_L1_BLOCK_HEIGHT"
 )
 
 type ChainConfig struct {
 	NetworkRPCSysConfigName string
-	StartL1BlockHeight      int64
+	StartL1BlockHeight      int64 `json:",optional"`
 	ConfirmBlocksCount      uint64
 	MaxHandledBlocksCount   int64
 	KeptHistoryBlocksCount  int64 // KeptHistoryBlocksCount define the count of blocks to keep in table, old blocks will be cleaned
@@ -65,11 +69,30 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 		return err
 	}
 
+	startL1BlockHeight, err := LoadStartL1BlockHeightFromEnvironment()
+	if err != nil {
+		return err
+	}
+
 	c.ChainConfig = systemConfig.ChainConfig
 	c.LogConf = systemConfig.LogConf
 	c.AccountCacheSize = systemConfig.AccountCacheSize
+	c.ChainConfig.StartL1BlockHeight = startL1BlockHeight
 
 	return nil
+}
+
+func LoadStartL1BlockHeightFromEnvironment() (int64, error) {
+	startL1BlockHeightStr := os.Getenv(StartL1BlockHeight)
+	if len(startL1BlockHeightStr) == 0 {
+		return 0, fmt.Errorf("environment variable START_L1_BLOCK_HEIGHT is not set")
+	}
+
+	startL1BlockHeight, err := strconv.ParseInt(startL1BlockHeightStr, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("environment variable START_L1_BLOCK_HEIGHT is not set correctly, %v", err)
+	}
+	return startL1BlockHeight, nil
 }
 
 func InitSystemConfigFromConfigFile(c *Config, configFile string) error {
