@@ -1,4 +1,4 @@
-FROM golang:1.18.10-alpine as builder
+FROM amazonlinux:2 as builder
 
 RUN apk add --no-cache make git bash
 

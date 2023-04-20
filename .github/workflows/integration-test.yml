@@ -25,7 +25,7 @@ jobs:
           
           cd ~
           sudo rm -rf ./zkbnb
-          git clone --depth 1 https://github.com/15000785133/zkbnb.git
+          git clone https://github.com/15000785133/zkbnb.git
           echo ">>> Integration tests run on commit id: $GITHUB_SHA"
           cd ./zkbnb
           git fetch origin pull/$PR_NUMBER/head:$GITHUB_SHA
