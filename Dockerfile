@@ -16,7 +16,7 @@ ARG USER=bsc
 ARG USER_UID=1000
 ARG USER_GID=1000
 
-ENV PACKAGES ca-certificates~=20220614 bash~=5.1.16-r2
+ENV PACKAGES ca-certificates~=20220614-r4 bash~=5.2.15-r0
 ENV WORKDIR=/server
 
 RUN apk add --no-cache $PACKAGES \
