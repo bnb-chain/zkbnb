@@ -63,6 +63,7 @@ jobs:
 
   integration-test:
     runs-on: self-hosted
+    needs: deploy-zkBNB
     permissions:
       issues: write
       pull-requests: write

@@ -1,4 +1,4 @@
-FROM amazonlinux:2 as builder
+FROM golang:1.18.10-alpine as builder
 
 RUN apk add --no-cache make git bash
 
@@ -10,7 +10,7 @@ ENV GO111MODULE=on
 RUN cd /zkbnb && make build-only
 
 # Pull ZkBNB into a second stage deploy alpine container
-FROM alpine:3.16.0
+FROM alpine:3.17
 
 ARG USER=bsc
 ARG USER_UID=1000
