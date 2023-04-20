@@ -1078,6 +1078,7 @@ func (s *Sender) setBatchCommitContactMetric(txRollUp *l1rolluptx.L1RollupTx, bl
 	gasCost := ffmath.Multiply(new(big.Int).SetUint64(txRollUp.GasUsed), new(big.Int).SetInt64(txRollUp.GasPrice))
 	cost := common2.GetFeeFromWei(gasCost)
 	batchCommitCostMetric.Add(cost)
+	batchCommitContactMetric.WithLabelValues("gasCost").Set(cost)
 	batchCommitContactMetric.WithLabelValues("blockNumber").Set(float64(len(blockHeights)))
 	count, err := s.txModel.GetCountByHeights(blockHeights)
 	if err == nil {
@@ -1097,6 +1098,7 @@ func (s *Sender) setBatchVerifyContactMetric(txRollUp *l1rolluptx.L1RollupTx, bl
 	gasCost := ffmath.Multiply(new(big.Int).SetUint64(txRollUp.GasUsed), new(big.Int).SetInt64(txRollUp.GasPrice))
 	cost := common2.GetFeeFromWei(gasCost)
 	batchVerifyCostMetric.Add(cost)
+	batchVerifyContactMetric.WithLabelValues("gasCost").Set(cost)
 	batchVerifyContactMetric.WithLabelValues("blockNumber").Set(float64(len(blockHeights)))
 	count, err := s.txModel.GetCountByHeights(blockHeights)
 	if err == nil {
