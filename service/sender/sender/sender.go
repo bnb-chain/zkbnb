@@ -495,10 +495,10 @@ func (s *Sender) UpdateSentTxs() (err error) {
 			l1ExceptionSenderMetric.Set(float64(pendingTx.L2BlockHeight))
 			logx.Severef("Transaction failed to execute on L1: %v", txHash)
 			cacheKey := fmt.Sprintf("%s-%d-%d", SentBlockToL1ErrorPrefix, pendingTx.TxType, pendingTx.L2BlockHeight)
-			retryCount := int64(0)
+			retryCount := 0
 			cacheValue, found := s.goCache.Get(cacheKey)
 			if found {
-				retryCount = cacheValue.(int64)
+				retryCount = cacheValue.(int)
 				if retryCount > 5 {
 					logx.Severef("Commit to L1 has been retried %d times, no more retries,txHash=%s,L2BlockHeight=%d", retryCount, txHash, pendingTx.L2BlockHeight)
 					continue
