@@ -42,15 +42,19 @@ func (m *Monitor) getNewL2Asset(event zkbnb.GovernanceNewAsset) (*asset.Asset, e
 	if err != nil {
 		return nil, err
 	}
-	name, err := erc20Instance.Name(EmptyCallOpts())
-	if err != nil && err.Error() != "execution reverted" {
-		//name OPTIONAL
-		return nil, err
-	}
 	symbol, err := erc20Instance.Symbol(EmptyCallOpts())
 	if err != nil {
 		return nil, err
 	}
+	name, err := erc20Instance.Name(EmptyCallOpts())
+	if err != nil {
+		//name OPTIONAL
+		if err.Error() != "execution reverted" {
+			return nil, err
+		}
+		name = symbol
+	}
+
 	decimals, err := erc20Instance.Decimals(EmptyCallOpts())
 	if err != nil {
 		return nil, err
