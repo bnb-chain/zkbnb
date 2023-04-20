@@ -25,7 +25,7 @@ jobs:
           
           cd ~
           sudo rm -rf ./zkbnb
-          git clone https://github.com/15000785133/zkbnb.git
+          git clone --depth 1 https://github.com/15000785133/zkbnb.git
           echo ">>> Integration tests run on commit id: $GITHUB_SHA"
           cd ./zkbnb
           git fetch origin pull/$PR_NUMBER/head:$GITHUB_SHA
@@ -74,10 +74,10 @@ jobs:
          export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin:/usr/local/bin
          
          cd /tmp && sudo rm -rf ./zkbnb-integration-test
-         git clone --branch integration-cicd https://${GH_PAT}@github.com/bnb-chain/zkbnb-integration-test.git
+         git clone --depth 1 --branch gkr-mimc https://${GH_PAT}@github.com/bnb-chain/zkbnb-integration-test.git
          cd ./zkbnb-integration-test && go mod tidy
          
-         echo ">>>Start TestSetupSuite "
+         echo ">>>Start TestSetupSuite"
          ZkBNBGovernanceKey=${BSC_TESTNET_PRIVATE_KEY} \
            L1EndPoint=${L1_ENDPOINT} \
            L2EndPoint=${L2_ENDPOINT} \
