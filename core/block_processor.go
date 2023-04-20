@@ -2,7 +2,10 @@ package core
 
 import (
 	"fmt"
+	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/metrics"
+	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -106,7 +109,15 @@ func (p *CommitProcessor) Process(tx *tx.Tx) (err error) {
 	}
 	tx.CreatedAt = time.Now()
 	p.bc.Statedb.Txs = append(p.bc.Statedb.Txs, tx)
-
+	metrics.TxTypeCommitRunCounter.WithLabelValues(strconv.Itoa(executor.GetTxInfo().GetTxType())).Inc()
+	fee, isValid := new(big.Int).SetString(tx.GasFee, 10)
+	if isValid {
+		metrics.TxTypeCommitRevenueCounter.WithLabelValues(strconv.Itoa(executor.GetTxInfo().GetTxType())).Add(common2.GetFeeFromWei(fee))
+		metrics.GasAccountRevenueCounter.Add(common2.GetFeeFromWei(fee))
+	} else {
+		metrics.TxTypeCommitRevenueCounter.WithLabelValues(strconv.Itoa(executor.GetTxInfo().GetTxType())).Add(0)
+		metrics.GasAccountRevenueCounter.Add(0)
+	}
 	return nil
 }
 

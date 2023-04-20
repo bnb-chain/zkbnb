@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb/common/log"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/dgraph-io/ristretto"
@@ -29,7 +30,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/shopspring/decimal"
 	"gorm.io/plugin/dbresolver"
-	"math"
 	"math/big"
 	"time"
 
@@ -40,6 +40,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
+	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -107,6 +108,30 @@ var (
 			Help:      "contract_balance metrics.",
 		},
 		[]string{"type"})
+	batchCommitContactMetric = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "zkbnb",
+			Name:      "batch_commit_contact",
+			Help:      "batch_commit_contact metrics.",
+		},
+		[]string{"type"})
+	batchCommitCostMetric = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "batch_commit_cost",
+		Help:      "batch_commit_cost metrics.",
+	})
+	batchVerifyContactMetric = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "zkbnb",
+			Name:      "batch_verify_contact",
+			Help:      "batch_verify_contact metrics.",
+		},
+		[]string{"type"})
+	batchVerifyCostMetric = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "batch_verify_cost",
+		Help:      "batch_verify_cost metrics.",
+	})
 )
 
 type Sender struct {
@@ -124,13 +149,17 @@ type Sender struct {
 	zkbnbClient *zkbnb.ZkBNBClient
 
 	// Data access objects
-	db                   *gorm.DB
-	blockModel           block.BlockModel
-	compressedBlockModel compressedblock.CompressedBlockModel
-	l1RollupTxModel      l1rolluptx.L1RollupTxModel
-	sysConfigModel       sysconfig.SysConfigModel
-	proofModel           proof.ProofModel
-	txModel              tx.TxModel
+	db                       *gorm.DB
+	blockModel               block.BlockModel
+	compressedBlockModel     compressedblock.CompressedBlockModel
+	l1RollupTxModel          l1rolluptx.L1RollupTxModel
+	sysConfigModel           sysconfig.SysConfigModel
+	proofModel               proof.ProofModel
+	txModel                  tx.TxModel
+	metricCommitRollupTxId   uint
+	metricCommitRollupHeight int64
+	metricVerifyRollupTxId   uint
+	metricVerifyRollupHeight int64
 }
 
 func NewSender(c sconfig.Config) *Sender {
@@ -166,15 +195,19 @@ func NewSender(c sconfig.Config) *Sender {
 	}
 
 	s := &Sender{
-		config:               c,
-		goCache:              cache,
-		db:                   db,
-		blockModel:           block.NewBlockModel(db),
-		compressedBlockModel: compressedblock.NewCompressedBlockModel(db),
-		l1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(db),
-		sysConfigModel:       sysconfig.NewSysConfigModel(db),
-		proofModel:           proof.NewProofModel(db),
-		txModel:              tx.NewTxModel(db),
+		config:                   c,
+		goCache:                  cache,
+		db:                       db,
+		blockModel:               block.NewBlockModel(db),
+		compressedBlockModel:     compressedblock.NewCompressedBlockModel(db),
+		l1RollupTxModel:          l1rolluptx.NewL1RollupTxModel(db),
+		sysConfigModel:           sysconfig.NewSysConfigModel(db),
+		proofModel:               proof.NewProofModel(db),
+		txModel:                  tx.NewTxModel(db),
+		metricCommitRollupTxId:   0,
+		metricCommitRollupHeight: 0,
+		metricVerifyRollupTxId:   0,
+		metricVerifyRollupHeight: 0,
 	}
 
 	l1RPCEndpoint, err := s.sysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
@@ -305,6 +338,18 @@ func InitPrometheusFacility() {
 	}
 	if err := prometheus.Register(contractBalanceMetric); err != nil {
 		logx.Errorf("prometheus.Register contractBalanceMetric error: %v", err)
+	}
+	if err := prometheus.Register(batchCommitContactMetric); err != nil {
+		logx.Errorf("prometheus.Register batchCommitContactMetric error: %v", err)
+	}
+	if err := prometheus.Register(batchCommitCostMetric); err != nil {
+		logx.Errorf("prometheus.Register batchCommitCostMetric error: %v", err)
+	}
+	if err := prometheus.Register(batchVerifyContactMetric); err != nil {
+		logx.Errorf("prometheus.Register batchVerifyContactMetric error: %v", err)
+	}
+	if err := prometheus.Register(batchVerifyCostMetric); err != nil {
+		logx.Errorf("prometheus.Register batchVerifyCostMetric error: %v", err)
 	}
 }
 
@@ -538,6 +583,7 @@ func (s *Sender) UpdateSentTxs() (err error) {
 
 		if validTx {
 			pendingTx.TxStatus = l1rolluptx.StatusHandled
+			pendingTx.GasUsed = receipt.GasUsed
 			pendingUpdateRxs = append(pendingUpdateRxs, pendingTx)
 			if pendingTx.TxType == l1rolluptx.TxTypeCommit {
 				l2BlockCommitConfirmByChainHeightMetric.Set(float64(pendingTx.L2BlockHeight))
@@ -931,7 +977,8 @@ func (s *Sender) Shutdown() {
 	}
 }
 
-func (s *Sender) MonitorBalance() {
+func (s *Sender) Monitor() {
+	//balance
 	info, err := s.sysConfigModel.GetSysConfigByName("ZkBNBContract")
 	if err == nil {
 		s.SetBalance(info, "ZkBNBContract")
@@ -946,6 +993,111 @@ func (s *Sender) MonitorBalance() {
 	if err == nil {
 		s.SetBalance(info, "VerifyAddress")
 	}
+
+	//costs
+	s.MetricBatchCommitContact()
+	s.MetricBatchVerifyContact()
+}
+
+func (s *Sender) MetricBatchCommitContact() {
+	blockHeights := make([]int64, 0)
+	if s.metricCommitRollupTxId == 0 {
+		txs, err := s.l1RollupTxModel.GetRecent2Transact(l1rolluptx.TxTypeCommit)
+		if err == nil {
+			if len(txs) == 1 {
+				txRollUp := txs[0]
+				for i := s.metricCommitRollupHeight + 1; i <= txRollUp.L2BlockHeight; i++ {
+					blockHeights = append(blockHeights, i)
+				}
+				s.setBatchCommitContactMetric(txRollUp, blockHeights)
+			} else {
+				//id desc
+				txRollUpStart := txs[1]
+				txRollUpEnd := txs[0]
+				for i := txRollUpStart.L2BlockHeight + 1; i <= txRollUpEnd.L2BlockHeight; i++ {
+					blockHeights = append(blockHeights, i)
+				}
+				s.setBatchCommitContactMetric(txRollUpEnd, blockHeights)
+			}
+		}
+	} else {
+		txRollUp, err := s.l1RollupTxModel.GetRecentById(s.metricCommitRollupTxId, l1rolluptx.TxTypeCommit)
+		if err == nil {
+			for i := s.metricCommitRollupHeight + 1; i <= txRollUp.L2BlockHeight; i++ {
+				blockHeights = append(blockHeights, i)
+			}
+			s.setBatchCommitContactMetric(txRollUp, blockHeights)
+		}
+	}
+}
+
+func (s *Sender) MetricBatchVerifyContact() {
+	blockHeights := make([]int64, 0)
+	if s.metricVerifyRollupTxId == 0 {
+		txs, err := s.l1RollupTxModel.GetRecent2Transact(l1rolluptx.TxTypeVerifyAndExecute)
+		if err == nil {
+			if len(txs) == 1 {
+				txRollUp := txs[0]
+				for i := s.metricVerifyRollupHeight + 1; i <= txRollUp.L2BlockHeight; i++ {
+					blockHeights = append(blockHeights, i)
+				}
+				s.setBatchVerifyContactMetric(txRollUp, blockHeights)
+			} else {
+				//id desc
+				txRollUpStart := txs[1]
+				txRollUpEnd := txs[0]
+				for i := txRollUpStart.L2BlockHeight + 1; i <= txRollUpEnd.L2BlockHeight; i++ {
+					blockHeights = append(blockHeights, i)
+				}
+				s.setBatchVerifyContactMetric(txRollUpEnd, blockHeights)
+			}
+		}
+	} else {
+		txRollUp, err := s.l1RollupTxModel.GetRecentById(s.metricVerifyRollupTxId, l1rolluptx.TxTypeVerifyAndExecute)
+		if err == nil {
+			for i := s.metricVerifyRollupHeight + 1; i <= txRollUp.L2BlockHeight; i++ {
+				blockHeights = append(blockHeights, i)
+			}
+			s.setBatchVerifyContactMetric(txRollUp, blockHeights)
+		}
+	}
+}
+
+func (s *Sender) setBatchCommitContactMetric(txRollUp *l1rolluptx.L1RollupTx, blockHeights []int64) {
+	gasCost := ffmath.Multiply(new(big.Int).SetUint64(txRollUp.GasUsed), new(big.Int).SetInt64(txRollUp.GasPrice))
+	cost := common2.GetFeeFromWei(gasCost)
+	batchCommitCostMetric.Add(cost)
+	batchCommitContactMetric.WithLabelValues("blockNumber").Set(float64(len(blockHeights)))
+	count, err := s.txModel.GetCountByHeights(blockHeights)
+	if err == nil {
+		batchCommitContactMetric.WithLabelValues("txNumber").Set(float64(count))
+		average := ffmath.Div(gasCost, big.NewInt(count))
+		batchCommitContactMetric.WithLabelValues("averageTxCost").Set(common2.GetFeeFromWei(average))
+	} else {
+		batchCommitContactMetric.WithLabelValues("txNumber").Set(0)
+		batchCommitContactMetric.WithLabelValues("averageTxCost").Set(0)
+	}
+	s.metricCommitRollupTxId = txRollUp.ID
+	s.metricCommitRollupHeight = txRollUp.L2BlockHeight
+
+}
+
+func (s *Sender) setBatchVerifyContactMetric(txRollUp *l1rolluptx.L1RollupTx, blockHeights []int64) {
+	gasCost := ffmath.Multiply(new(big.Int).SetUint64(txRollUp.GasUsed), new(big.Int).SetInt64(txRollUp.GasPrice))
+	cost := common2.GetFeeFromWei(gasCost)
+	batchVerifyCostMetric.Add(cost)
+	batchVerifyContactMetric.WithLabelValues("blockNumber").Set(float64(len(blockHeights)))
+	count, err := s.txModel.GetCountByHeights(blockHeights)
+	if err == nil {
+		batchVerifyContactMetric.WithLabelValues("txNumber").Set(float64(count))
+		average := ffmath.Div(gasCost, big.NewInt(count))
+		batchVerifyContactMetric.WithLabelValues("averageTxCost").Set(common2.GetFeeFromWei(average))
+	} else {
+		batchVerifyContactMetric.WithLabelValues("txNumber").Set(0)
+		batchVerifyContactMetric.WithLabelValues("averageTxCost").Set(0)
+	}
+	s.metricVerifyRollupTxId = txRollUp.ID
+	s.metricVerifyRollupHeight = txRollUp.L2BlockHeight
 }
 
 func (s *Sender) SetBalance(info *sysconfig.SysConfig, name string) {
@@ -954,9 +1106,5 @@ func (s *Sender) SetBalance(info *sysconfig.SysConfig, name string) {
 		contractBalanceMetric.WithLabelValues(name).Set(float64(0))
 		logx.Errorf("%s get balance error: %s", name, err.Error())
 	}
-	fbalance := new(big.Float)
-	fbalance.SetString(balance.String())
-	ethValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18)))
-	f, _ := ethValue.Float64()
-	contractBalanceMetric.WithLabelValues(name).Set(f)
+	contractBalanceMetric.WithLabelValues(name).Set(common2.GetFeeFromWei(balance))
 }

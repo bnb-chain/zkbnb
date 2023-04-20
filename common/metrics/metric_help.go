@@ -347,6 +347,33 @@ var (
 			Help:      "get_nft_tree_time.",
 		},
 		[]string{"type"})
+
+	TxTypeCommitRunCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "tx_type_commit_run",
+			Help:      "tx_type_commit_run.",
+		},
+		[]string{"type"})
+	TxTypeCommitRevenueCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "tx_type_commit_revenue",
+			Help:      "tx_type_commit_revenue.",
+		},
+		[]string{"type"})
+	GasAccountRevenueCounter = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "gas_account_revenue",
+			Help:      "gas_account_revenue.",
+		})
+	ProtocolFeeRevenueCounter = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "protocol_fee_revenue",
+			Help:      "protocol_fee_revenue.",
+		})
 )
 
 func InitCommitterMetrics() error {
@@ -475,6 +502,18 @@ func InitCommitterMetrics() error {
 	}
 	if err := prometheus.Register(PoolTxL2ErrorCountMetics); err != nil {
 		return fmt.Errorf("prometheus.Register poolTxL2ErrorCountMetics error: %v", err)
+	}
+	if err := prometheus.Register(TxTypeCommitRunCounter); err != nil {
+		return fmt.Errorf("prometheus.Register TxTypeCommitRunCounter error: %v", err)
+	}
+	if err := prometheus.Register(TxTypeCommitRevenueCounter); err != nil {
+		return fmt.Errorf("prometheus.Register TxTypeCommitRevenueCounter error: %v", err)
+	}
+	if err := prometheus.Register(GasAccountRevenueCounter); err != nil {
+		return fmt.Errorf("prometheus.Register GasAccountRevenueCounter error: %v", err)
+	}
+	if err := prometheus.Register(ProtocolFeeRevenueCounter); err != nil {
+		return fmt.Errorf("prometheus.Register ProtocolFeeRevenueCounter error: %v", err)
 	}
 	return nil
 }

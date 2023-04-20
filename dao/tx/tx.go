@@ -90,6 +90,7 @@ type (
 		GetMaxPoolTxIdByHeightInTransact(tx *gorm.DB, height int64) (poolTxId uint, err error)
 		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
 		GetOnChainTxsByHeight(blockHeight int64) (txList []*Tx, err error)
+		GetCountByHeights(blockHeights []int64) (count int64, err error)
 	}
 
 	defaultTxModel struct {
@@ -345,6 +346,16 @@ func (m *defaultTxModel) GetOnChainTxsByHeight(blockHeight int64) (txList []*Tx,
 		}
 	}
 	return txList, nil
+}
+
+func (m *defaultTxModel) GetCountByHeights(blockHeights []int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_height in ?", blockHeights).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, types.DbErrNotFound
+	}
+	return count, nil
 }
 
 func (ai *Tx) DeepCopy() *Tx {
