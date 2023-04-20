@@ -77,7 +77,7 @@ jobs:
          git clone --branch integration-cicd https://${GH_PAT}@github.com/bnb-chain/zkbnb-integration-test.git
          cd ./zkbnb-integration-test && go mod tidy
          
-         echo ">>>Start TestSetupSuite"
+         echo ">>>Start TestSetupSuite "
          ZkBNBGovernanceKey=${BSC_TESTNET_PRIVATE_KEY} \
            L1EndPoint=${L1_ENDPOINT} \
            L2EndPoint=${L2_ENDPOINT} \
