@@ -89,6 +89,11 @@ func InitRateLimitControlPathMapByPeriod(pathRateLimitMap map[string]RateLimitCo
 
 func (r *PeriodRateLimiter) StartRateLimitControl(param *RateLimitParam) error {
 
+	// If rate limit switch is false, not does the rate limit control here
+	if !r.RateLimitConfig.RateLimitSwitch {
+		return nil
+	}
+
 	// Only if the request path rate limit has been set for the
 	// period rate limit control, we do the limit control process
 	if r.RateLimitConfig.IsPeriodLimitType(param.RequestPath) {

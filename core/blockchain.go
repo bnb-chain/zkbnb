@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/apollo"
 	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
 	"github.com/dgraph-io/ristretto"
@@ -37,27 +38,25 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
+type TreeDB struct {
+	Driver tree.Driver
+	//nolint:staticcheck
+	LevelDBOption tree.LevelDBOption `json:",optional"`
+	//nolint:staticcheck
+	RedisDBOption tree.RedisDBOption `json:",optional"`
+	//nolint:staticcheck
+	RoutinePoolSize    int `json:",optional"`
+	AssetTreeCacheSize int
+}
+
 type ChainConfig struct {
-	Postgres struct {
-		MasterDataSource string
-		SlaveDataSource  string
-		LogLevel         logger.LogLevel `json:",optional"`
-	}
+	Postgres   apollo.Postgres
 	CacheRedis cache.CacheConf
 	//second
 	RedisExpiration int `json:",optional"`
 	//nolint:staticcheck
 	CacheConfig statedb.CacheConfig `json:",optional"`
-	TreeDB      struct {
-		Driver tree.Driver
-		//nolint:staticcheck
-		LevelDBOption tree.LevelDBOption `json:",optional"`
-		//nolint:staticcheck
-		RedisDBOption tree.RedisDBOption `json:",optional"`
-		//nolint:staticcheck
-		RoutinePoolSize    int `json:",optional"`
-		AssetTreeCacheSize int
-	}
+	TreeDB      TreeDB
 }
 
 type BlockChain struct {
