@@ -103,6 +103,7 @@ echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info
 
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/register.js
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deposit.js
+npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/addTokens.js
 
 
 echo '5. modify deployed contracts into zkbnb config'
