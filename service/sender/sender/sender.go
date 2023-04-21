@@ -1075,6 +1075,9 @@ func (s *Sender) MetricBatchVerifyContact() {
 }
 
 func (s *Sender) setBatchCommitContactMetric(txRollUp *l1rolluptx.L1RollupTx, blockHeights []int64) {
+	if txRollUp.GasPrice == int64(0) || txRollUp.GasUsed == 0 {
+		return
+	}
 	gasCost := ffmath.Multiply(new(big.Int).SetUint64(txRollUp.GasUsed), new(big.Int).SetInt64(txRollUp.GasPrice))
 	cost := common2.GetFeeFromWei(gasCost)
 	batchCommitCostMetric.Add(cost)
@@ -1100,6 +1103,9 @@ func (s *Sender) setBatchCommitContactMetric(txRollUp *l1rolluptx.L1RollupTx, bl
 }
 
 func (s *Sender) setBatchVerifyContactMetric(txRollUp *l1rolluptx.L1RollupTx, blockHeights []int64) {
+	if txRollUp.GasPrice == int64(0) || txRollUp.GasUsed == 0 {
+		return
+	}
 	gasCost := ffmath.Multiply(new(big.Int).SetUint64(txRollUp.GasUsed), new(big.Int).SetInt64(txRollUp.GasPrice))
 	cost := common2.GetFeeFromWei(gasCost)
 	batchVerifyCostMetric.Add(cost)
