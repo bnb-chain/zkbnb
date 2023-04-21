@@ -1083,8 +1083,13 @@ func (s *Sender) setBatchCommitContactMetric(txRollUp *l1rolluptx.L1RollupTx, bl
 	count, err := s.txModel.GetCountByHeights(blockHeights)
 	if err == nil {
 		batchCommitContactMetric.WithLabelValues("txNumber").Set(float64(count))
-		average := ffmath.Div(gasCost, big.NewInt(count))
-		batchCommitContactMetric.WithLabelValues("averageTxCost").Set(common2.GetFeeFromWei(average))
+		if count == 0 {
+			batchCommitContactMetric.WithLabelValues("averageTxCost").Set(0)
+
+		} else {
+			average := ffmath.Div(gasCost, big.NewInt(count))
+			batchCommitContactMetric.WithLabelValues("averageTxCost").Set(common2.GetFeeFromWei(average))
+		}
 	} else {
 		batchCommitContactMetric.WithLabelValues("txNumber").Set(0)
 		batchCommitContactMetric.WithLabelValues("averageTxCost").Set(0)
@@ -1103,8 +1108,13 @@ func (s *Sender) setBatchVerifyContactMetric(txRollUp *l1rolluptx.L1RollupTx, bl
 	count, err := s.txModel.GetCountByHeights(blockHeights)
 	if err == nil {
 		batchVerifyContactMetric.WithLabelValues("txNumber").Set(float64(count))
-		average := ffmath.Div(gasCost, big.NewInt(count))
-		batchVerifyContactMetric.WithLabelValues("averageTxCost").Set(common2.GetFeeFromWei(average))
+		if count == 0 {
+			batchVerifyContactMetric.WithLabelValues("averageTxCost").Set(0)
+
+		} else {
+			average := ffmath.Div(gasCost, big.NewInt(count))
+			batchVerifyContactMetric.WithLabelValues("averageTxCost").Set(common2.GetFeeFromWei(average))
+		}
 	} else {
 		batchVerifyContactMetric.WithLabelValues("txNumber").Set(0)
 		batchVerifyContactMetric.WithLabelValues("averageTxCost").Set(0)
