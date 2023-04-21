@@ -314,18 +314,6 @@ func InitPrometheusFacility() {
 	if err := prometheus.Register(l2BlockVerifiedHeightMetric); err != nil {
 		logx.Errorf("prometheus.Register l2BlockVerifiedHeightMetric error: %v", err)
 	}
-	if err := prometheus.Register(l2BlockCommitToChainHeightMetric); err != nil {
-		logx.Errorf("prometheus.Register l2BlockCommitToChainHeightMetric error: %v", err)
-	}
-	if err := prometheus.Register(l2BlockCommitConfirmByChainHeightMetric); err != nil {
-		logx.Errorf("prometheus.Register l2BlockCommitConfirmByChainHeightMetric error: %v", err)
-	}
-	if err := prometheus.Register(l2BlockSubmitToVerifyHeightMetric); err != nil {
-		logx.Errorf("prometheus.Register l2BlockSubmitToVerifyHeightMetric error: %v", err)
-	}
-	if err := prometheus.Register(l2BlockVerifiedHeightMetric); err != nil {
-		logx.Errorf("prometheus.Register l2BlockVerifiedHeightMetric error: %v", err)
-	}
 	if err := prometheus.Register(l2MaxWaitingTimeMetric); err != nil {
 		logx.Errorf("prometheus.Register l2MaxWaitingTimeMetric error: %v", err)
 	}
