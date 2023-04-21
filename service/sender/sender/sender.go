@@ -314,18 +314,6 @@ func InitPrometheusFacility() {
 	if err := prometheus.Register(l2BlockVerifiedHeightMetric); err != nil {
 		logx.Errorf("prometheus.Register l2BlockVerifiedHeightMetric error: %v", err)
 	}
-	if err := prometheus.Register(l2BlockCommitToChainHeightMetric); err != nil {
-		logx.Errorf("prometheus.Register l2BlockCommitToChainHeightMetric error: %v", err)
-	}
-	if err := prometheus.Register(l2BlockCommitConfirmByChainHeightMetric); err != nil {
-		logx.Errorf("prometheus.Register l2BlockCommitConfirmByChainHeightMetric error: %v", err)
-	}
-	if err := prometheus.Register(l2BlockSubmitToVerifyHeightMetric); err != nil {
-		logx.Errorf("prometheus.Register l2BlockSubmitToVerifyHeightMetric error: %v", err)
-	}
-	if err := prometheus.Register(l2BlockVerifiedHeightMetric); err != nil {
-		logx.Errorf("prometheus.Register l2BlockVerifiedHeightMetric error: %v", err)
-	}
 	if err := prometheus.Register(l2MaxWaitingTimeMetric); err != nil {
 		logx.Errorf("prometheus.Register l2MaxWaitingTimeMetric error: %v", err)
 	}
@@ -1021,7 +1009,7 @@ func (s *Sender) MetricBatchCommitContact() {
 					blockHeights = append(blockHeights, i)
 				}
 				s.setBatchCommitContactMetric(txRollUp, blockHeights)
-			} else {
+			} else if len(txs) == 2 {
 				//id desc
 				txRollUpStart := txs[1]
 				txRollUpEnd := txs[0]
@@ -1053,7 +1041,7 @@ func (s *Sender) MetricBatchVerifyContact() {
 					blockHeights = append(blockHeights, i)
 				}
 				s.setBatchVerifyContactMetric(txRollUp, blockHeights)
-			} else {
+			} else if len(txs) == 2 {
 				//id desc
 				txRollUpStart := txs[1]
 				txRollUpEnd := txs[0]
@@ -1075,6 +1063,9 @@ func (s *Sender) MetricBatchVerifyContact() {
 }
 
 func (s *Sender) setBatchCommitContactMetric(txRollUp *l1rolluptx.L1RollupTx, blockHeights []int64) {
+	if txRollUp.GasPrice == int64(0) || txRollUp.GasUsed == 0 {
+		return
+	}
 	gasCost := ffmath.Multiply(new(big.Int).SetUint64(txRollUp.GasUsed), new(big.Int).SetInt64(txRollUp.GasPrice))
 	cost := common2.GetFeeFromWei(gasCost)
 	batchCommitCostMetric.Add(cost)
@@ -1083,8 +1074,13 @@ func (s *Sender) setBatchCommitContactMetric(txRollUp *l1rolluptx.L1RollupTx, bl
 	count, err := s.txModel.GetCountByHeights(blockHeights)
 	if err == nil {
 		batchCommitContactMetric.WithLabelValues("txNumber").Set(float64(count))
-		average := ffmath.Div(gasCost, big.NewInt(count))
-		batchCommitContactMetric.WithLabelValues("averageTxCost").Set(common2.GetFeeFromWei(average))
+		if count == 0 {
+			batchCommitContactMetric.WithLabelValues("averageTxCost").Set(0)
+
+		} else {
+			average := ffmath.Div(gasCost, big.NewInt(count))
+			batchCommitContactMetric.WithLabelValues("averageTxCost").Set(common2.GetFeeFromWei(average))
+		}
 	} else {
 		batchCommitContactMetric.WithLabelValues("txNumber").Set(0)
 		batchCommitContactMetric.WithLabelValues("averageTxCost").Set(0)
@@ -1095,6 +1091,9 @@ func (s *Sender) setBatchCommitContactMetric(txRollUp *l1rolluptx.L1RollupTx, bl
 }
 
 func (s *Sender) setBatchVerifyContactMetric(txRollUp *l1rolluptx.L1RollupTx, blockHeights []int64) {
+	if txRollUp.GasPrice == int64(0) || txRollUp.GasUsed == 0 {
+		return
+	}
 	gasCost := ffmath.Multiply(new(big.Int).SetUint64(txRollUp.GasUsed), new(big.Int).SetInt64(txRollUp.GasPrice))
 	cost := common2.GetFeeFromWei(gasCost)
 	batchVerifyCostMetric.Add(cost)
@@ -1103,8 +1102,13 @@ func (s *Sender) setBatchVerifyContactMetric(txRollUp *l1rolluptx.L1RollupTx, bl
 	count, err := s.txModel.GetCountByHeights(blockHeights)
 	if err == nil {
 		batchVerifyContactMetric.WithLabelValues("txNumber").Set(float64(count))
-		average := ffmath.Div(gasCost, big.NewInt(count))
-		batchVerifyContactMetric.WithLabelValues("averageTxCost").Set(common2.GetFeeFromWei(average))
+		if count == 0 {
+			batchVerifyContactMetric.WithLabelValues("averageTxCost").Set(0)
+
+		} else {
+			average := ffmath.Div(gasCost, big.NewInt(count))
+			batchVerifyContactMetric.WithLabelValues("averageTxCost").Set(common2.GetFeeFromWei(average))
+		}
 	} else {
 		batchVerifyContactMetric.WithLabelValues("txNumber").Set(0)
 		batchVerifyContactMetric.WithLabelValues("averageTxCost").Set(0)

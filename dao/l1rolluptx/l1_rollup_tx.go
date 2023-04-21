@@ -197,7 +197,7 @@ func (m *defaultL1RollupTxModel) GetLatestByNonce(l1Nonce int64, txType int64) (
 }
 
 func (m *defaultL1RollupTxModel) GetRecentById(id uint, txType int64) (tx *L1RollupTx, err error) {
-	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type = ? AND id > ?", txType, id).
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type = ? AND id > ? and tx_status = ?", txType, id, StatusHandled).
 		Order("id asc").Limit(1).Find(&tx)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
@@ -208,7 +208,7 @@ func (m *defaultL1RollupTxModel) GetRecentById(id uint, txType int64) (tx *L1Rol
 }
 
 func (m *defaultL1RollupTxModel) GetRecent2Transact(txType int64) (txs []*L1RollupTx, err error) {
-	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type = ?", txType).
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type = ? and tx_status = ?", txType, StatusHandled).
 		Order("id desc").Limit(2).Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
