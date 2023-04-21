@@ -41,8 +41,8 @@ import (
 	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
-func (m *Monitor) MonitorGenericBlocks() (err error) {
-	startHeight, endHeight, err := m.getBlockRangeToSync(l1syncedblock.TypeGeneric)
+func (m *Monitor) MonitorGenericBlocks(cli *rpc.ProviderClient) (err error) {
+	startHeight, endHeight, err := m.getBlockRangeToSync(l1syncedblock.TypeGeneric, cli)
 	if err != nil {
 		logx.Errorf("get block range to sync error, err: %s", err.Error())
 		return err
@@ -54,12 +54,12 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 	logx.Infof("syncing generic l1 blocks from %d to %d", big.NewInt(startHeight), big.NewInt(endHeight))
 
-	priorityRequestCount, err := GetPriorityRequestCount(m.cli, m.zkbnbContractAddress, uint64(startHeight), uint64(endHeight))
+	priorityRequestCount, err := GetPriorityRequestCount(cli, m.zkbnbContractAddress, uint64(startHeight), uint64(endHeight))
 	if err != nil {
 		return fmt.Errorf("failed to get priority request count, err: %v", err)
 	}
 
-	logs, err := GetZkBNBContractLogs(m.cli, m.zkbnbContractAddress, uint64(startHeight), uint64(endHeight))
+	logs, err := GetZkBNBContractLogs(cli, m.zkbnbContractAddress, uint64(startHeight), uint64(endHeight))
 	if err != nil {
 		return fmt.Errorf("failed to get contract logs, err: %v", err)
 	}
@@ -89,7 +89,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			logx.Errorf("Removed to get vlog,TxHash:%v,Index:%v", l1EventInfo.TxHash, l1EventInfo.Index)
 			continue
 		}
-		logBlock, err := m.cli.GetBlockHeaderByNumber(big.NewInt(int64(vlog.BlockNumber)))
+		logBlock, err := cli.GetBlockHeaderByNumber(big.NewInt(int64(vlog.BlockNumber)))
 		if err != nil {
 			return fmt.Errorf("failed to get block header, err: %v", err)
 		}

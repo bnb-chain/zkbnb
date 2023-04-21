@@ -1,6 +1,7 @@
 package sender
 
 import (
+	"github.com/bnb-chain/zkbnb/core/rpc_client"
 	"github.com/robfig/cron/v3"
 	"time"
 
@@ -87,6 +88,15 @@ func Run(configFile string) error {
 	if err != nil {
 		logx.Severef("failed to start the monitor balance task, %v", err)
 		panic("failed to start the monitor balance task, err:" + err.Error())
+	}
+
+	_, err = cronJob.AddFunc("@every 10s", func() {
+		logx.Info("========================= start rpc health task =========================")
+		rpc_client.HealthCheck()
+	})
+	if err != nil {
+		logx.Severef("failed to start rpc health task, %v", err)
+		panic("failed to start the rpc health task, err:" + err.Error())
 	}
 
 	cronJob.Start()

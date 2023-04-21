@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	"github.com/bnb-chain/zkbnb/common/monitor"
 	"math/big"
 	"strings"
@@ -36,9 +37,9 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (m *Monitor) getNewL2Asset(event zkbnb.GovernanceNewAsset) (*asset.Asset, error) {
+func (m *Monitor) getNewL2Asset(event zkbnb.GovernanceNewAsset, cli *rpc.ProviderClient) (*asset.Asset, error) {
 	// get asset info by contract address
-	erc20Instance, err := zkbnb.LoadERC20(m.cli, event.AssetAddress.Hex())
+	erc20Instance, err := zkbnb.LoadERC20(cli, event.AssetAddress.Hex())
 	if err != nil {
 		return nil, err
 	}
@@ -87,8 +88,8 @@ func NewGovernancePendingChanges() *GovernancePendingChanges {
 	}
 }
 
-func (m *Monitor) MonitorGovernanceBlocks() (err error) {
-	startHeight, endHeight, err := m.getBlockRangeToSync(l1syncedblock.TypeGovernance)
+func (m *Monitor) MonitorGovernanceBlocks(cli *rpc.ProviderClient) (err error) {
+	startHeight, endHeight, err := m.getBlockRangeToSync(l1syncedblock.TypeGovernance, cli)
 	if err != nil {
 		logx.Errorf("get block range to sync error, err: %s", err.Error())
 		return err
@@ -105,7 +106,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 		ToBlock:   big.NewInt(endHeight),
 		Addresses: []common.Address{contractAddress},
 	}
-	logs, err := m.cli.FilterLogs(context.Background(), query)
+	logs, err := cli.FilterLogs(context.Background(), query)
 	if err != nil {
 		return fmt.Errorf("failed to query logs through rpc client: %v", err)
 	}
@@ -136,7 +137,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
 			l1EventInfo.EventType = monitor.EventTypeAddAsset
-			newL2Asset, err := m.getNewL2Asset(event)
+			newL2Asset, err := m.getNewL2Asset(event, cli)
 			if err != nil {
 				logx.Infof("get new l2 asset error, err: %s", err.Error())
 				return err
