@@ -1021,7 +1021,7 @@ func (s *Sender) MetricBatchCommitContact() {
 					blockHeights = append(blockHeights, i)
 				}
 				s.setBatchCommitContactMetric(txRollUp, blockHeights)
-			} else {
+			} else if len(txs) == 2 {
 				//id desc
 				txRollUpStart := txs[1]
 				txRollUpEnd := txs[0]
@@ -1053,7 +1053,7 @@ func (s *Sender) MetricBatchVerifyContact() {
 					blockHeights = append(blockHeights, i)
 				}
 				s.setBatchVerifyContactMetric(txRollUp, blockHeights)
-			} else {
+			} else if len(txs) == 2 {
 				//id desc
 				txRollUpStart := txs[1]
 				txRollUpEnd := txs[0]
