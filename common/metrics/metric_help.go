@@ -348,8 +348,8 @@ var (
 		},
 		[]string{"type"})
 
-	TxTypeCommitRunCounter = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	TxTypeCommitRunCounter = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
 			Namespace: "zkbnb",
 			Name:      "tx_type_commit_run",
 			Help:      "tx_type_commit_run.",
