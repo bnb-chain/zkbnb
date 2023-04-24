@@ -52,6 +52,8 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
+const MaxErrorRetryCount = 5
+
 var (
 	l2BlockCommitToChainHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
@@ -453,19 +455,23 @@ func (s *Sender) CommitBlocks() (err error) {
 		}
 
 		// commit blocks on-chain
+		blockHeight := pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber
+		if s.IsOverMaxErrorRetryCount(blockHeight, l1rolluptx.TxTypeCommit) {
+			return fmt.Errorf("Send tx to L1 has been retried %d times, no more retries,please check.L2BlockHeight=%d,txType=%d ", MaxErrorRetryCount, blockHeight, l1rolluptx.TxTypeCommit)
+		}
 		txHash, err = s.zkbnbClient.CommitBlocksWithNonce(
 			lastStoredBlockInfo,
 			pendingCommitBlocks,
 			gasPrice,
 			s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
-			blockHeight := pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber
 			commitExceptionHeightMetric.Set(float64(blockHeight))
 			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
 				logx.WithContext(ctx).Errorf("failed to send commit tx,try again: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
 				retry = true
 				continue
 			}
+			s.HandleSendTxToL1Error(blockHeight, l1rolluptx.TxTypeCommit, txHash, err)
 			return fmt.Errorf("failed to send commit tx, errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
 		}
 		break
@@ -532,13 +538,14 @@ func (s *Sender) UpdateSentTxs() (err error) {
 			cacheValue, found := s.goCache.Get(cacheKey)
 			if found {
 				retryCount = cacheValue.(int)
-				if retryCount > 5 {
+				if retryCount >= MaxErrorRetryCount {
 					logx.Severef("Commit to L1 has been retried %d times, no more retries,txHash=%s,L2BlockHeight=%d", retryCount, txHash, pendingTx.L2BlockHeight)
 					continue
 				}
 				s.goCache.SetWithTTL(cacheKey, retryCount+1, 0, time.Minute*30)
 			} else {
-				s.goCache.SetWithTTL(cacheKey, 1, 0, time.Minute*30)
+				retryCount = 1
+				s.goCache.SetWithTTL(cacheKey, retryCount, 0, time.Minute*30)
 			}
 			logx.Infof("Commit to L1 has been retried %d times,txHash=%s,L2BlockHeight=%d", retryCount, txHash, pendingTx.L2BlockHeight)
 			logx.Infof("delete timeout l1 rollup tx, tx_hash=%s", pendingTx.L1TxHash)
@@ -726,17 +733,21 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			logx.WithContext(ctx).Infof("speed up verify block to l1,l1 nonce: %d,gasPrice: %d", nonce, gasPrice)
 		}
 		// Verify blocks on-chain
+		blockHeight := pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber
+		if s.IsOverMaxErrorRetryCount(blockHeight, l1rolluptx.TxTypeVerifyAndExecute) {
+			return fmt.Errorf("Send tx to L1 has been retried %d times, no more retries,please check,L2BlockHeight=%d,txType=TxTypeVerifyAndExecute ", MaxErrorRetryCount, blockHeight)
+		}
 		txHash, err = s.zkbnbClient.VerifyAndExecuteBlocksWithNonce(
 			pendingVerifyAndExecuteBlocks,
 			proofs, gasPrice, s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
-			blockHeight := pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber
 			verifyExceptionHeightMetric.Set(float64(blockHeight))
 			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
 				logx.WithContext(ctx).Errorf("failed to send verify tx,try again: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
 				retry = true
 				continue
 			}
+			s.HandleSendTxToL1Error(blockHeight, l1rolluptx.TxTypeVerifyAndExecute, txHash, err)
 			return fmt.Errorf("failed to send verify tx: %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
 		}
 		break
@@ -937,6 +948,32 @@ func (s *Sender) GenerateConstructorForCommit() (zkbnb.TransactOptsConstructor, 
 		return s.commitAuthClient, nil
 	}
 	return nil, errors.New("both commitKmsKeyClient and commitAuthClient are all not initiated yet")
+}
+
+func (s *Sender) IsOverMaxErrorRetryCount(height uint32, txType uint) bool {
+	cacheKey := fmt.Sprintf("%s-%d-%d", SentBlockToL1ErrorPrefix, txType, height)
+	retryCount := 0
+	cacheValue, found := s.goCache.Get(cacheKey)
+	if found {
+		retryCount = cacheValue.(int)
+		if retryCount >= MaxErrorRetryCount {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Sender) HandleSendTxToL1Error(height uint32, txType uint, txHash string, err error) {
+	cacheKey := fmt.Sprintf("%s-%d-%d", SentBlockToL1ErrorPrefix, txType, height)
+	retryCount := 0
+	cacheValue, found := s.goCache.Get(cacheKey)
+	if found {
+		retryCount = cacheValue.(int) + 1
+	} else {
+		retryCount = 1
+	}
+	s.goCache.SetWithTTL(cacheKey, retryCount, 0, time.Minute*30)
+	logx.Infof("fail to send tx to L1, Send tx to L1 has been retried %d times, txHash=%s,L2BlockHeight=%d,txType=%d,err=%v", retryCount-1, txHash, height, txType, err.Error())
 }
 
 func (s *Sender) GenerateConstructorForVerifyAndExecute() (zkbnb.TransactOptsConstructor, error) {

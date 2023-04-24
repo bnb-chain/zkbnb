@@ -70,12 +70,12 @@ func InitCommonConfig() (*CommonConfig, error) {
 		}
 
 		// Load the postgresql connection parameter from the secret manager
-		/*postgresql, err := LoadPostgresqlConfig()
+		postgresql, err := LoadPostgresqlConfig()
 		if err != nil {
 			return nil, err
 		}
 		commonConfig.Postgres.MasterDataSource = postgresql.MasterDataSource
-		commonConfig.Postgres.SlaveDataSource = postgresql.SlaveDataSource*/
+		commonConfig.Postgres.SlaveDataSource = postgresql.SlaveDataSource
 
 		return commonConfig, nil
 	}
