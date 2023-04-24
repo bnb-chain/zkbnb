@@ -31,6 +31,8 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/plugin/dbresolver"
 	"math/big"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -52,7 +54,10 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-const MaxErrorRetryCount = 5
+const MaxErrorRetryCount = 3
+
+// VM Exception while processing transaction: revert i
+const CallContractError = "revert"
 
 var (
 	l2BlockCommitToChainHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
@@ -454,10 +459,12 @@ func (s *Sender) CommitBlocks() (err error) {
 			logx.WithContext(ctx).Infof("speed up commit block to l1,l1 nonce: %d,gasPrice: %d", nonce, gasPrice)
 		}
 
+		s.ValidOverSuggestGasPrice(gasPrice)
+
 		// commit blocks on-chain
 		blockHeight := pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber
 		if s.IsOverMaxErrorRetryCount(blockHeight, l1rolluptx.TxTypeCommit) {
-			return fmt.Errorf("Send tx to L1 has been retried %d times, no more retries,please check.L2BlockHeight=%d,txType=%d ", MaxErrorRetryCount, blockHeight, l1rolluptx.TxTypeCommit)
+			return fmt.Errorf("Send tx to L1 has been called %d times, no more retries,please check.L2BlockHeight=%d,txType=%d ", MaxErrorRetryCount, blockHeight, l1rolluptx.TxTypeCommit)
 		}
 		txHash, err = s.zkbnbClient.CommitBlocksWithNonce(
 			lastStoredBlockInfo,
@@ -542,10 +549,10 @@ func (s *Sender) UpdateSentTxs() (err error) {
 					logx.Severef("Commit to L1 has been retried %d times, no more retries,txHash=%s,L2BlockHeight=%d", retryCount, txHash, pendingTx.L2BlockHeight)
 					continue
 				}
-				s.goCache.SetWithTTL(cacheKey, retryCount+1, 0, time.Minute*30)
+				s.goCache.SetWithTTL(cacheKey, retryCount+1, 0, time.Minute*120)
 			} else {
 				retryCount = 1
-				s.goCache.SetWithTTL(cacheKey, retryCount, 0, time.Minute*30)
+				s.goCache.SetWithTTL(cacheKey, retryCount, 0, time.Minute*120)
 			}
 			logx.Infof("Commit to L1 has been retried %d times,txHash=%s,L2BlockHeight=%d", retryCount, txHash, pendingTx.L2BlockHeight)
 			logx.Infof("delete timeout l1 rollup tx, tx_hash=%s", pendingTx.L1TxHash)
@@ -732,10 +739,13 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			gasPrice = standByGasPrice.RoundUp(0).BigInt()
 			logx.WithContext(ctx).Infof("speed up verify block to l1,l1 nonce: %d,gasPrice: %d", nonce, gasPrice)
 		}
+
+		s.ValidOverSuggestGasPrice(gasPrice)
+
 		// Verify blocks on-chain
 		blockHeight := pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber
 		if s.IsOverMaxErrorRetryCount(blockHeight, l1rolluptx.TxTypeVerifyAndExecute) {
-			return fmt.Errorf("Send tx to L1 has been retried %d times, no more retries,please check,L2BlockHeight=%d,txType=TxTypeVerifyAndExecute ", MaxErrorRetryCount, blockHeight)
+			return fmt.Errorf("Send tx to L1 has been called %d times, no more retries,please check,L2BlockHeight=%d,txType=TxTypeVerifyAndExecute ", MaxErrorRetryCount, blockHeight)
 		}
 		txHash, err = s.zkbnbClient.VerifyAndExecuteBlocksWithNonce(
 			pendingVerifyAndExecuteBlocks,
@@ -964,6 +974,15 @@ func (s *Sender) IsOverMaxErrorRetryCount(height uint32, txType uint) bool {
 }
 
 func (s *Sender) HandleSendTxToL1Error(height uint32, txType uint, txHash string, err error) {
+	if _, ok := err.(*url.Error); ok {
+		return
+	}
+
+	ttl := time.Minute * 30
+	if strings.Contains(err.Error(), CallContractError) {
+		ttl = time.Minute * 120
+	}
+
 	cacheKey := fmt.Sprintf("%s-%d-%d", SentBlockToL1ErrorPrefix, txType, height)
 	retryCount := 0
 	cacheValue, found := s.goCache.Get(cacheKey)
@@ -972,8 +991,8 @@ func (s *Sender) HandleSendTxToL1Error(height uint32, txType uint, txHash string
 	} else {
 		retryCount = 1
 	}
-	s.goCache.SetWithTTL(cacheKey, retryCount, 0, time.Minute*30)
-	logx.Infof("fail to send tx to L1, Send tx to L1 has been retried %d times, txHash=%s,L2BlockHeight=%d,txType=%d,err=%v", retryCount-1, txHash, height, txType, err.Error())
+	s.goCache.SetWithTTL(cacheKey, retryCount, 0, ttl)
+	logx.Infof("fail to send tx to L1, Send tx to L1 has been called %d times, txHash=%s,L2BlockHeight=%d,txType=%d,err=%v", retryCount, txHash, height, txType, err.Error())
 }
 
 func (s *Sender) GenerateConstructorForVerifyAndExecute() (zkbnb.TransactOptsConstructor, error) {
@@ -1161,4 +1180,13 @@ func (s *Sender) SetBalance(info *sysconfig.SysConfig, name string) {
 		logx.Errorf("%s get balance error: %s", name, err.Error())
 	}
 	contractBalanceMetric.WithLabelValues(name).Set(common2.GetFeeFromWei(balance))
+}
+
+func (s *Sender) ValidOverSuggestGasPrice(gasPrice *big.Int) {
+	suggestGasPrice, err := s.client.SuggestGasPrice(context.Background())
+	if err == nil {
+		if gasPrice.Cmp(suggestGasPrice) > 0 {
+			logx.Severef("over bsc suggest gas price,suggestGasPrice=%s,gasPrice=%s", suggestGasPrice.String(), gasPrice.String())
+		}
+	}
 }
