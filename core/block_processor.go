@@ -115,10 +115,6 @@ func (p *CommitProcessor) Process(tx *tx.Tx) (err error) {
 		metrics.TxTypeCommitRevenueCounter.WithLabelValues(strconv.Itoa(executor.GetTxInfo().GetTxType())).Add(common2.GetFeeFromWei(fee))
 		metrics.GasAccountRevenueCounter.Add(common2.GetFeeFromWei(fee))
 		metrics.TotalRevenueCounter.Add(common2.GetFeeFromWei(fee))
-	} else {
-		metrics.TxTypeCommitRevenueCounter.WithLabelValues(strconv.Itoa(executor.GetTxInfo().GetTxType())).Add(0)
-		metrics.GasAccountRevenueCounter.Add(0)
-		metrics.TotalRevenueCounter.Add(0)
 	}
 	return nil
 }
