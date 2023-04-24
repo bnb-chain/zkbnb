@@ -374,6 +374,12 @@ var (
 			Name:      "protocol_fee_revenue",
 			Help:      "protocol_fee_revenue.",
 		})
+	TotalRevenueCounter = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "total_fee_revenue",
+			Help:      "total_fee_revenue.",
+		})
 )
 
 func InitCommitterMetrics() error {
@@ -515,6 +521,10 @@ func InitCommitterMetrics() error {
 	if err := prometheus.Register(ProtocolFeeRevenueCounter); err != nil {
 		return fmt.Errorf("prometheus.Register ProtocolFeeRevenueCounter error: %v", err)
 	}
+	if err := prometheus.Register(TotalRevenueCounter); err != nil {
+		return fmt.Errorf("prometheus.Register TotalRevenueCounter error: %v", err)
+	}
+
 	return nil
 }
 

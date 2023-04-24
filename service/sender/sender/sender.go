@@ -134,6 +134,11 @@ var (
 		Name:      "batch_verify_cost",
 		Help:      "batch_verify_cost metrics.",
 	})
+	batchTotalCostMetric = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "batch_total_cost",
+		Help:      "batch_total_cost metrics.",
+	})
 )
 
 type Sender struct {
@@ -346,6 +351,10 @@ func InitPrometheusFacility() {
 	if err := prometheus.Register(batchVerifyCostMetric); err != nil {
 		logx.Errorf("prometheus.Register batchVerifyCostMetric error: %v", err)
 	}
+	if err := prometheus.Register(batchTotalCostMetric); err != nil {
+		logx.Errorf("prometheus.Register batchTotalCostMetric error: %v", err)
+	}
+
 }
 
 func (s *Sender) CommitBlocks() (err error) {
@@ -1106,6 +1115,7 @@ func (s *Sender) setBatchCommitContactMetric(txRollUp *l1rolluptx.L1RollupTx, bl
 	gasCost := ffmath.Multiply(new(big.Int).SetUint64(txRollUp.GasUsed), new(big.Int).SetInt64(txRollUp.GasPrice))
 	cost := common2.GetFeeFromWei(gasCost)
 	batchCommitCostMetric.Add(cost)
+	batchTotalCostMetric.Add(cost)
 	batchCommitContactMetric.WithLabelValues("gasCost").Set(cost)
 	batchCommitContactMetric.WithLabelValues("blockHeight").Set(float64(txRollUp.L2BlockHeight))
 	count, err := s.txModel.GetCountByHeights(blockHeights)
@@ -1134,6 +1144,7 @@ func (s *Sender) setBatchVerifyContactMetric(txRollUp *l1rolluptx.L1RollupTx, bl
 	gasCost := ffmath.Multiply(new(big.Int).SetUint64(txRollUp.GasUsed), new(big.Int).SetInt64(txRollUp.GasPrice))
 	cost := common2.GetFeeFromWei(gasCost)
 	batchVerifyCostMetric.Add(cost)
+	batchTotalCostMetric.Add(cost)
 	batchVerifyContactMetric.WithLabelValues("gasCost").Set(cost)
 	batchVerifyContactMetric.WithLabelValues("blockHeight").Set(float64(txRollUp.L2BlockHeight))
 	count, err := s.txModel.GetCountByHeights(blockHeights)

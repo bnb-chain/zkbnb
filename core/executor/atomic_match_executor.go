@@ -648,5 +648,6 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 
 func (e *AtomicMatchExecutor) Finalize() error {
 	metrics.ProtocolFeeRevenueCounter.Add(common2.GetFeeFromWei(e.TxInfo.BuyOffer.ProtocolAmount))
+	metrics.TotalRevenueCounter.Add(common2.GetFeeFromWei(e.TxInfo.BuyOffer.ProtocolAmount))
 	return nil
 }
