@@ -7,6 +7,7 @@ import (
 	"github.com/apolloconfig/agollo/v4"
 	apollo "github.com/apolloconfig/agollo/v4/env/config"
 	"github.com/apolloconfig/agollo/v4/storage"
+	"github.com/bnb-chain/zkbnb/common/environment"
 	"github.com/bnb-chain/zkbnb/common/secret"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
@@ -69,14 +70,16 @@ func InitCommonConfig() (*CommonConfig, error) {
 			return nil, err
 		}
 
-		// Load the postgresql connection parameter from the secret manager
-		postgresql, err := LoadPostgresqlConfig()
-		if err != nil {
-			return nil, err
+		// If the environment is not local environment, load the postgresql connection from the secret manager
+		if !environment.IsLocalEnvironment() {
+			// Load the postgresql connection parameter from the secret manager
+			postgresql, err := LoadPostgresqlConfig()
+			if err != nil {
+				return nil, err
+			}
+			commonConfig.Postgres.MasterDataSource = postgresql.MasterDataSource
+			commonConfig.Postgres.SlaveDataSource = postgresql.SlaveDataSource
 		}
-		commonConfig.Postgres.MasterDataSource = postgresql.MasterDataSource
-		commonConfig.Postgres.SlaveDataSource = postgresql.SlaveDataSource
-
 		return commonConfig, nil
 	}
 }
