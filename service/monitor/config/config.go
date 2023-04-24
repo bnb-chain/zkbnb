@@ -96,7 +96,7 @@ func LoadStartL1BlockHeightFromEnvironment() (int64, error) {
 }
 
 func InitSystemConfigFromConfigFile(c *Config, configFile string) error {
-	conf.MustLoad(configFile, c)
+	conf.Load(configFile, c)
 	logx.MustSetup(c.LogConf)
 	c.Validate()
 	logx.DisableStat()

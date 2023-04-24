@@ -73,7 +73,7 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 }
 
 func InitSystemConfigFromConfigFile(c *Config, configFile string) error {
-	conf.MustLoad(configFile, c)
+	conf.Load(configFile, c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 	return nil

@@ -21,7 +21,7 @@ func Run(configFile string) error {
 		panic("failed to initiate system configuration, err:" + err.Error())
 	}
 
-	conf.MustLoad(configFile, &c)
+	conf.Load(configFile, &c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
