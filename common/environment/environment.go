@@ -9,7 +9,7 @@ const (
 
 func IsLocalEnvironment() bool {
 	environment := os.Getenv(ENV)
-	if len(environment) == 0 || environment == LOCAL {
+	if environment == LOCAL {
 		return true
 	}
 	return false
