@@ -1,7 +1,6 @@
 package permctrl
 
 import (
-	"context"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/fetcher/address"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/types"
@@ -12,8 +11,8 @@ type PermissionControl struct {
 	fetcher *address.Fetcher
 }
 
-func NewPermissionControl(ctx context.Context, svcCtx *svc.ServiceContext) *PermissionControl {
-	fetcher := address.NewFetcher(ctx, svcCtx)
+func NewPermissionControl(svcCtx *svc.ServiceContext) *PermissionControl {
+	fetcher := address.NewFetcher(svcCtx)
 	return &PermissionControl{
 		fetcher: fetcher,
 	}
