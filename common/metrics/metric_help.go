@@ -348,8 +348,8 @@ var (
 		},
 		[]string{"type"})
 
-	TxTypeCommitRunCounter = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
+	TxTypeCommitRunCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
 			Namespace: "zkbnb",
 			Name:      "tx_type_commit_run",
 			Help:      "tx_type_commit_run.",
@@ -373,6 +373,12 @@ var (
 			Namespace: "zkbnb",
 			Name:      "protocol_fee_revenue",
 			Help:      "protocol_fee_revenue.",
+		})
+	TotalRevenueCounter = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "total_fee_revenue",
+			Help:      "total_fee_revenue.",
 		})
 )
 
@@ -515,6 +521,10 @@ func InitCommitterMetrics() error {
 	if err := prometheus.Register(ProtocolFeeRevenueCounter); err != nil {
 		return fmt.Errorf("prometheus.Register ProtocolFeeRevenueCounter error: %v", err)
 	}
+	if err := prometheus.Register(TotalRevenueCounter); err != nil {
+		return fmt.Errorf("prometheus.Register TotalRevenueCounter error: %v", err)
+	}
+
 	return nil
 }
 

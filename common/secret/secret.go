@@ -10,8 +10,10 @@ import (
 )
 
 const (
-	VersionStage = "AWSCURRENT"
-	AwsRegion    = "AWS_REGION"
+	VersionStage     = "AWSCURRENT"
+	AwsRegion        = "AWS_REGION"
+	AwsProfile       = "AWS_PROFILE"
+	AwsSdkLoadConfig = "AWS_SDK_LOAD_CONFIG"
 )
 
 func LoadSecretData(secretName string) (map[string]string, error) {

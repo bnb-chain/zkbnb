@@ -68,9 +68,6 @@ func main() {
 					flags.PProfPortFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return prover.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
@@ -88,9 +85,6 @@ func main() {
 					flags.PProfPortFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return witness.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
@@ -108,9 +102,6 @@ func main() {
 					flags.PProfPortFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return monitor.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
@@ -128,9 +119,6 @@ func main() {
 				},
 				Usage: "Run committer service",
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return committer.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
@@ -142,10 +130,6 @@ func main() {
 				},
 				Usage: "Run fullnode service",
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
-
 					return fullnode.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
 			},
@@ -162,9 +146,6 @@ func main() {
 					flags.PProfPortFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return sender.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
@@ -182,9 +163,6 @@ func main() {
 					flags.PProfPortFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return apiserver.Run(cCtx.String(flags.ConfigFlag.Name))
 				},

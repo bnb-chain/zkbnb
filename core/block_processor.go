@@ -109,14 +109,12 @@ func (p *CommitProcessor) Process(tx *tx.Tx) (err error) {
 	}
 	tx.CreatedAt = time.Now()
 	p.bc.Statedb.Txs = append(p.bc.Statedb.Txs, tx)
-	metrics.TxTypeCommitRunCounter.WithLabelValues(strconv.Itoa(executor.GetTxInfo().GetTxType())).Set(1)
+	metrics.TxTypeCommitRunCounter.WithLabelValues(strconv.Itoa(executor.GetTxInfo().GetTxType())).Inc()
 	fee, isValid := new(big.Int).SetString(tx.GasFee, 10)
 	if isValid {
 		metrics.TxTypeCommitRevenueCounter.WithLabelValues(strconv.Itoa(executor.GetTxInfo().GetTxType())).Add(common2.GetFeeFromWei(fee))
 		metrics.GasAccountRevenueCounter.Add(common2.GetFeeFromWei(fee))
-	} else {
-		metrics.TxTypeCommitRevenueCounter.WithLabelValues(strconv.Itoa(executor.GetTxInfo().GetTxType())).Add(0)
-		metrics.GasAccountRevenueCounter.Add(0)
+		metrics.TotalRevenueCounter.Add(common2.GetFeeFromWei(fee))
 	}
 	return nil
 }
