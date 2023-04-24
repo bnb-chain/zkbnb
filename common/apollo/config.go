@@ -42,6 +42,8 @@ type Postgres struct {
 	LogLevel         logger.LogLevel `json:",optional"`
 	MaxIdle          int             `json:",optional"`
 	MaxConn          int             `json:",optional"`
+	MasterSecretKey  string          `json:",optional"`
+	SlaveSecretKey   string          `json:",optional"`
 }
 
 type Apollo struct {
@@ -53,8 +55,11 @@ type Apollo struct {
 }
 
 type CommonConfig struct {
-	Postgres   Postgres
-	CacheRedis cache.CacheConf
+	Postgres         Postgres
+	CacheRedis       cache.CacheConf
+	AwsRegion        string
+	AwsProfile       string
+	AwsSdkLoadConfig string
 }
 
 var apolloClientMap = make(map[string]agollo.Client)
@@ -69,11 +74,20 @@ func InitCommonConfig() (*CommonConfig, error) {
 		if err != nil {
 			return nil, err
 		}
+		if os.Getenv(secret.AwsRegion) == "" {
+			os.Setenv(secret.AwsRegion, commonConfig.AwsRegion)
+		}
+		if os.Getenv(secret.AwsProfile) == "" {
+			os.Setenv(secret.AwsProfile, commonConfig.AwsProfile)
+		}
+		if os.Getenv(secret.AwsSdkLoadConfig) == "" {
+			os.Setenv(secret.AwsSdkLoadConfig, commonConfig.AwsSdkLoadConfig)
+		}
 
 		// If the environment is not local environment, load the postgresql connection from the secret manager
 		if !environment.IsLocalEnvironment() {
 			// Load the postgresql connection parameter from the secret manager
-			postgresql, err := LoadPostgresqlConfig()
+			postgresql, err := LoadPostgresqlConfig(commonConfig)
 			if err != nil {
 				return nil, err
 			}
@@ -84,9 +98,9 @@ func InitCommonConfig() (*CommonConfig, error) {
 	}
 }
 
-func LoadPostgresqlConfig() (*Postgres, error) {
-	masterSecretKey := os.Getenv(MasterSecretKey)
-	slaveSecretKey := os.Getenv(SlaveSecretKey)
+func LoadPostgresqlConfig(cfg *CommonConfig) (*Postgres, error) {
+	masterSecretKey := cfg.Postgres.MasterSecretKey
+	slaveSecretKey := cfg.Postgres.SlaveSecretKey
 
 	postgres := &Postgres{}
 	masterDataMap, err := secret.LoadSecretData(masterSecretKey)
