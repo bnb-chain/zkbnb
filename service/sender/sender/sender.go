@@ -25,6 +25,7 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb/common/log"
 	"github.com/bnb-chain/zkbnb/core/rpc_client"
+	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/dgraph-io/ristretto"
 	"github.com/ethereum/go-ethereum/common"
@@ -146,6 +147,13 @@ var (
 		Name:      "batch_total_cost",
 		Help:      "batch_total_cost metrics.",
 	})
+	runTimeIntervalMetric = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "zkbnb",
+			Name:      "run_time_interval",
+			Help:      "run_time_interval metrics.",
+		},
+		[]string{"type"})
 )
 
 type CommitBlockData struct {
@@ -189,6 +197,7 @@ type Sender struct {
 	sysConfigModel           sysconfig.SysConfigModel
 	proofModel               proof.ProofModel
 	txModel                  tx.TxModel
+	accountModel             account.AccountModel
 	metricCommitRollupTxId   uint
 	metricCommitRollupHeight int64
 	metricVerifyRollupTxId   uint
@@ -237,6 +246,7 @@ func NewSender(c sconfig.Config) *Sender {
 		sysConfigModel:           sysconfig.NewSysConfigModel(db),
 		proofModel:               proof.NewProofModel(db),
 		txModel:                  tx.NewTxModel(db),
+		accountModel:             account.NewAccountModel(db),
 		metricCommitRollupTxId:   0,
 		metricCommitRollupHeight: 0,
 		metricVerifyRollupTxId:   0,
@@ -373,6 +383,9 @@ func InitPrometheusFacility() {
 	}
 	if err := prometheus.Register(batchTotalCostMetric); err != nil {
 		logx.Errorf("prometheus.Register batchTotalCostMetric error: %v", err)
+	}
+	if err := prometheus.Register(runTimeIntervalMetric); err != nil {
+		logx.Errorf("prometheus.Register runTimeIntervalMetric error: %v", err)
 	}
 
 }
@@ -1255,16 +1268,44 @@ func (s *Sender) Monitor() {
 	if err == nil {
 		s.SetBalance(info, "VerifyAddress")
 	}
+	contractBalanceMetric.WithLabelValues("gasAccount").Set(common2.GetFeeFromWei(s.GetAccount(types.GasAccount)))
+	contractBalanceMetric.WithLabelValues("protocolAccount").Set(common2.GetFeeFromWei(s.GetAccount(types.ProtocolAccount)))
 
 	//costs
 	s.MetricBatchCommitContact()
 	s.MetricBatchVerifyContact()
 }
 
+func (s *Sender) GetAccount(accountIndex int64) *big.Int {
+	dbAccount, err := s.accountModel.GetAccountByIndex(accountIndex)
+	if err != nil {
+		return big.NewInt(0)
+	}
+	var assetInfo map[int64]*types.AccountAsset
+	err = json.Unmarshal([]byte(dbAccount.AssetInfo), &assetInfo)
+	if err != nil {
+		return big.NewInt(0)
+	}
+	asset, ok := assetInfo[0]
+	if ok {
+		return asset.Balance
+	} else {
+		return big.NewInt(0)
+	}
+}
+
 func (s *Sender) MetricBatchCommitContact() {
 	blockHeights := make([]int64, 0)
+	txs, err := s.l1RollupTxModel.GetRecent2Transact(l1rolluptx.TxTypeCommit)
+	if err == nil {
+		if len(txs) == 2 {
+			txRollUpStart := txs[1]
+			txRollUpEnd := txs[0]
+			value := txRollUpEnd.CreatedAt.UnixMilli() - txRollUpStart.CreatedAt.UnixMilli()
+			runTimeIntervalMetric.WithLabelValues("commit").Set(float64(value))
+		}
+	}
 	if s.metricCommitRollupTxId == 0 {
-		txs, err := s.l1RollupTxModel.GetRecent2Transact(l1rolluptx.TxTypeCommit)
 		if err == nil {
 			if len(txs) == 1 {
 				txRollUp := txs[0]
@@ -1295,8 +1336,16 @@ func (s *Sender) MetricBatchCommitContact() {
 
 func (s *Sender) MetricBatchVerifyContact() {
 	blockHeights := make([]int64, 0)
+	txs, err := s.l1RollupTxModel.GetRecent2Transact(l1rolluptx.TxTypeVerifyAndExecute)
+	if err == nil {
+		if len(txs) == 2 {
+			txRollUpStart := txs[1]
+			txRollUpEnd := txs[0]
+			value := txRollUpEnd.CreatedAt.UnixMilli() - txRollUpStart.CreatedAt.UnixMilli()
+			runTimeIntervalMetric.WithLabelValues("verify").Set(float64(value))
+		}
+	}
 	if s.metricVerifyRollupTxId == 0 {
-		txs, err := s.l1RollupTxModel.GetRecent2Transact(l1rolluptx.TxTypeVerifyAndExecute)
 		if err == nil {
 			if len(txs) == 1 {
 				txRollUp := txs[0]

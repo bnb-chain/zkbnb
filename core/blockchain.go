@@ -534,6 +534,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 			return fmt.Errorf("unmarshal pollTxIds failed: %s", err.Error())
 
 		}
+		metrics.RollbackTxGauge.Set(float64(len(pollTxIds)))
 
 		fromTxHash := ""
 		fromPoolTxId := uint(0)

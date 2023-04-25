@@ -387,6 +387,11 @@ var (
 			Name:      "total_fee_revenue",
 			Help:      "total_fee_revenue.",
 		})
+	RollbackTxGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "rollback_Tx",
+		Help:      "rollback_Tx",
+	})
 )
 
 func InitCommitterMetrics() error {
@@ -533,6 +538,9 @@ func InitCommitterMetrics() error {
 	}
 	if err := prometheus.Register(TotalRevenueCounter); err != nil {
 		return fmt.Errorf("prometheus.Register TotalRevenueCounter error: %v", err)
+	}
+	if err := prometheus.Register(RollbackTxGauge); err != nil {
+		return fmt.Errorf("prometheus.Register RollbackTxGauge error: %v", err)
 	}
 
 	return nil
