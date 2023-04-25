@@ -1330,6 +1330,7 @@ func (s *Sender) setBatchCommitContactMetric(txRollUp *l1rolluptx.L1RollupTx, bl
 	batchTotalCostMetric.Add(cost)
 	batchCommitContactMetric.WithLabelValues("gasCost").Set(cost)
 	batchCommitContactMetric.WithLabelValues("blockHeight").Set(float64(txRollUp.L2BlockHeight))
+	batchCommitContactMetric.WithLabelValues("blockNumber").Set(float64(len(blockHeights)))
 	count, err := s.txModel.GetCountByHeights(blockHeights)
 	if err == nil {
 		batchCommitContactMetric.WithLabelValues("txNumber").Set(float64(count))
@@ -1359,6 +1360,7 @@ func (s *Sender) setBatchVerifyContactMetric(txRollUp *l1rolluptx.L1RollupTx, bl
 	batchTotalCostMetric.Add(cost)
 	batchVerifyContactMetric.WithLabelValues("gasCost").Set(cost)
 	batchVerifyContactMetric.WithLabelValues("blockHeight").Set(float64(txRollUp.L2BlockHeight))
+	batchVerifyContactMetric.WithLabelValues("blockNumber").Set(float64(len(blockHeights)))
 	count, err := s.txModel.GetCountByHeights(blockHeights)
 	if err == nil {
 		batchVerifyContactMetric.WithLabelValues("txNumber").Set(float64(count))

@@ -243,6 +243,13 @@ var (
 		Name:      "pool_tx_l2_error_count",
 		Help:      "pool_tx_l2_error_count metrics.",
 	})
+	PoolTxErrorCountMetics = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "pool_tx_error_count",
+			Help:      "pool_tx_error_count.",
+		},
+		[]string{"type"})
 )
 
 // metrics
@@ -508,6 +515,9 @@ func InitCommitterMetrics() error {
 	}
 	if err := prometheus.Register(PoolTxL2ErrorCountMetics); err != nil {
 		return fmt.Errorf("prometheus.Register poolTxL2ErrorCountMetics error: %v", err)
+	}
+	if err := prometheus.Register(PoolTxErrorCountMetics); err != nil {
+		return fmt.Errorf("prometheus.Register PoolTxErrorCountMetics error: %v", err)
 	}
 	if err := prometheus.Register(TxTypeCommitRunCounter); err != nil {
 		return fmt.Errorf("prometheus.Register TxTypeCommitRunCounter error: %v", err)
