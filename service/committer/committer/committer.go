@@ -63,9 +63,6 @@ type UpdatePoolTx struct {
 //->updateAssetTreeFunc->updateAccountAndNftTreeFunc->saveBlockDataFunc->finalSaveBlockDataFunc
 
 func NewCommitter(config *config.Config) (*Committer, error) {
-	if len(config.BlockConfig.OptionalBlockSizes) == 0 {
-		return nil, types.AppErrNilOptionalBlockSize
-	}
 
 	err := metrics.InitCommitterMetrics()
 	if err != nil {
