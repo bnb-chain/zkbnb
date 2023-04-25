@@ -55,10 +55,11 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-const MaxErrorRetryCount = 3
-
-// VM Exception while processing transaction: revert i
-const CallContractError = "revert"
+const (
+	MaxErrorRetryCount = 3
+	// VM Exception while processing transaction: revert i
+	CallContractError = "revert"
+)
 
 var (
 	l2BlockCommitToChainHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
@@ -780,6 +781,8 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 
 		if maxCommitBlockCount > 1 {
 			maxCommitBlockCount--
+		} else {
+			return nil, nil
 		}
 	}
 }
@@ -1033,6 +1036,8 @@ func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1Ro
 		}
 		if maxVerifyBlockCount > 1 {
 			maxVerifyBlockCount--
+		} else {
+			return nil, nil
 		}
 	}
 }
