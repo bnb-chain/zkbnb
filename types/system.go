@@ -33,6 +33,7 @@ const (
 	VerifyAddress           = "VerifyAddress"
 	GovernanceContract      = "GovernanceContract"
 	AssetGovernanceContract = "AssetGovernanceContract"
+	OptionalBlockSizes      = "OptionalBlockSizes"
 	Validators              = "Validators"
 
 	Governor       = "Governor"

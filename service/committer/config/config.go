@@ -15,7 +15,6 @@ const (
 )
 
 type BlockConfig struct {
-	OptionalBlockSizes []int
 	//second
 	MaxPackedInterval     int  `json:",optional"`
 	SaveBlockDataPoolSize int  `json:",optional"`
