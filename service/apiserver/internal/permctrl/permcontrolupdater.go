@@ -25,7 +25,7 @@ func (u *PermControlUpdater) OnChange(event *storage.ChangeEvent) {
 
 		// Validate the permission control configuration from the apollo server side
 		if err = newPermissionControlConfig.ValidatePermissionControlConfig(); err != nil {
-			logx.Severef("Fail to validate PermissionControlConfig from the apollo server, Reason:%s", err.Error())
+			logx.Errorf("Fail to validate PermissionControlConfig from the apollo server, Reason:%s", err.Error())
 			return
 		}
 		permissionControlConfig = newPermissionControlConfig

@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/panjf2000/ants/v2"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -396,6 +397,7 @@ func (c *GenerateProof) generateProof(blockHeight int64, accountIndex int64, nft
 		if err != nil {
 			return err
 		}
+		Mkdir(c.config.ProofFolder)
 		err = ioutil.WriteFile(c.config.ProofFolder+"performDesertAsset.json", data, 0777)
 		if err != nil {
 			return err
@@ -458,6 +460,7 @@ func (c *GenerateProof) generateProof(blockHeight int64, accountIndex int64, nft
 		performDesertNftData.AccountMerkleProof = accountMerkleProof
 
 		data, err := json.Marshal(performDesertNftData)
+		Mkdir(c.config.ProofFolder)
 		err = ioutil.WriteFile(c.config.ProofFolder+"performDesertNft.json", data, 0777)
 		if err != nil {
 			return err
@@ -544,6 +547,13 @@ func (c *GenerateProof) getStoredBlockInfo() (*StoredBlockInfo, error) {
 		Commitment:                   common.Bytes2Hex(lastStoredBlockInfo.Commitment[:]),
 	}
 	return storedBlockInfo, nil
+}
+
+func Mkdir(dir string) {
+	err := os.MkdirAll(dir, 0777)
+	if err != nil {
+		logx.Errorf("make dir error,%s", err)
+	}
 }
 
 func (c *GenerateProof) Shutdown() {

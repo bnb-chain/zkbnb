@@ -1,6 +1,7 @@
 package sender
 
 import (
+	"github.com/bnb-chain/zkbnb/core/rpc_client"
 	"github.com/robfig/cron/v3"
 	"time"
 
@@ -16,12 +17,17 @@ const GracefulShutdownTimeout = 10 * time.Second
 
 func Run(configFile string) error {
 	var c config.Config
-	conf.MustLoad(configFile, &c)
+	if err := config.InitSystemConfiguration(&c, configFile); err != nil {
+		logx.Severef("failed to initiate system configuration, %v", err)
+		panic("failed to initiate system configuration, err:" + err.Error())
+	}
+
+	conf.Load(configFile, &c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
 	//Initiate the apollo configuration
-	config.InitApolloConfiguration(c)
+	config.InitSenderConfiguration(c)
 	//Initiate the Prometheus Monitor Facility
 	sender.InitPrometheusFacility()
 
@@ -77,11 +83,20 @@ func Run(configFile string) error {
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
 		logx.Info("========================= start monitor balance task =========================")
-		s.MonitorBalance()
+		s.Monitor()
 	})
 	if err != nil {
 		logx.Severef("failed to start the monitor balance task, %v", err)
 		panic("failed to start the monitor balance task, err:" + err.Error())
+	}
+
+	_, err = cronJob.AddFunc("@every 10s", func() {
+		logx.Info("========================= start rpc health task =========================")
+		rpc_client.HealthCheck()
+	})
+	if err != nil {
+		logx.Severef("failed to start rpc health task, %v", err)
+		panic("failed to start the rpc health task, err:" + err.Error())
 	}
 
 	cronJob.Start()

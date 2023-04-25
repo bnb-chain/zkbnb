@@ -10,13 +10,13 @@ ENV GO111MODULE=on
 RUN cd /zkbnb && make build-only
 
 # Pull ZkBNB into a second stage deploy alpine container
-FROM alpine:3.16.0
+FROM alpine:3.17
 
 ARG USER=bsc
 ARG USER_UID=1000
 ARG USER_GID=1000
 
-ENV PACKAGES ca-certificates~=20220614 bash~=5.1.16-r2
+ENV PACKAGES ca-certificates~=20220614-r4 bash~=5.2.15-r0 curl
 ENV WORKDIR=/server
 
 RUN apk add --no-cache $PACKAGES \

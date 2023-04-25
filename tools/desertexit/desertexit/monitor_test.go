@@ -12,7 +12,7 @@ import (
 )
 
 const networkRpc = "https://bsc-testnet.nodereal.io/v1/a1cee760ac744f449416a711f20d99dd"
-const hash = "0xcbaafe9f8b8a9728a7ebd5b21c760e454f84a4bba2524dfb49b81d0ae4068a2d"
+const hash = "0xd9f3886d3a657c1e1eba5527bae8a9aa6565ebf3a32432d3e40b2a743e9cc9a5"
 
 func TestDesertExit_getCommitBlocksCallData(t *testing.T) {
 	client, err := rpc.NewClient(networkRpc)
@@ -25,6 +25,14 @@ func TestDesertExit_getCommitBlocksCallData(t *testing.T) {
 	if err != nil {
 		logx.Severe(err)
 		return
+	}
+
+	receipt, err := client.GetTransactionReceipt(hash)
+	if err != nil {
+		logx.Errorf("query transaction receipt %s failed, err: %v", hash, err)
+	} else {
+		json, _ := receipt.MarshalJSON()
+		logx.Infof(string(json))
 	}
 
 	storageStoredBlockInfo := StorageStoredBlockInfo{}

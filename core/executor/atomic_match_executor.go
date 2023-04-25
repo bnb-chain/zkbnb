@@ -3,6 +3,7 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 
@@ -643,4 +644,10 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 
 	return txDetails, nil
+}
+
+func (e *AtomicMatchExecutor) Finalize() error {
+	metrics.ProtocolFeeRevenueCounter.Add(common2.GetFeeFromWei(e.TxInfo.BuyOffer.ProtocolAmount))
+	metrics.TotalRevenueCounter.Add(common2.GetFeeFromWei(e.TxInfo.BuyOffer.ProtocolAmount))
+	return nil
 }

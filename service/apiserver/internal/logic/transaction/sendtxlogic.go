@@ -34,7 +34,7 @@ type SendTxLogic struct {
 }
 
 func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext, header http.Header) *SendTxLogic {
-	permissionControl := permctrl.NewPermissionControl(ctx, svcCtx)
+	permissionControl := permctrl.NewPermissionControl(svcCtx)
 	return &SendTxLogic{
 		Logger:            logx.WithContext(ctx),
 		ctx:               ctx,

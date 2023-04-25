@@ -353,6 +353,15 @@ func (m *PerformDesert) doCancelOutstandingDeposit(maxRequestId uint64, deposits
 }
 
 func (m *PerformDesert) ActivateDesertMode() error {
+	desertMode, err := zkbnb.DesertMode(m.zkbnbInstance)
+	if err != nil {
+		logx.Errorf("failed to fetch desert mode: %v", err)
+		return err
+	}
+	if desertMode {
+		logx.Infof("desert mode has been activated")
+		return nil
+	}
 	gasPrice, err := m.cli.SuggestGasPrice(context.Background())
 	if err != nil {
 		logx.Errorf("failed to fetch gas price: %v", err)

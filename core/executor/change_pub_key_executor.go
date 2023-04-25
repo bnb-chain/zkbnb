@@ -147,6 +147,8 @@ func (e *ChangePubKeyExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
+	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
+	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 

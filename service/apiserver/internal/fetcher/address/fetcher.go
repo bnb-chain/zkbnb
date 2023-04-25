@@ -1,7 +1,6 @@
 package address
 
 import (
-	"context"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/types"
@@ -10,13 +9,11 @@ import (
 )
 
 type Fetcher struct {
-	ctx    context.Context
 	svcCtx *svc.ServiceContext
 }
 
-func NewFetcher(ctx context.Context, svcCtx *svc.ServiceContext) *Fetcher {
+func NewFetcher(svcCtx *svc.ServiceContext) *Fetcher {
 	return &Fetcher{
-		ctx:    ctx,
 		svcCtx: svcCtx,
 	}
 }

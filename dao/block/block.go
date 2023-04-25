@@ -49,6 +49,7 @@ type (
 		DropBlockTable() error
 		GetBlocks(limit int64, offset int64) (blocks []*Block, err error)
 		GetPendingBlocksBetween(start int64, end int64) (blocks []*Block, err error)
+		GetPendingBlocksBetweenWithoutTx(start int64, end int64) (blocks []*Block, err error)
 		GetBlockByHeight(blockHeight int64) (block *Block, err error)
 		GetBlockByHeightWithoutTx(blockHeight int64) (block *Block, err error)
 		GetCommittedBlocksCount() (count int64, err error)
@@ -193,6 +194,18 @@ func (m *defaultBlockModel) GetPendingBlocksBetween(start int64, end int64) (blo
 				return txInfo.TxDetails[i].Order < txInfo.TxDetails[j].Order
 			})
 		}
+	}
+	return blocks, nil
+}
+
+func (m *defaultBlockModel) GetPendingBlocksBetweenWithoutTx(start int64, end int64) (blocks []*Block, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ? and block_status in ?", start, end, []int{StatusPending, StatusCommitted}).
+		Order("block_height").
+		Find(&blocks)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
 	}
 	return blocks, nil
 }

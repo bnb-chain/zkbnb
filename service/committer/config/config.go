@@ -3,32 +3,31 @@ package config
 import (
 	"encoding/json"
 	"github.com/bnb-chain/zkbnb/common/apollo"
+	"github.com/bnb-chain/zkbnb/core"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/cache"
 )
 
 const (
-	MonitorAppId       = "zkbnb-monitor"
-	SystemConfigKey    = "SystemConfig"
-	Namespace          = "application"
-	StartL1BlockHeight = "START_L1_BLOCK_HEIGHT"
+	CommitterAppId  = "zkbnb-committer"
+	SystemConfigKey = "SystemConfig"
+	Namespace       = "application"
 )
 
-type ChainConfig struct {
-	NetworkRPCSysConfigName string
-	StartL1BlockHeight      int64 `json:",optional"`
-	ConfirmBlocksCount      uint64
-	MaxHandledBlocksCount   int64
-	KeptHistoryBlocksCount  int64 // KeptHistoryBlocksCount define the count of blocks to keep in table, old blocks will be cleaned
+type BlockConfig struct {
+	OptionalBlockSizes []int
+	//second
+	MaxPackedInterval     int  `json:",optional"`
+	SaveBlockDataPoolSize int  `json:",optional"`
+	RollbackOnly          bool `json:",optional"`
 }
 
 type Config struct {
-	Postgres         apollo.Postgres
-	CacheRedis       cache.CacheConf
-	ChainConfig      ChainConfig
-	LogConf          logx.LogConf
-	AccountCacheSize int
+	core.ChainConfig
+
+	BlockConfig BlockConfig
+	LogConf     logx.LogConf
+	IpfsUrl     string
 }
 
 func InitSystemConfiguration(config *Config, configFile string) error {
@@ -55,7 +54,7 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 	c.Postgres = commonConfig.Postgres
 	c.CacheRedis = commonConfig.CacheRedis
 
-	systemConfigString, err := apollo.LoadApolloConfigFromEnvironment(MonitorAppId, Namespace, SystemConfigKey)
+	systemConfigString, err := apollo.LoadApolloConfigFromEnvironment(CommitterAppId, Namespace, SystemConfigKey)
 	if err != nil {
 		return err
 	}
@@ -65,11 +64,12 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 	if err != nil {
 		return err
 	}
-
-	c.ChainConfig = systemConfig.ChainConfig
+	c.RedisExpiration = systemConfig.RedisExpiration
+	c.CacheConfig = systemConfig.CacheConfig
+	c.TreeDB = systemConfig.TreeDB
+	c.BlockConfig = systemConfig.BlockConfig
 	c.LogConf = systemConfig.LogConf
-	c.AccountCacheSize = systemConfig.AccountCacheSize
-	c.ChainConfig.StartL1BlockHeight = systemConfig.ChainConfig.StartL1BlockHeight
+	c.IpfsUrl = systemConfig.IpfsUrl
 
 	return nil
 }
@@ -77,14 +77,6 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 func InitSystemConfigFromConfigFile(c *Config, configFile string) error {
 	conf.Load(configFile, c)
 	logx.MustSetup(c.LogConf)
-	c.Validate()
 	logx.DisableStat()
 	return nil
-}
-
-func (c *Config) Validate() {
-	if c.ChainConfig.StartL1BlockHeight < 0 || c.ChainConfig.MaxHandledBlocksCount <= 0 || c.ChainConfig.KeptHistoryBlocksCount <= 0 {
-		logx.Severe("invalid chain config")
-		panic("invalid chain config")
-	}
 }

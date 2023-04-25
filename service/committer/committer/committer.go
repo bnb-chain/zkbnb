@@ -17,37 +17,23 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/gorm"
-
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/core"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/service/committer/config"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 const (
 	MaxPackedInterval = 60 * 1
 )
 
-type Config struct {
-	core.ChainConfig
-
-	BlockConfig struct {
-		OptionalBlockSizes []int
-		//second
-		MaxPackedInterval     int  `json:",optional"`
-		SaveBlockDataPoolSize int  `json:",optional"`
-		RollbackOnly          bool `json:",optional"`
-	}
-	LogConf logx.LogConf
-	IpfsUrl string
-}
-
 type Committer struct {
 	running              bool
-	config               *Config
+	config               *config.Config
 	maxTxsPerBlock       int
 	maxCommitterInterval int
 	optionalBlockSizes   []int
@@ -76,7 +62,7 @@ type UpdatePoolTx struct {
 //work flow: pullPoolTxsToQueue->executeTxFunc->updatePoolTxFunc->preSaveBlockDataFunc
 //->updateAssetTreeFunc->updateAccountAndNftTreeFunc->saveBlockDataFunc->finalSaveBlockDataFunc
 
-func NewCommitter(config *Config) (*Committer, error) {
+func NewCommitter(config *config.Config) (*Committer, error) {
 	if len(config.BlockConfig.OptionalBlockSizes) == 0 {
 		return nil, types.AppErrNilOptionalBlockSize
 	}
@@ -285,7 +271,7 @@ func (c *Committer) executeTxFunc() error {
 			subPendingTxs = nil
 		} else {
 			pendingTxs = c.getPoolTxsFromQueue()
-			//c.preLoadAccountAndNft(pendingTxs)
+			c.preLoadAccountAndNft(pendingTxs)
 		}
 
 		for len(pendingTxs) == 0 {
@@ -299,7 +285,7 @@ func (c *Committer) executeTxFunc() error {
 
 			time.Sleep(100 * time.Millisecond)
 			pendingTxs = c.getPoolTxsFromQueue()
-			//c.preLoadAccountAndNft(pendingTxs)
+			c.preLoadAccountAndNft(pendingTxs)
 		}
 
 		pendingDeletePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
@@ -1147,9 +1133,9 @@ func (c *Committer) getLatestExecutedRequestId() (int64, error) {
 }
 
 func (c *Committer) preLoadAccountAndNft(txs []*tx.Tx) {
-	var accountIndexMap map[int64]bool
-	var nftIndexMap map[int64]bool
-	var addressMap map[string]bool
+	accountIndexMap := make(map[int64]bool, 0)
+	nftIndexMap := make(map[int64]bool, 0)
+	addressMap := make(map[string]bool, 0)
 	for _, poolTx := range txs {
 		c.bc.PreApplyTransaction(poolTx, accountIndexMap, nftIndexMap, addressMap)
 	}

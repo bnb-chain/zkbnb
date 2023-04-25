@@ -63,6 +63,7 @@ jobs:
 
   integration-test:
     runs-on: self-hosted
+    needs: deploy-zkBNB
     permissions:
       issues: write
       pull-requests: write
@@ -74,7 +75,7 @@ jobs:
          export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin:/usr/local/bin
          
          cd /tmp && sudo rm -rf ./zkbnb-integration-test
-         git clone --branch integration-cicd https://${GH_PAT}@github.com/bnb-chain/zkbnb-integration-test.git
+         git clone --depth 1 --branch gkr-mimc https://${GH_PAT}@github.com/bnb-chain/zkbnb-integration-test.git
          cd ./zkbnb-integration-test && go mod tidy
          
          echo ">>>Start TestSetupSuite"
