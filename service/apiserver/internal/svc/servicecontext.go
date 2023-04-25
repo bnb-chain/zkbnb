@@ -37,6 +37,13 @@ var (
 		Name:      "sent_tx_total_count",
 		Help:      "sent tx total count",
 	})
+	channelTxMetric = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "channel_tx",
+			Help:      "channel_tx metrics.",
+		},
+		[]string{"channel", "type"})
 )
 
 type ServiceContext struct {
@@ -64,6 +71,7 @@ type ServiceContext struct {
 
 	SendTxTotalMetrics prometheus.Counter
 	SendTxMetrics      prometheus.Counter
+	ChannelTxMetric    *prometheus.CounterVec
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -111,6 +119,10 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		logx.Errorf("prometheus.Register sendTxTotalMetrics error: %s", err.Error())
 		return nil
 	}
+	if err := prometheus.Register(channelTxMetric); err != nil {
+		logx.Errorf("prometheus.Register ChannelTxMetric error: %s", err.Error())
+		return nil
+	}
 	common.NewIPFS(c.IpfsUrl)
 	CMCPriceFetcher := price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token)
 	BOPriceFetcher := price.NewBOFetcher(memCache, assetModel, c.BinanceOracle.Url, c.BinanceOracle.Apikey, c.BinanceOracle.ApiSecret)
@@ -137,6 +149,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 		SendTxTotalMetrics: sendTxTotalMetrics,
 		SendTxMetrics:      sendTxMetrics,
+		ChannelTxMetric:    channelTxMetric,
 	}
 }
 

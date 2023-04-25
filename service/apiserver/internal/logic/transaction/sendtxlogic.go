@@ -60,7 +60,6 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 	if s.svcCtx.Config.TxPool.MaxPendingTxCount > 0 && pendingTxCount >= int64(s.svcCtx.Config.TxPool.MaxPendingTxCount) {
 		return nil, types2.AppErrTooManyTxs
 	}
-
 	// Control the permission list with the whitelist or blacklist
 	err = s.permissionControl.Control(req.TxType, req.TxInfo)
 	if err != nil {
@@ -74,6 +73,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		logx.Error("fail to init blockchain runner:", err)
 		return nil, types2.AppErrInternal
 	}
+	s.svcCtx.ChannelTxMetric.WithLabelValues(channelName, string(req.TxType)).Inc()
 	newPoolTx := tx.BaseTx{
 		TxHash: types2.EmptyTxHash, // Would be computed in prepare method of executors.
 		TxType: int64(req.TxType),
