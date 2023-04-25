@@ -383,6 +383,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	var gasPrice *big.Int
 	if s.config.ChainConfig.GasPrice > 0 {
 		gasPrice = big.NewInt(int64(s.config.ChainConfig.GasPrice))
+		s.ValidOverSuggestGasPrice(cli, gasPrice)
 	} else {
 		gasPrice, err = cli.SuggestGasPrice(context.Background())
 		if err != nil {
@@ -440,14 +441,13 @@ func (s *Sender) CommitBlocks() (err error) {
 			logx.WithContext(ctx).Infof("speed up commit block to l1,l1 nonce: %d,gasPrice: %d", nonce, gasPrice)
 		}
 
-		s.ValidOverSuggestGasPrice(gasPrice)
+		s.ValidOverSuggestGasPrice150Percent(cli, gasPrice)
 
 		// commit blocks on-chain
 		blockHeight := pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber
 		if s.IsOverMaxErrorRetryCount(blockHeight, l1rolluptx.TxTypeCommit) {
 			return fmt.Errorf("Send tx to L1 has been called %d times, no more retries,please check.L2BlockHeight=%d,txType=%d ", MaxErrorRetryCount, blockHeight, l1rolluptx.TxTypeCommit)
 		}
-		txHash, err = s.zkbnbClient.CommitBlocksWithNonce(
 		txHash, err = zkbnbClient.CommitBlocksWithNonce(
 			lastStoredBlockInfo,
 			pendingCommitBlocks,
@@ -665,6 +665,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	var gasPrice *big.Int
 	if s.config.ChainConfig.GasPrice > 0 {
 		gasPrice = big.NewInt(int64(s.config.ChainConfig.GasPrice))
+		s.ValidOverSuggestGasPrice(cli, gasPrice)
 	} else {
 		gasPrice, err = cli.SuggestGasPrice(context.Background())
 		if err != nil {
@@ -723,15 +724,14 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			logx.WithContext(ctx).Infof("speed up verify block to l1,l1 nonce: %d,gasPrice: %d", nonce, gasPrice)
 		}
 
-		s.ValidOverSuggestGasPrice(gasPrice)
+		s.ValidOverSuggestGasPrice150Percent(cli, gasPrice)
 
 		// Verify blocks on-chain
-		txHash, err = zkbnbClient.VerifyAndExecuteBlocksWithNonce(
 		blockHeight := pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber
 		if s.IsOverMaxErrorRetryCount(blockHeight, l1rolluptx.TxTypeVerifyAndExecute) {
 			return fmt.Errorf("Send tx to L1 has been called %d times, no more retries,please check,L2BlockHeight=%d,txType=TxTypeVerifyAndExecute ", MaxErrorRetryCount, blockHeight)
 		}
-		txHash, err = s.zkbnbClient.VerifyAndExecuteBlocksWithNonce(
+		txHash, err = zkbnbClient.VerifyAndExecuteBlocksWithNonce(
 			pendingVerifyAndExecuteBlocks,
 			proofs, gasPrice, s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
@@ -1193,11 +1193,21 @@ func (s *Sender) getZkbnbClient(cli *rpc.ProviderClient) *zkbnb.ZkBNBClient {
 	return zkbnbClient
 }
 
-func (s *Sender) ValidOverSuggestGasPrice(gasPrice *big.Int) {
-	suggestGasPrice, err := s.client.SuggestGasPrice(context.Background())
+func (s *Sender) ValidOverSuggestGasPrice150Percent(cli *rpc.ProviderClient, gasPrice *big.Int) {
+	suggestGasPrice, err := cli.SuggestGasPrice(context.Background())
+	if err == nil {
+		suggestGasPriceMax := ffmath.Add(suggestGasPrice, ffmath.Div(suggestGasPrice, big.NewInt(2)))
+		if gasPrice.Cmp(suggestGasPriceMax) > 0 {
+			logx.Severef("More than 150% of the suggest gas price,suggestGasPrice=%s,gasPrice=%s", suggestGasPrice.String(), gasPrice.String())
+		}
+	}
+}
+
+func (s *Sender) ValidOverSuggestGasPrice(cli *rpc.ProviderClient, gasPrice *big.Int) {
+	suggestGasPrice, err := cli.SuggestGasPrice(context.Background())
 	if err == nil {
 		if gasPrice.Cmp(suggestGasPrice) > 0 {
-			logx.Severef("over bsc suggest gas price,suggestGasPrice=%s,gasPrice=%s", suggestGasPrice.String(), gasPrice.String())
+			logx.Severef("The gasPrice of the apollo configuration is more than the suggest gas price,suggestGasPrice=%s,gasPrice=%s", suggestGasPrice.String(), gasPrice.String())
 		}
 	}
 }
