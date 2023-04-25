@@ -2,11 +2,9 @@ package config
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/bnb-chain/zkbnb/common/apollo"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
-	"os"
 )
 
 const (
@@ -88,36 +86,11 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 	}
 
 	c.ChainConfig = systemConfig.ChainConfig
+	c.KMSConfig = systemConfig.KMSConfig
+	c.AuthConfig = systemConfig.AuthConfig
 	c.LogConf = systemConfig.LogConf
 
-	if err = InitKeyConfigFromEnvironment(c); err != nil {
-		return err
-	}
-
 	return nil
-}
-
-func InitKeyConfigFromEnvironment(c *Config) error {
-	// Load and check all the kms key Ids from environment variables
-	commitKeyId := os.Getenv(KmsCommitKeyId)
-	verifyKeyId := os.Getenv(KmsVerifyKeyId)
-	if len(commitKeyId) > 0 && len(verifyKeyId) > 0 {
-		c.KMSConfig.CommitKeyId = commitKeyId
-		c.KMSConfig.VerifyKeyId = verifyKeyId
-		return nil
-	}
-
-	// Load and check all the private secrets from environment variables
-	commitBlockSk := os.Getenv(AuthCommitBlockSk)
-	verifyBlockSk := os.Getenv(AuthVerifyBlockSk)
-	if len(commitBlockSk) > 0 && len(verifyBlockSk) > 0 {
-		c.AuthConfig.CommitBlockSk = commitBlockSk
-		c.AuthConfig.VerifyBlockSk = verifyBlockSk
-		return nil
-	}
-
-	// If both kms keys and private keys have not been set in the environment, directly return this error
-	return errors.New("both kms keys and auth private keys not set in the environment variables")
 }
 
 func InitSystemConfigFromConfigFile(c *Config, configFile string) error {
