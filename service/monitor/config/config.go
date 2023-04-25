@@ -2,10 +2,13 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/bnb-chain/zkbnb/common/apollo"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
+	"os"
+	"strconv"
 )
 
 const (
@@ -66,12 +69,32 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 		return err
 	}
 
-	c.ChainConfig = systemConfig.ChainConfig
+	// Firstly load startL1BlockHeight from environment variable that is prepared by the initial script
+	// in qa or dev environment. But if for perf or prod, it is injected by the apollo configuration
+	startL1BlockHeight, err := LoadStartL1BlockHeightFromEnvironment()
+	if err != nil {
+		startL1BlockHeight = systemConfig.ChainConfig.StartL1BlockHeight
+	}
+
 	c.LogConf = systemConfig.LogConf
+	c.ChainConfig = systemConfig.ChainConfig
 	c.AccountCacheSize = systemConfig.AccountCacheSize
-	c.ChainConfig.StartL1BlockHeight = systemConfig.ChainConfig.StartL1BlockHeight
+	c.ChainConfig.StartL1BlockHeight = startL1BlockHeight
 
 	return nil
+}
+
+func LoadStartL1BlockHeightFromEnvironment() (int64, error) {
+	startL1BlockHeightStr := os.Getenv(StartL1BlockHeight)
+	if len(startL1BlockHeightStr) == 0 {
+		return 0, fmt.Errorf("environment variable START_L1_BLOCK_HEIGHT is not set")
+	}
+
+	startL1BlockHeight, err := strconv.ParseInt(startL1BlockHeightStr, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("environment variable START_L1_BLOCK_HEIGHT is not set correctly, %v", err)
+	}
+	return startL1BlockHeight, nil
 }
 
 func InitSystemConfigFromConfigFile(c *Config, configFile string) error {
