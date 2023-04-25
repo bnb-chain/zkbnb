@@ -972,7 +972,7 @@ func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1Ro
 		if err != nil && err != types.DbErrNotFound {
 			return nil, fmt.Errorf("unable to get blocks to prove, err: %v", err)
 		}
-		logx.Infof("GetBlocksForVerifyAndExecute: start:%d, maxVerifyBlockCount:%d, result block count:", start, maxVerifyBlockCount, len(blocks))
+		logx.Infof("GetBlocksForVerifyAndExecute: start:%d, maxVerifyBlockCount:%d, verify block count:%d", start, maxVerifyBlockCount, len(blocks))
 		if len(blocks) == 0 {
 			return nil, nil
 		}
