@@ -314,6 +314,7 @@ func (c *Committer) executeTxFunc() error {
 			metrics.ExecuteTxApply1TxMetrics.Set(float64(time.Since(startApplyTx).Milliseconds()))
 			if err != nil {
 				logx.Severef("apply pool tx failed,id=%d, err %v ", poolTx.ID, err)
+				metrics.PoolTxErrorCountMetics.WithLabelValues(strconv.FormatInt(poolTx.TxType, 10)).Inc()
 				if types.IsPriorityOperationTx(poolTx.TxType) {
 					metrics.PoolTxL1ErrorCountMetics.Inc()
 					return fmt.Errorf("apply priority pool tx failed,id=%d,error=%s", poolTx.ID, err.Error())
