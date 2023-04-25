@@ -1480,3 +1480,23 @@ func (s *Sender) ValidOverSuggestGasPrice(gasPrice *big.Int) {
 		}
 	}
 }
+
+func (s *Sender) TimeOut() {
+	maxCommitBlockInterval := sconfig.GetSenderConfig().MaxCommitBlockInterval
+	maxCommitBlockTime, _ := time.ParseDuration(fmt.Sprintf("-%ds", maxCommitBlockInterval))
+	commitTime := time.Now().Add(maxCommitBlockTime)
+	commitBlock, err := s.blockModel.GetBlockByStatusAndTime(tx.StatusPacked, commitTime)
+	if err == nil {
+		interval := time.Now().Unix() - commitBlock.CreatedAt.Unix()
+		runTimeIntervalMetric.WithLabelValues("commitBlockTimeOut").Set(float64(interval))
+	}
+	maxVerifyBlockInterval := sconfig.GetSenderConfig().MaxVerifyBlockInterval
+	maxVerifyBlockTime, _ := time.ParseDuration(fmt.Sprintf("-%ds", maxVerifyBlockInterval))
+	verifyTime := time.Now().Add(maxVerifyBlockTime)
+	verifyBlock, err := s.blockModel.GetBlockByStatusAndTime(tx.StatusCommitted, verifyTime)
+	if err == nil {
+		interval := time.Now().Unix() - verifyBlock.CreatedAt.Unix()
+		runTimeIntervalMetric.WithLabelValues("verifyBlockTimeOut").Set(float64(interval))
+	}
+
+}
