@@ -15,6 +15,7 @@ import (
 	"github.com/zeromicro/go-zero/core/proc"
 	"math/big"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -53,7 +54,7 @@ func RevertCommittedBlocks(configFile string, height int64) (err error) {
 		return fmt.Errorf("fatal error, failed to get zkBNB contract configuration, err:%v, SysConfigName:%s",
 			err, types.ZkBNBContract)
 	}
-	cli, err := rpc.NewClient(l1RPCEndpoint.Value)
+	cli, err := rpc.NewClient(strings.Split(l1RPCEndpoint.Value, ",")[0])
 	if err != nil {
 		return fmt.Errorf("failed to create client instance, %v", err)
 	}
