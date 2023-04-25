@@ -66,10 +66,11 @@ func main() {
 					flags.PProfEnabledFlag,
 					flags.PProfAddrFlag,
 					flags.PProfPortFlag,
+					flags.ProverIdFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
 					startMetricsServer(cCtx)
-					return prover.Run(cCtx.String(flags.ConfigFlag.Name))
+					return prover.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.Uint(flags.ProverIdFlag.Name))
 				},
 			},
 			{

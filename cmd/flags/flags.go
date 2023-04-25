@@ -146,4 +146,9 @@ var (
 		Usage: "sendToL1",
 		Value: 0,
 	}
+	ProverIdFlag = &cli.UintFlag{
+		Name:  "proverId",
+		Usage: "proverId",
+		Value: 0,
+	}
 )

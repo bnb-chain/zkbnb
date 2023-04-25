@@ -6,6 +6,7 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
+	"strconv"
 )
 
 const (
@@ -27,8 +28,8 @@ type Config struct {
 	BlockConfig BlockConfig
 }
 
-func InitSystemConfiguration(config *Config, configFile string) error {
-	if err := InitSystemConfigFromEnvironment(config); err != nil {
+func InitSystemConfiguration(config *Config, configFile string, proverId uint) error {
+	if err := InitSystemConfigFromEnvironment(config, proverId); err != nil {
 		logx.Errorf("Init system configuration from environment raise error: %v", err)
 	} else {
 		logx.Infof("Init system configuration from environment Successfully")
@@ -43,7 +44,7 @@ func InitSystemConfiguration(config *Config, configFile string) error {
 	}
 }
 
-func InitSystemConfigFromEnvironment(c *Config) error {
+func InitSystemConfigFromEnvironment(c *Config, proverId uint) error {
 	commonConfig, err := apollo.InitCommonConfig()
 	if err != nil {
 		return err
@@ -51,7 +52,11 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 	c.Postgres = commonConfig.Postgres
 	c.CacheRedis = commonConfig.CacheRedis
 
-	systemConfigString, err := apollo.LoadApolloConfigFromEnvironment(ProverAppId, Namespace, SystemConfigKey)
+	configKey := SystemConfigKey
+	if proverId > 0 {
+		configKey = SystemConfigKey + "-" + strconv.Itoa(int(proverId))
+	}
+	systemConfigString, err := apollo.LoadApolloConfigFromEnvironment(ProverAppId, Namespace, configKey)
 	if err != nil {
 		return err
 	}
