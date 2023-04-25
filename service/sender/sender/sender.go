@@ -396,6 +396,9 @@ func (s *Sender) CommitBlocks() (err error) {
 	if err != nil {
 		return err
 	}
+	if commitBlockData == nil {
+		return nil
+	}
 
 	lastStoredBlockInfo := commitBlockData.lastStoredBlockInfo
 	pendingCommitBlocks := commitBlockData.commitBlockList
@@ -618,6 +621,9 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	if err != nil {
 		return err
 	}
+	if verifyAndExecuteBlockData == nil {
+		return nil
+	}
 
 	nonce := verifyAndExecuteBlockData.nonce
 	blocks := verifyAndExecuteBlockData.blocks
@@ -723,8 +729,10 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 		if err != nil && err != types.DbErrNotFound {
 			return nil, fmt.Errorf("failed to get compress block err: %v", err)
 		}
-
 		logx.Infof("GetCompressedBlocksForCommit: start:%d, maxCommitBlockCount:%d, compressed block count:%d", start, maxCommitBlockCount, len(compressedBlocks))
+		if len(compressedBlocks) == 0 {
+			return nil, nil
+		}
 
 		commitBlockList, err := ConvertBlocksForCommitToCommitBlockInfos(compressedBlocks, s.txModel)
 		if err != nil {
@@ -964,8 +972,10 @@ func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1Ro
 		if err != nil && err != types.DbErrNotFound {
 			return nil, fmt.Errorf("unable to get blocks to prove, err: %v", err)
 		}
-
 		logx.Infof("GetBlocksForVerifyAndExecute: start:%d, maxVerifyBlockCount:%d, result block count:", start, maxVerifyBlockCount, len(blocks))
+		if len(blocks) == 0 {
+			return nil, nil
+		}
 
 		pendingVerifyAndExecuteBlocks, err := ConvertBlocksToVerifyAndExecuteBlockInfos(blocks)
 		if err != nil {
