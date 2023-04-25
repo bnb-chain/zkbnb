@@ -8,7 +8,7 @@ import (
 var _ metrics.MetricsServer = (*PrometheusServer)(nil)
 
 func NewPrometheusServer(srv *metrics.RunOnceHttpMux, addr string) metrics.MetricsServer {
-	srv.Handle("/debug/metrics/prometheus", promhttp.Handler())
+	srv.Handle("/metrics", promhttp.Handler())
 	return &PrometheusServer{
 		srv:  srv,
 		addr: addr,

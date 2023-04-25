@@ -23,9 +23,6 @@ const (
 
 	CommonConfigKey = "CommonConfig"
 
-	MasterSecretKey = "MASTER_SECRET_KEY"
-	SlaveSecretKey  = "SLAVE_SECRET_KEY"
-
 	DBConnectionFormat = "host=%s user=%s password=%s dbname=%s port=%s sslmode=disable"
 
 	Username = "username"
@@ -39,11 +36,17 @@ const (
 type Postgres struct {
 	MasterDataSource string          `json:",optional"`
 	SlaveDataSource  string          `json:",optional"`
+	MasterSecretKey  string          `json:",optional"`
+	SlaveSecretKey   string          `json:",optional"`
 	LogLevel         logger.LogLevel `json:",optional"`
 	MaxIdle          int             `json:",optional"`
 	MaxConn          int             `json:",optional"`
-	MasterSecretKey  string          `json:",optional"`
-	SlaveSecretKey   string          `json:",optional"`
+}
+
+type EnvVariables struct {
+	AwsRegion        string
+	AwsProfile       string
+	AwsSdkLoadConfig string
 }
 
 type Apollo struct {
@@ -55,11 +58,9 @@ type Apollo struct {
 }
 
 type CommonConfig struct {
-	Postgres         Postgres
-	CacheRedis       cache.CacheConf
-	AwsRegion        string
-	AwsProfile       string
-	AwsSdkLoadConfig string
+	Postgres     Postgres
+	CacheRedis   cache.CacheConf
+	EnvVariables EnvVariables
 }
 
 var apolloClientMap = make(map[string]agollo.Client)
@@ -74,14 +75,18 @@ func InitCommonConfig() (*CommonConfig, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// Fetch the environment variables from apollo
+		// center and set them to the environment
+		envVariables := commonConfig.EnvVariables
 		if os.Getenv(secret.AwsRegion) == "" {
-			os.Setenv(secret.AwsRegion, commonConfig.AwsRegion)
+			os.Setenv(secret.AwsRegion, envVariables.AwsRegion)
 		}
 		if os.Getenv(secret.AwsProfile) == "" {
-			os.Setenv(secret.AwsProfile, commonConfig.AwsProfile)
+			os.Setenv(secret.AwsProfile, envVariables.AwsProfile)
 		}
 		if os.Getenv(secret.AwsSdkLoadConfig) == "" {
-			os.Setenv(secret.AwsSdkLoadConfig, commonConfig.AwsSdkLoadConfig)
+			os.Setenv(secret.AwsSdkLoadConfig, envVariables.AwsSdkLoadConfig)
 		}
 
 		// If the environment is not local environment, load the postgresql connection from the secret manager
@@ -91,6 +96,7 @@ func InitCommonConfig() (*CommonConfig, error) {
 			if err != nil {
 				return nil, err
 			}
+			// Overwrite both the master and slave data source for postgresql database
 			commonConfig.Postgres.MasterDataSource = postgresql.MasterDataSource
 			commonConfig.Postgres.SlaveDataSource = postgresql.SlaveDataSource
 		}
@@ -99,6 +105,8 @@ func InitCommonConfig() (*CommonConfig, error) {
 }
 
 func LoadPostgresqlConfig(cfg *CommonConfig) (*Postgres, error) {
+	//For aws esc environment, all the database connection information is maintained in the secret manager
+	//So here directly loads the secret keys which represent the database connection information.
 	masterSecretKey := cfg.Postgres.MasterSecretKey
 	slaveSecretKey := cfg.Postgres.SlaveSecretKey
 
@@ -119,6 +127,7 @@ func LoadPostgresqlConfig(cfg *CommonConfig) (*Postgres, error) {
 		len(masterDbname) == 0 || len(masterHost) == 0 || len(masterPort) == 0 {
 		return nil, errors.New("master datasource configuration is not correct in secret manager, please check it again")
 	}
+	// Format the database connection string with the credential from the secret manager
 	masterConnectionString := fmt.Sprintf(DBConnectionFormat, masterHost, masterUsername, masterPassword, masterDbname, masterPort)
 	postgres.MasterDataSource = masterConnectionString
 
