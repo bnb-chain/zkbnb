@@ -61,6 +61,7 @@ type contractAddr struct {
 	ERC721             string
 	ZnsPriceOracle     string
 	DefaultNftFactory  string
+	OptionalBlockSizes string
 }
 
 type dao struct {
@@ -241,7 +242,7 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 		},
 		{
 			Name:      types.OptionalBlockSizes,
-			Value:     "[8,16]",
+			Value:     svrConf.OptionalBlockSizes,
 			ValueType: "string",
 			Comment:   "OptionalBlockSizes config for committer and prover",
 		},
