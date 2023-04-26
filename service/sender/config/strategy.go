@@ -34,6 +34,9 @@ type SenderConfig struct {
 	MaxCommitBlockInterval uint64
 	MaxVerifyBlockInterval uint64
 
+	CommitAvgUnitGasSwitch bool
+	VerifyAvgUnitGasSwitch bool
+
 	MaxCommitAvgUnitGas uint64
 	MaxVerifyAvgUnitGas uint64
 }
@@ -65,7 +68,7 @@ func InitSenderConfiguration(c Config) {
 			panic("Fail to validate SenderConfig from the apollo server!")
 		}
 		senderConfig = newSenderConfig
-		
+
 		logx.Info("Initiate and load SenderConfig Successfully!")
 		logx.Info("SenderConfig:", newSenderConfigString)
 	}

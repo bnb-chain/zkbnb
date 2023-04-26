@@ -909,19 +909,24 @@ func (s *Sender) ShouldCommitBlocks(blocks []*compressedblock.CompressedBlock, e
 		return true
 	}
 
-	// Judge the average tx gas consumption for the committing operation, if the average tx gas consumption is greater
-	// than the maxCommitAvgUnitGas, abandon commit operation for temporary
-	maxCommitAvgUnitGas := sconfig.GetSenderConfig().MaxCommitAvgUnitGas
-	unitGas := estimatedFee / totalTxCount
-	if unitGas > maxCommitAvgUnitGas {
-		logx.WithContext(ctx).Info("Abandon commit block to l1, UnitGasFee is greater than MaxCommitBlockUnitGas, UnitGasFee:", unitGas,
-			",MaxCommitAvgUnitGas:", maxCommitAvgUnitGas)
-		return false
+	// Only if CommitAvgUnitGasSwitch is switched on, perform this part of logic
+	if sconfig.GetSenderConfig().CommitAvgUnitGasSwitch {
+		// Judge the average tx gas consumption for the committing operation, if the average tx gas consumption is greater
+		// than the maxCommitAvgUnitGas, abandon commit operation for temporary
+		maxCommitAvgUnitGas := sconfig.GetSenderConfig().MaxCommitAvgUnitGas
+		unitGas := estimatedFee / totalTxCount
+		if unitGas > maxCommitAvgUnitGas {
+			logx.WithContext(ctx).Info("Abandon commit block to l1, UnitGasFee is greater than MaxCommitBlockUnitGas, UnitGasFee:", unitGas,
+				",MaxCommitAvgUnitGas:", maxCommitAvgUnitGas)
+			return false
+		}
+
+		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because unitGas <= maxCommitAvgUnitGas,"+
+			"unitGas:%d, maxCommitAvgUnitGas:%d", unitGas, maxCommitAvgUnitGas)
+		return true
 	}
 
-	logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because unitGas <= maxCommitAvgUnitGas,"+
-		"unitGas:%d, maxCommitAvgUnitGas:%d", unitGas, maxCommitAvgUnitGas)
-	return true
+	return false
 }
 
 func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, totalEstimatedFee uint64, ctx context.Context) bool {
@@ -952,17 +957,22 @@ func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, totalEstima
 		return true
 	}
 
-	maxVerifyAvgUnitGas := sconfig.GetSenderConfig().MaxVerifyAvgUnitGas
-	unitGas := totalEstimatedFee / totalTxCount
-	if unitGas > maxVerifyAvgUnitGas {
-		logx.WithContext(ctx).Info("abandon verify and execute block to l1, UnitGasFee is greater than maxVerifyAvgUnitGas, UnitGasFee:", unitGas,
-			",MaxVerifyAvgUnitGas:", maxVerifyAvgUnitGas)
-		return false
-	}
+	// Only if VerifyAvgUnitGasSwitch is switched on, perform this part of logic
+	if sconfig.GetSenderConfig().VerifyAvgUnitGasSwitch {
 
-	logx.WithContext(ctx).Infof("Should verify blocks to l1 network, because unitGas <= maxVerifyAvgUnitGas,"+
-		"unitGas:%d, maxVerifyAvgUnitGas:%d", unitGas, maxVerifyAvgUnitGas)
-	return true
+		maxVerifyAvgUnitGas := sconfig.GetSenderConfig().MaxVerifyAvgUnitGas
+		unitGas := totalEstimatedFee / totalTxCount
+		if unitGas > maxVerifyAvgUnitGas {
+			logx.WithContext(ctx).Info("abandon verify and execute block to l1, UnitGasFee is greater than maxVerifyAvgUnitGas, UnitGasFee:", unitGas,
+				",MaxVerifyAvgUnitGas:", maxVerifyAvgUnitGas)
+			return false
+		}
+
+		logx.WithContext(ctx).Infof("Should verify blocks to l1 network, because unitGas <= maxVerifyAvgUnitGas,"+
+			"unitGas:%d, maxVerifyAvgUnitGas:%d", unitGas, maxVerifyAvgUnitGas)
+		return true
+	}
+	return false
 }
 
 func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*VerifyAndExecuteBlockData, error) {
