@@ -61,6 +61,7 @@ type contractAddr struct {
 	ERC721             string
 	ZnsPriceOracle     string
 	DefaultNftFactory  string
+	OptionalBlockSizes string
 }
 
 type dao struct {
@@ -239,6 +240,12 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 			ValueType: "string",
 			Comment:   "Governance contract on BSC",
 		},
+		{
+			Name:      types.OptionalBlockSizes,
+			Value:     "[16,32,64]",
+			ValueType: "string",
+			Comment:   "OptionalBlockSizes config for committer and prover",
+		},
 		// network rpc
 		{
 			Name:      types.BscTestNetworkRpc,
@@ -263,7 +270,7 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 			Value:     svrConf.DefaultNftFactory,
 			ValueType: "string",
 			Comment:   "ZkBNB default nft factory contract on BSC",
-		},
+		}
 	}
 }
 
