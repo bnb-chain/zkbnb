@@ -142,6 +142,7 @@ func (e *WithdrawExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
 	e.tx.AssetId = e.TxInfo.AssetId
 	e.tx.TxAmount = e.TxInfo.AssetAmount.String()
+	e.tx.NativeAddress = e.TxInfo.ToAddress
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
