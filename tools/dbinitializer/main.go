@@ -270,7 +270,7 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 			Value:     svrConf.DefaultNftFactory,
 			ValueType: "string",
 			Comment:   "ZkBNB default nft factory contract on BSC",
-		}
+		},
 	}
 }
 
