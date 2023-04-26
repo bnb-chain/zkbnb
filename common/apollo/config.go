@@ -75,33 +75,36 @@ func InitCommonConfig() (*CommonConfig, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		// Fetch the environment variables from apollo
-		// center and set them to the environment
-		envVariables := commonConfig.EnvVariables
-		if os.Getenv(secret.AwsRegion) == "" {
-			os.Setenv(secret.AwsRegion, envVariables.AwsRegion)
-		}
-		if os.Getenv(secret.AwsProfile) == "" {
-			os.Setenv(secret.AwsProfile, envVariables.AwsProfile)
-		}
-		if os.Getenv(secret.AwsSdkLoadConfig) == "" {
-			os.Setenv(secret.AwsSdkLoadConfig, envVariables.AwsSdkLoadConfig)
-		}
-
-		// If the environment is not local environment, load the postgresql connection from the secret manager
-		if !environment.IsLocalEnvironment() {
-			// Load the postgresql connection parameter from the secret manager
-			postgresql, err := LoadPostgresqlConfig(commonConfig)
-			if err != nil {
-				return nil, err
-			}
-			// Overwrite both the master and slave data source for postgresql database
-			commonConfig.Postgres.MasterDataSource = postgresql.MasterDataSource
-			commonConfig.Postgres.SlaveDataSource = postgresql.SlaveDataSource
-		}
-		return commonConfig, nil
+		return BuildCommonConfig(commonConfig)
 	}
+}
+
+func BuildCommonConfig(commonConfig *CommonConfig) (*CommonConfig, error) {
+	// Fetch the environment variables from apollo
+	// center and set them to the environment
+	envVariables := commonConfig.EnvVariables
+	if os.Getenv(secret.AwsRegion) == "" {
+		os.Setenv(secret.AwsRegion, envVariables.AwsRegion)
+	}
+	if os.Getenv(secret.AwsProfile) == "" {
+		os.Setenv(secret.AwsProfile, envVariables.AwsProfile)
+	}
+	if os.Getenv(secret.AwsSdkLoadConfig) == "" {
+		os.Setenv(secret.AwsSdkLoadConfig, envVariables.AwsSdkLoadConfig)
+	}
+
+	// If the environment is not local environment, load the postgresql connection from the secret manager
+	if !environment.IsLocalEnvironment() {
+		// Load the postgresql connection parameter from the secret manager
+		postgresql, err := LoadPostgresqlConfig(commonConfig)
+		if err != nil {
+			return nil, err
+		}
+		// Overwrite both the master and slave data source for postgresql database
+		commonConfig.Postgres.MasterDataSource = postgresql.MasterDataSource
+		commonConfig.Postgres.SlaveDataSource = postgresql.SlaveDataSource
+	}
+	return commonConfig, nil
 }
 
 func LoadPostgresqlConfig(cfg *CommonConfig) (*Postgres, error) {

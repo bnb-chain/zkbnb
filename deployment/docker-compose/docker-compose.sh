@@ -145,7 +145,6 @@ ChainConfig:
   ConfirmBlocksCount: 0
   MaxWaitingTime: 120
   MaxBlockCount: 4
-  SendSignatureMode: PrivateKeySignMode
   GasLimit: 5000000
   GasPrice: 0
 

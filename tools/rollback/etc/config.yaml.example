@@ -1,14 +1,46 @@
 Postgres:
   MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  SlaveDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  #if MasterSecretKey and SlaveSecretKey are not empty,replace database password by secret key
+  #  MasterSecretKey: zkbnb-qa-pgsql
+  #  SlaveSecretKey: zkbnb-qa-pgsql
   LogLevel: 4
 
 ChainConfig:
+  #BscTestNetworkRpc  LocalTestNetworkRpc
   NetworkRPCSysConfigName: LocalTestNetworkRpc
   MaxWaitingTime: 120   #s
   ConfirmBlocksCount: 0
-  #  NetworkRPCSysConfigName: BscTestNetworkRpc
-  RevertBlockSk: 3f242374e0d7580e8c52a75790493539e514268ebc2e441e61cb5b86d5077698
   GasLimit: 5000000
   GasPrice: 0
+
+TreeDB:
+  Driver: redis
+  RedisDBOption:
+    Addr: localhost:6666
+    DialTimeout: 10s
+    ReadTimeout: 10s
+    WriteTimeout: 10s
+    PoolTimeout: 15s
+    IdleTimeout: 5m
+    PoolSize: 500
+    MaxRetries: 3
+    MinRetryBackoff: 8ms
+    MaxRetryBackoff: 512ms
+  AssetTreeCacheSize: 512000
+
+#if CommitKeyId is not empty,use CommitKeyId for l1 sig
+AuthConfig:
+  CommitBlockSk: 3f242374e0d7580e8c52a75790493539e514268ebc2e441e61cb5b86d5077698
+
+#KMSConfig:
+#  CommitKeyId: a232ffa2-9a0b-4bbc-a579-b62fa7d9e82e
+
+
+# aws
+EnvVariables:
+  AwsRegion: ap-northeast-1
+  AwsProfile: bnbcloud-dev
+  AwsSdkLoadConfig: true
 
 
