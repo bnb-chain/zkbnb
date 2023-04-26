@@ -23,6 +23,7 @@ import (
 	"gorm.io/gorm"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/compressedblock"
@@ -73,6 +74,7 @@ type (
 		GetLatestHeight(statuses []int) (height int64, err error)
 		UpdateBlockToProposingInTransact(tx *gorm.DB, blockHeights []int64) error
 		UpdateGreaterOrEqualHeight(blockHeight int64, targetBlockStatus int64) error
+		GetBlockByStatusAndTime(status int, time time.Time) (block *Block, err error)
 	}
 
 	defaultBlockModel struct {
@@ -506,4 +508,18 @@ func (m *defaultBlockModel) UpdateGreaterOrEqualHeight(blockHeight int64, target
 		return dbTx.Error
 	}
 	return nil
+}
+
+func (m *defaultBlockModel) GetBlockByStatusAndTime(status int, time time.Time) (block *Block, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_status = ? and created_at < ?", status, time).
+		Order("created_at").
+		Limit(1).
+		Find(&block)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrFailToUpdateBlock
+	}
+	return block, nil
 }

@@ -289,7 +289,6 @@ ChainConfig:
   NetworkRPCSysConfigName: "${NETWORK_RPC_SYS_CONFIG_NAME}"
   #NetworkRPCSysConfigName: LocalTestNetworkRpc
   ConfirmBlocksCount: 0
-  SendSignatureMode: PrivateKeySignMode
   MaxWaitingTime: 120
   MaxBlockCount: 4
   GasLimit: 5000000

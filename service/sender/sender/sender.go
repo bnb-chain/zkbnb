@@ -1297,7 +1297,7 @@ func (s *Sender) MetricBatchCommitContact() {
 		if len(txs) == 2 {
 			txRollUpStart := txs[1]
 			txRollUpEnd := txs[0]
-			value := txRollUpEnd.CreatedAt.UnixMilli() - txRollUpStart.CreatedAt.UnixMilli()
+			value := txRollUpEnd.CreatedAt.Unix() - txRollUpStart.CreatedAt.Unix()
 			runTimeIntervalMetric.WithLabelValues("commit").Set(float64(value))
 		}
 	}
@@ -1337,7 +1337,7 @@ func (s *Sender) MetricBatchVerifyContact() {
 		if len(txs) == 2 {
 			txRollUpStart := txs[1]
 			txRollUpEnd := txs[0]
-			value := txRollUpEnd.CreatedAt.UnixMilli() - txRollUpStart.CreatedAt.UnixMilli()
+			value := txRollUpEnd.CreatedAt.Unix() - txRollUpStart.CreatedAt.Unix()
 			runTimeIntervalMetric.WithLabelValues("verify").Set(float64(value))
 		}
 	}
@@ -1480,4 +1480,24 @@ func (s *Sender) ValidOverSuggestGasPrice(gasPrice *big.Int) {
 			logx.Severef("The gasPrice of the apollo configuration is more than the suggest gas price,suggestGasPrice=%s,gasPrice=%s", suggestGasPrice.String(), gasPrice.String())
 		}
 	}
+}
+
+func (s *Sender) TimeOut() {
+	maxCommitBlockInterval := sconfig.GetSenderConfig().MaxCommitBlockInterval
+	maxCommitBlockTime, _ := time.ParseDuration(fmt.Sprintf("-%ds", maxCommitBlockInterval))
+	commitTime := time.Now().Add(maxCommitBlockTime)
+	commitBlock, err := s.blockModel.GetBlockByStatusAndTime(tx.StatusPacked, commitTime)
+	if err == nil {
+		interval := time.Now().Unix() - commitBlock.CreatedAt.Unix()
+		runTimeIntervalMetric.WithLabelValues("commitBlockTimeOut").Set(float64(interval))
+	}
+	maxVerifyBlockInterval := sconfig.GetSenderConfig().MaxVerifyBlockInterval
+	maxVerifyBlockTime, _ := time.ParseDuration(fmt.Sprintf("-%ds", maxVerifyBlockInterval))
+	verifyTime := time.Now().Add(maxVerifyBlockTime)
+	verifyBlock, err := s.blockModel.GetBlockByStatusAndTime(tx.StatusCommitted, verifyTime)
+	if err == nil {
+		interval := time.Now().Unix() - verifyBlock.CreatedAt.Unix()
+		runTimeIntervalMetric.WithLabelValues("verifyBlockTimeOut").Set(float64(interval))
+	}
+
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/robfig/cron/v3"
 	"time"
 
-	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 
@@ -22,7 +21,6 @@ func Run(configFile string) error {
 		panic("failed to initiate system configuration, err:" + err.Error())
 	}
 
-	conf.Load(configFile, &c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
@@ -81,13 +79,22 @@ func Run(configFile string) error {
 		panic("failed to start the update send transaction task, err:" + err.Error())
 	}
 
-	_, err = cronJob.AddFunc("@every 10s", func() {
+	_, err = cronJob.AddFunc("@every 15s", func() {
 		logx.Info("========================= start monitor balance task =========================")
 		s.Monitor()
 	})
 	if err != nil {
 		logx.Severef("failed to start the monitor balance task, %v", err)
 		panic("failed to start the monitor balance task, err:" + err.Error())
+	}
+
+	_, err = cronJob.AddFunc("@every 15s", func() {
+		logx.Info("========================= start monitor timeout task =========================")
+		s.TimeOut()
+	})
+	if err != nil {
+		logx.Severef("failed to start the monitor timeout task, %v", err)
+		panic("failed to start the monitor timeout task, err:" + err.Error())
 	}
 
 	_, err = cronJob.AddFunc("@every 10s", func() {

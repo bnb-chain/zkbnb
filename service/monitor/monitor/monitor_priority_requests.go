@@ -97,11 +97,17 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			poolTx.TxAmount = txInfo.AssetAmount.String()
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err == nil {
-				poolTx.AccountIndex = accountIndex
-				poolTx.FromAccountIndex = accountIndex
 				poolTx.ToAccountIndex = accountIndex
 			} else {
 				logx.Errorf("unable to get account index : %v", err)
+			}
+			NativeAccountIndex, err := m.GetAccountIndex(poolTx.NativeAddress)
+			if err == nil {
+				poolTx.AccountIndex = NativeAccountIndex
+				poolTx.FromAccountIndex = NativeAccountIndex
+			} else {
+				poolTx.AccountIndex = types.NilAccountIndex
+				poolTx.FromAccountIndex = types.NilAccountIndex
 			}
 		case monitor.TxTypeDepositNft:
 			txInfo, err := chain.ParseDepositNftPubData(common.FromHex(request.Pubdata))
@@ -118,11 +124,17 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			poolTx.CollectionId = txInfo.CollectionId
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err == nil {
-				poolTx.AccountIndex = accountIndex
-				poolTx.FromAccountIndex = accountIndex
 				poolTx.ToAccountIndex = accountIndex
 			} else {
 				logx.Errorf("unable to get account index : %v", err)
+			}
+			NativeAccountIndex, err := m.GetAccountIndex(poolTx.NativeAddress)
+			if err == nil {
+				poolTx.AccountIndex = NativeAccountIndex
+				poolTx.FromAccountIndex = NativeAccountIndex
+			} else {
+				poolTx.AccountIndex = types.NilAccountIndex
+				poolTx.FromAccountIndex = types.NilAccountIndex
 			}
 		case monitor.TxTypeFullExit:
 			txInfo, err := chain.ParseFullExitPubData(common.FromHex(request.Pubdata))
