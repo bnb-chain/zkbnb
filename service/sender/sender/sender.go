@@ -1301,7 +1301,7 @@ func (s *Sender) MetricBatchCommitContact() {
 		if len(txs) == 2 {
 			txRollUpStart := txs[1]
 			txRollUpEnd := txs[0]
-			value := txRollUpEnd.CreatedAt.UnixMilli() - txRollUpStart.CreatedAt.UnixMilli()
+			value := txRollUpEnd.CreatedAt.Unix() - txRollUpStart.CreatedAt.Unix()
 			runTimeIntervalMetric.WithLabelValues("commit").Set(float64(value))
 		}
 	}
@@ -1341,7 +1341,7 @@ func (s *Sender) MetricBatchVerifyContact() {
 		if len(txs) == 2 {
 			txRollUpStart := txs[1]
 			txRollUpEnd := txs[0]
-			value := txRollUpEnd.CreatedAt.UnixMilli() - txRollUpStart.CreatedAt.UnixMilli()
+			value := txRollUpEnd.CreatedAt.Unix() - txRollUpStart.CreatedAt.Unix()
 			runTimeIntervalMetric.WithLabelValues("verify").Set(float64(value))
 		}
 	}
