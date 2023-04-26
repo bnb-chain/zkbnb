@@ -743,7 +743,8 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 		if err != nil && err != types.DbErrNotFound {
 			return nil, fmt.Errorf("failed to get compress block err: %v", err)
 		}
-		logx.Infof("GetCompressedBlocksForCommit: start:%d, maxCommitBlockCount:%d, compressed block count:%d", start, maxCommitBlockCount, len(compressedBlocks))
+		logx.Infof("GetCompressedBlocksForCommit: start:%d, maxCommitBlockCount:%d, compressed block count:%d",
+			start, maxCommitBlockCount, len(compressedBlocks))
 		if len(compressedBlocks) == 0 {
 			return nil, nil
 		}
@@ -893,10 +894,8 @@ func (s *Sender) ShouldCommitBlocks(blocks []*compressedblock.CompressedBlock, e
 	maxCommitTxCount := sconfig.GetSenderConfig().MaxCommitTxCount
 	totalTxCount := s.CalculateTotalTxCountForCompressBlock(blocks)
 	if totalTxCount > maxCommitTxCount {
-
 		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because totalTxCount > maxCommitTxCount,"+
 			"totalTxCount:%d, maxCommitTxCount:%d", totalTxCount, maxCommitTxCount)
-
 		return true
 	}
 
@@ -905,10 +904,8 @@ func (s *Sender) ShouldCommitBlocks(blocks []*compressedblock.CompressedBlock, e
 	maxCommitBlockInterval := sconfig.GetSenderConfig().MaxCommitBlockInterval
 	commitBlockInterval := s.CalculateBlockIntervalForCompressedBlock(blocks)
 	if commitBlockInterval > int64(maxCommitBlockInterval) {
-
 		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because commitBlockInterval > maxCommitBlockInterval,"+
 			"commitBlockInterval:%d, maxCommitBlockInterval:%d", commitBlockInterval, maxCommitBlockInterval)
-
 		return true
 	}
 
@@ -924,7 +921,6 @@ func (s *Sender) ShouldCommitBlocks(blocks []*compressedblock.CompressedBlock, e
 
 	logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because unitGas <= maxCommitAvgUnitGas,"+
 		"unitGas:%d, maxCommitAvgUnitGas:%d", unitGas, maxCommitAvgUnitGas)
-
 	return true
 }
 
