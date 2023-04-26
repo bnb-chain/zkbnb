@@ -8,7 +8,6 @@ import (
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/redislock"
 	"github.com/bnb-chain/zkbnb/core/executor"
-	nftModels "github.com/bnb-chain/zkbnb/core/model"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/permctrl"
@@ -173,10 +172,7 @@ func sendToIpfs(txInfo *txtypes.MintNftTxInfo, txHash string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	cid, err := uploadIpfs(&nftModels.NftMetaData{
-		MetaData:          txInfo.MetaData,
-		MutableAttributes: fmt.Sprintf("%s%s", "ipns://", ipnsId.Id),
-	})
+	cid, err := uploadIpfs(txInfo.MetaData, fmt.Sprintf("%s%s", "ipns://", ipnsId.Id))
 	if err != nil {
 		return "", err
 	}
@@ -190,12 +186,18 @@ func sendToIpfs(txInfo *txtypes.MintNftTxInfo, txHash string) (string, error) {
 	return cid, nil
 }
 
-func uploadIpfs(data *nftModels.NftMetaData) (string, error) {
-	b, err := json.Marshal(data)
-	if err != nil {
-		return "", err
+func uploadIpfs(metaData string, mutableAttributes string) (string, error) {
+	meta := ""
+	if len(metaData) > 0 {
+		content := metaData[len(metaData)-1:]
+		if content == "}" {
+			metaData = metaData[:len(metaData)-1]
+		}
+		meta = fmt.Sprintf("%s,\"%s\":\"%s\"}", metaData, "mutable_attributes", mutableAttributes)
+	} else {
+		meta = fmt.Sprintf("{\"%s\":\"%s\"}", "mutable_attributes", mutableAttributes)
 	}
-	cid, err := common2.Ipfs.Upload(string(b))
+	cid, err := common2.Ipfs.Upload(meta)
 	if err != nil {
 		return "", err
 	}
