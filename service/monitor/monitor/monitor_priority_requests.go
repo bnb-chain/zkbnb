@@ -98,7 +98,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err == nil {
 				poolTx.AccountIndex = accountIndex
-				poolTx.FromAccountIndex = accountIndex
+				poolTx.FromAccountIndex = types.NilAccountIndex
 				poolTx.ToAccountIndex = accountIndex
 			} else {
 				logx.Errorf("unable to get account index : %v", err)
@@ -119,7 +119,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err == nil {
 				poolTx.AccountIndex = accountIndex
-				poolTx.FromAccountIndex = accountIndex
+				poolTx.FromAccountIndex = types.NilAccountIndex
 				poolTx.ToAccountIndex = accountIndex
 			} else {
 				logx.Errorf("unable to get account index : %v", err)
@@ -141,7 +141,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err == nil {
 				poolTx.AccountIndex = accountIndex
 				poolTx.FromAccountIndex = accountIndex
-				poolTx.ToAccountIndex = accountIndex
+				poolTx.ToAccountIndex = types.NilAccountIndex
 			} else {
 				logx.Errorf("unable to get account index : %v", err)
 			}
@@ -162,7 +162,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err == nil {
 				poolTx.AccountIndex = accountIndex
 				poolTx.FromAccountIndex = accountIndex
-				poolTx.ToAccountIndex = accountIndex
+				poolTx.ToAccountIndex = types.NilAccountIndex
 			} else {
 				logx.Errorf("unable to get account index : %v", err)
 			}
