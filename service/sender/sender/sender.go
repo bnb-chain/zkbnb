@@ -311,8 +311,8 @@ func NewSender(c sconfig.Config) *Sender {
 				panic("fatal error, failed to initiate verify authClient instance, err:" + err.Error())
 			}
 		} else {
-			logx.Severef("fatal error, both kms keys and auth private keys not set in the environment variables!")
-			panic("fatal error, both kms keys and auth private keys not set in the environment variables!")
+			logx.Severef("fatal error, both kms keys and auth private keys not set!")
+			panic("fatal error, both kms keys and auth private keys not set!")
 		}
 	}
 
