@@ -142,7 +142,7 @@ sed -i -e "s/VerifyAddress: .*/VerifyAddress: ${VERIFY_ADDRESS}/" ${DEPLOY_PATH}
 cd ${DEPLOY_PATH}/zkbnb && go mod tidy
 
 echo "6. init tables on database"
-go run ./cmd/zkbnb/main.go db initialize --dsn "host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable" --contractAddr ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+go run ./cmd/zkbnb/main.go db initialize --dsn "host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable" --local ${BSC_TESTNET_RPC} --optionalBlockSizes [${ZKBNB_OPTIONAL_BLOCK_SIZES}] --contractAddr ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
 sleep 10s
 
