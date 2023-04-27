@@ -63,9 +63,6 @@ type UpdatePoolTx struct {
 //->updateAssetTreeFunc->updateAccountAndNftTreeFunc->saveBlockDataFunc->finalSaveBlockDataFunc
 
 func NewCommitter(config *config.Config) (*Committer, error) {
-	if len(config.BlockConfig.OptionalBlockSizes) == 0 {
-		return nil, types.AppErrNilOptionalBlockSize
-	}
 
 	err := metrics.InitCommitterMetrics()
 	if err != nil {
@@ -92,11 +89,12 @@ func NewCommitter(config *config.Config) (*Committer, error) {
 	committer := &Committer{
 		running:              true,
 		config:               config,
-		maxTxsPerBlock:       config.BlockConfig.OptionalBlockSizes[len(config.BlockConfig.OptionalBlockSizes)-1],
 		maxCommitterInterval: config.BlockConfig.MaxPackedInterval,
-		optionalBlockSizes:   config.BlockConfig.OptionalBlockSizes,
 		bc:                   bc,
 		pool:                 pool,
+	}
+	if err := committer.loadOptionalBlockSizes(); err != nil {
+		return nil, fmt.Errorf("load optional block sizes error: %v", err)
 	}
 
 	return committer, nil
@@ -1091,6 +1089,10 @@ func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 	//After the rollback, re-execute tx and form a block  based on the block size,because curBlock.CreatedAt does not change
 	if c.bc.Statedb.NeedRestoreExecutedTxs() {
 		if len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
+
+			logx.Infof("shouldCommit, because len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock, len(c.bc.Statedb.Txs):%d,"+
+				" maxTxsPerBlock:%d", len(c.bc.Statedb.Txs), c.maxTxsPerBlock)
+
 			return true
 		}
 		return false
@@ -1098,10 +1100,37 @@ func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 	var now = time.Now()
 	if (len(c.bc.Statedb.Txs) > 0 && now.Unix()-curBlock.CreatedAt.Unix() >= int64(c.maxCommitterInterval)) ||
 		len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
+
+		logx.Infof("shouldCommit, because now.Unix()-curBlock.CreatedAt.Unix() >= int64(c.maxCommitterInterval)) "+
+			"or len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock now.Unix():%d, curBlock.CreatedAt.Unix():%d, "+
+			"len(c.bc.Statedb.Txs):%d, c.maxTxsPerBlock:%d",
+			now.Unix(), curBlock.CreatedAt.Unix(), len(c.bc.Statedb.Txs), c.maxTxsPerBlock)
+
 		return true
 	}
 
 	return false
+}
+
+func (c *Committer) loadOptionalBlockSizes() error {
+	if optionalBlockSizeConfig, err := c.bc.SysConfigModel.GetSysConfigByName(types.OptionalBlockSizes); err != nil {
+		logx.Errorf("failed to load optionalBlockSizes configuration, err:%v", err)
+		return err
+	} else {
+		optionalBlockSizeValue := optionalBlockSizeConfig.Value
+		optionalBlockSizes := make([]int, 2)
+		if err := json.Unmarshal([]byte(optionalBlockSizeValue), &optionalBlockSizes); err != nil {
+			return err
+		}
+
+		if len(optionalBlockSizes) == 0 {
+			return fmt.Errorf("failed to load optionalBlockSizes configuration, optionalBlockSizes is empty")
+		}
+
+		c.optionalBlockSizes = optionalBlockSizes
+		c.maxTxsPerBlock = optionalBlockSizes[len(optionalBlockSizes)-1]
+	}
+	return nil
 }
 
 func (c *Committer) computeCurrentBlockSize(stateCopy *statedb.StateDataCopy) int {

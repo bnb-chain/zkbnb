@@ -3,6 +3,7 @@ package prover
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/constraint"
 	"github.com/prometheus/client_golang/prometheus"
@@ -47,6 +48,7 @@ type Prover struct {
 
 	DB                *gorm.DB
 	ProofModel        proof.ProofModel
+	SysConfigModel    sysconfig.SysConfigModel
 	BlockWitnessModel blockwitness.BlockWitnessModel
 
 	VerifyingKeys      []groth16.VerifyingKey
@@ -117,16 +119,15 @@ func NewProver(c config.Config) (*Prover, error) {
 		Config:            c,
 		RedisConn:         redisConn,
 		DB:                db,
+		SysConfigModel:    sysconfig.NewSysConfigModel(db),
 		BlockWitnessModel: blockwitness.NewBlockWitnessModel(db),
 		ProofModel:        proof.NewProofModel(db),
 	}
 
-	if !IsBlockSizesSorted(c.BlockConfig.OptionalBlockSizes) {
-		logx.Severe("invalid OptionalBlockSizes")
-		panic("invalid OptionalBlockSizes")
+	if err := prover.loadOptionalBlockSizes(); err != nil {
+		panic("invalid OptionalBlockSizes:" + err.Error())
 	}
 
-	prover.OptionalBlockSizes = c.BlockConfig.OptionalBlockSizes
 	prover.ProvingKeys = make([][]groth16.ProvingKey, len(prover.OptionalBlockSizes))
 	prover.VerifyingKeys = make([]groth16.VerifyingKey, len(prover.OptionalBlockSizes))
 	prover.R1cs = make([]constraint.ConstraintSystem, len(prover.OptionalBlockSizes))
@@ -320,6 +321,29 @@ func (p *Prover) getWitness() (*blockwitness.BlockWitness, error) {
 		return nil, err
 	}
 	return blockWitness, nil
+}
+
+func (p *Prover) loadOptionalBlockSizes() error {
+	if optionalBlockSizeConfig, err := p.SysConfigModel.GetSysConfigByName(types.OptionalBlockSizes); err != nil {
+		logx.Errorf("failed to load optionalBlockSizes configuration, err:%v", err)
+		return err
+	} else {
+		optionalBlockSizeValue := optionalBlockSizeConfig.Value
+		optionalBlockSizes := make([]int, 2)
+		if err := json.Unmarshal([]byte(optionalBlockSizeValue), &optionalBlockSizes); err != nil {
+			return err
+		}
+
+		if len(optionalBlockSizes) == 0 {
+			return fmt.Errorf("failed to load optionalBlockSizes configuration, optionalBlockSizes is empty")
+		}
+
+		p.OptionalBlockSizes = optionalBlockSizes
+		if !IsBlockSizesSorted(p.OptionalBlockSizes) {
+			return fmt.Errorf("failed to load optionalBlockSizes configuration, invalid OptionalBlockSizes")
+		}
+	}
+	return nil
 }
 
 func (p *Prover) Shutdown() {

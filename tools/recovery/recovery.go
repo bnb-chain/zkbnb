@@ -1,7 +1,6 @@
 package recovery
 
 import (
-	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 
@@ -18,8 +17,11 @@ func RecoveryTreeDB(
 	batchSize int,
 	fromHistory bool,
 ) {
-	var c config.Config
-	conf.MustLoad(configFile, &c)
+	c := config.Config{}
+	if err := config.InitSystemConfiguration(&c, configFile); err != nil {
+		logx.Severef("failed to initiate system configuration, %v", err)
+		panic("failed to initiate system configuration, err:" + err.Error())
+	}
 	ctx := svc.NewServiceContext(c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
@@ -56,6 +58,8 @@ func RecoveryTreeDB(
 		logx.Error("InitMerkleTree error:", err)
 		return
 	}
+	logx.Infof("recovery account smt successfully")
+
 	// dbinitializer nftTree
 	_, err = tree.InitNftTree(
 		ctx.NftModel,
@@ -66,4 +70,6 @@ func RecoveryTreeDB(
 		logx.Errorf("InitNftTree error: %s", err.Error())
 		return
 	}
+	logx.Infof("recovery nft smt successfully")
+
 }

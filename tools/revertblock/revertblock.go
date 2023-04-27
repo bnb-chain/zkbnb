@@ -3,6 +3,8 @@ package revertblock
 import (
 	"context"
 	"fmt"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	"github.com/bnb-chain/zkbnb/common/chain"
@@ -44,6 +46,11 @@ func RevertCommittedBlocks(configFile string, height int64) (err error) {
 	if lastHandledTx != nil {
 		endHeight = lastHandledTx.L2BlockHeight
 	}
+
+	if height > endHeight {
+		return fmt.Errorf("the latest height of TxTypeCommit is %d,it is less than input param height %d,pls check", endHeight, height)
+	}
+
 	l1RPCEndpoint, err := ctx.SysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
 		return fmt.Errorf("fatal error, failed to get network rpc configuration, err:%v, SysConfigName:%s",
@@ -62,17 +69,35 @@ func RevertCommittedBlocks(configFile string, height int64) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to get chainId, %v", err)
 	}
-	authCliRevertBlock, err := rpc.NewAuthClient(c.ChainConfig.RevertBlockSk, chainId)
-	if err != nil {
-		return fmt.Errorf("failed to create authClient error, %v", err)
-	}
 
 	zkBNBClient, err := zkbnb.NewZkBNBClient(cli, rollupAddress.Value)
 	if err != nil {
 		return fmt.Errorf("failed to initiate ZkBNBClient instance, %v", err)
 	}
-	zkBNBClient.RevertConstructor = authCliRevertBlock
 
+	cfg, err := awsConfig.LoadDefaultConfig(context.Background())
+	if err != nil {
+		logx.Severef("failed to load KMS client config, %v", err)
+		panic("failed to load KMS client config, err:" + err.Error())
+	}
+	kmsClient := kms.NewFromConfig(cfg)
+	commitKeyId := c.KMSConfig.CommitKeyId
+	if len(commitKeyId) > 0 {
+		commitKmsKeyClient, err := rpc.NewKMSKeyClient(kmsClient, c.KMSConfig.CommitKeyId, chainId)
+		if err != nil {
+			logx.Severef("fatal error, failed to initiate commit kmsKeyClient instance, err:%v", err)
+			panic("fatal error, failed to initiate commit kmsKeyClient instance, err:" + err.Error())
+		}
+		zkBNBClient.RevertConstructor = commitKmsKeyClient
+	} else {
+		commitBlockSk := c.AuthConfig.CommitBlockSk
+		commitAuthClient, err := rpc.NewAuthClient(commitBlockSk, chainId)
+		if err != nil {
+			logx.Severef("fatal error, failed to initiate commit authClient instance, err:%v", err)
+			panic("fatal error, failed to initiate commit authClient instance, err:" + err.Error())
+		}
+		zkBNBClient.RevertConstructor = commitAuthClient
+	}
 	storedBlockInfoList := make([]zkbnb.StorageStoredBlockInfo, 0)
 	for height <= endHeight {
 		blockInfo, err := ctx.BlockModel.GetBlockByHeight(height)
