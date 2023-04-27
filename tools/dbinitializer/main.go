@@ -61,7 +61,6 @@ type contractAddr struct {
 	ERC721             string
 	ZnsPriceOracle     string
 	DefaultNftFactory  string
-	OptionalBlockSizes string
 }
 
 type dao struct {
