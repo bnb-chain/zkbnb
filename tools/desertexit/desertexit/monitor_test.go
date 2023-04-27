@@ -12,7 +12,7 @@ import (
 )
 
 const networkRpc = "https://bsc-testnet.nodereal.io/v1/a1cee760ac744f449416a711f20d99dd"
-const hash = "0xd9f3886d3a657c1e1eba5527bae8a9aa6565ebf3a32432d3e40b2a743e9cc9a5"
+const hash = "0xa4d20fae8559728f347d2202363a01051060ad56b03516b7fff88e877efcb30f"
 
 func TestDesertExit_getCommitBlocksCallData(t *testing.T) {
 	client, err := rpc.NewClient(networkRpc)
@@ -44,4 +44,39 @@ func TestDesertExit_getCommitBlocksCallData(t *testing.T) {
 	}
 	jsonBytes, err := json.Marshal(callData)
 	logx.Infof("callData=%s", string(jsonBytes))
+}
+
+func TestDesertExit_getRevertBlocksCallData(t *testing.T) {
+	client, err := rpc.NewClient(networkRpc)
+	if err != nil {
+		logx.Severef("failed to create rpc client, %v", err)
+		return
+	}
+	newABIDecoder := abicoder.NewABIDecoder(monitor2.ZkBNBContractAbi)
+	transaction, _, err := client.TransactionByHash(context.Background(), common.HexToHash(hash))
+	if err != nil {
+		logx.Severe(err)
+		return
+	}
+
+	receipt, err := client.GetTransactionReceipt(hash)
+	if err != nil {
+		logx.Errorf("query transaction receipt %s failed, err: %v", hash, err)
+	} else {
+		json, _ := receipt.MarshalJSON()
+		logx.Infof(string(json))
+	}
+
+	blocksToRevertData := make([]StorageStoredBlockInfo, 0)
+	callData := RevertBlocksCallData{BlocksToRevert: blocksToRevertData}
+	if err := newABIDecoder.UnpackIntoInterface(&callData, "revertBlocks", transaction.Data()[4:]); err != nil {
+		logx.Severe(err)
+		return
+	}
+	jsonBytes, err := json.Marshal(callData)
+	logx.Infof("callData=%s", string(jsonBytes))
+}
+
+type RevertBlocksCallData struct {
+	BlocksToRevert []StorageStoredBlockInfo `abi:"_blocksToRevert"`
 }

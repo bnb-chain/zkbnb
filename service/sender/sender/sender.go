@@ -735,6 +735,11 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 	var commitBlockData = &CommitBlockData{}
 
 	if lastHandledTx != nil {
+		latestCommittedHeight, err := s.blockModel.GetLatestCommittedHeight()
+		if err != nil && err != types.DbErrNotFound {
+			return nil, err
+		}
+		lastHandledTx.L2BlockHeight = common2.MaxInt64(latestCommittedHeight, lastHandledTx.L2BlockHeight)
 		start = lastHandledTx.L2BlockHeight + 1
 	}
 
@@ -776,7 +781,7 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 		// than the maxCommitAvgUnitGas, abandon commit operation for temporary
 		totalEstimatedFee, err := s.zkbnbClient.EstimateCommitGasWithNonce(lastStoredBlockInfo, commitBlockList, gasPrice, 0, nonce)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get estimated gas fee for committing, err: %v", err)
+			return nil, fmt.Errorf("failed to get estimated gas fee for committing,last stored block L2BlockHeight=%d err: %v", lastStoredBlockInfo.BlockNumber, err)
 		}
 
 		totalTxCount = s.CalculateTotalTxCountForCompressBlock(compressedBlocks)
