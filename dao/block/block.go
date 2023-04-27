@@ -344,7 +344,7 @@ func (m *defaultBlockModel) GetLatestVerifiedHeight() (height int64, err error) 
 	dbTx := m.DB.Table(m.table).Where("block_status = ?", StatusVerifiedAndExecuted).
 		Order("block_height DESC").
 		Limit(1).
-		First(&block)
+		Find(&block)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -358,7 +358,7 @@ func (m *defaultBlockModel) GetLatestCommittedHeight() (height int64, err error)
 	dbTx := m.DB.Table(m.table).Where("block_status = ?", StatusCommitted).
 		Order("block_height DESC").
 		Limit(1).
-		First(&block)
+		Find(&block)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -372,7 +372,7 @@ func (m *defaultBlockModel) GetLatestHeight(statuses []int) (height int64, err e
 	dbTx := m.DB.Table(m.table).Where("block_status in ?", statuses).
 		Order("block_height DESC").
 		Limit(1).
-		First(&block)
+		Find(&block)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
