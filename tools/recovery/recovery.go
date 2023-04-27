@@ -58,6 +58,8 @@ func RecoveryTreeDB(
 		logx.Error("InitMerkleTree error:", err)
 		return
 	}
+	logx.Infof("recovery account smt successfully")
+
 	// dbinitializer nftTree
 	_, err = tree.InitNftTree(
 		ctx.NftModel,
@@ -68,4 +70,6 @@ func RecoveryTreeDB(
 		logx.Errorf("InitNftTree error: %s", err.Error())
 		return
 	}
+	logx.Infof("recovery nft smt successfully")
+
 }

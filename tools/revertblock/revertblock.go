@@ -46,6 +46,11 @@ func RevertCommittedBlocks(configFile string, height int64) (err error) {
 	if lastHandledTx != nil {
 		endHeight = lastHandledTx.L2BlockHeight
 	}
+
+	if height > endHeight {
+		return fmt.Errorf("the latest height of TxTypeCommit is %d,it is less than input param height %d,pls check", endHeight, height)
+	}
+
 	l1RPCEndpoint, err := ctx.SysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
 		return fmt.Errorf("fatal error, failed to get network rpc configuration, err:%v, SysConfigName:%s",
