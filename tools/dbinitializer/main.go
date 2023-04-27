@@ -88,7 +88,7 @@ type dao struct {
 func Initialize(
 	dsn string,
 	contractAddrFile string,
-	bscTestNetworkRPC, localTestNetworkRPC string,
+	bscTestNetworkRPC, localTestNetworkRPC, optionalBlockSizes string,
 ) error {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
@@ -124,7 +124,7 @@ func Initialize(
 	}
 
 	dropTables(dao)
-	initTable(dao, &svrConf, bscTestNetworkRPC, localTestNetworkRPC)
+	initTable(dao, &svrConf, bscTestNetworkRPC, localTestNetworkRPC, optionalBlockSizes)
 
 	return nil
 }
@@ -154,7 +154,7 @@ func InitializeDesertExit(
 	return nil
 }
 
-func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC string) []*sysconfig.SysConfig {
+func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC, optionalBlockSizes string) []*sysconfig.SysConfig {
 
 	// to config gas for different transaction types, need to be evaluated and tune these values
 	bnbGasFee := make(map[int]int64)
@@ -241,7 +241,7 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 		},
 		{
 			Name:      types.OptionalBlockSizes,
-			Value:     "[8,16]",
+			Value:     optionalBlockSizes,
 			ValueType: "string",
 			Comment:   "OptionalBlockSizes config for committer and prover",
 		},
@@ -327,7 +327,7 @@ func dropTablesDesertExit(dao *dao) {
 
 }
 
-func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC string) {
+func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC, optionalBlockSizes string) {
 	assert.Nil(nil, dao.sysConfigModel.CreateSysConfigTable())
 	assert.Nil(nil, dao.accountModel.CreateAccountTable())
 	assert.Nil(nil, dao.accountHistoryModel.CreateAccountHistoryTable())
@@ -352,7 +352,7 @@ func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetw
 		panic("failed to initialize assets data, err:" + err.Error())
 	}
 	logx.Infof("l2 assets info rows affected: %d", rowsAffected)
-	rowsAffected, err = dao.sysConfigModel.CreateSysConfigs(initSysConfig(svrConf, bscTestNetworkRPC, localTestNetworkRPC))
+	rowsAffected, err = dao.sysConfigModel.CreateSysConfigs(initSysConfig(svrConf, bscTestNetworkRPC, localTestNetworkRPC, optionalBlockSizes))
 	if err != nil {
 		logx.Severef("failed to initialize system configuration data, %v", err)
 		panic("failed to initialize system configuration data, err:" + err.Error())

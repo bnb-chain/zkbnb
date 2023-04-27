@@ -14,6 +14,10 @@ var (
 		Name:  "contractAddr",
 		Usage: "the contract addresses file",
 	}
+	OptionalBlockSizesFlag = &cli.StringFlag{
+		Name:  "optionalBlockSizes",
+		Usage: "optional block sizes",
+	}
 	DSNFlag = &cli.StringFlag{
 		Name:  "dsn",
 		Usage: "data source name",

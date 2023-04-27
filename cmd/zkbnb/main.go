@@ -348,6 +348,7 @@ func main() {
 							flags.DSNFlag,
 							flags.BSCTestNetworkRPCFlag,
 							flags.LocalTestNetworkRPCFlag,
+							flags.OptionalBlockSizesFlag,
 						},
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ContractAddrFlag.Name) ||
@@ -360,6 +361,7 @@ func main() {
 								cCtx.String(flags.ContractAddrFlag.Name),
 								cCtx.String(flags.BSCTestNetworkRPCFlag.Name),
 								cCtx.String(flags.LocalTestNetworkRPCFlag.Name),
+								cCtx.String(flags.OptionalBlockSizesFlag.Name),
 							)
 						},
 					},
