@@ -65,8 +65,8 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 	}
 	c.RedisExpiration = systemConfig.RedisExpiration
 	c.CacheConfig = systemConfig.CacheConfig
-	c.TreeDB = systemConfig.TreeDB
 	c.BlockConfig = systemConfig.BlockConfig
+	c.TreeDB = systemConfig.TreeDB
 	c.LogConf = systemConfig.LogConf
 	c.IpfsUrl = systemConfig.IpfsUrl
 

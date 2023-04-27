@@ -1089,10 +1089,6 @@ func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 	//After the rollback, re-execute tx and form a block  based on the block size,because curBlock.CreatedAt does not change
 	if c.bc.Statedb.NeedRestoreExecutedTxs() {
 		if len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
-
-			logx.Infof("shouldCommit, because len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock, len(c.bc.Statedb.Txs):%d,"+
-				" maxTxsPerBlock:%d", len(c.bc.Statedb.Txs), c.maxTxsPerBlock)
-
 			return true
 		}
 		return false
@@ -1100,12 +1096,6 @@ func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 	var now = time.Now()
 	if (len(c.bc.Statedb.Txs) > 0 && now.Unix()-curBlock.CreatedAt.Unix() >= int64(c.maxCommitterInterval)) ||
 		len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
-
-		logx.Infof("shouldCommit, because now.Unix()-curBlock.CreatedAt.Unix() >= int64(c.maxCommitterInterval)) "+
-			"or len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock now.Unix():%d, curBlock.CreatedAt.Unix():%d, "+
-			"len(c.bc.Statedb.Txs):%d, c.maxTxsPerBlock:%d",
-			now.Unix(), curBlock.CreatedAt.Unix(), len(c.bc.Statedb.Txs), c.maxTxsPerBlock)
-
 		return true
 	}
 
