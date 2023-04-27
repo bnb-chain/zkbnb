@@ -78,12 +78,7 @@ func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *t
 	}
 
 	for _, dbTx := range txs {
-		tx := utils.ConvertTx(dbTx)
-		tx.L1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.AccountIndex)
-		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
-		if tx.ToAccountIndex >= 0 {
-			tx.ToL1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.ToAccountIndex)
-		}
+		tx := utils.ConvertTx(dbTx, l.svcCtx.MemCache)
 		resp.Txs = append(resp.Txs, tx)
 	}
 	return resp, nil

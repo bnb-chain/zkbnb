@@ -95,16 +95,9 @@ func (l *GetMergedAccountTxsLogic) mergeTxsList(poolTxList []*tx.Tx, txList []*t
 	for _, poolTx := range poolTxList {
 		var resultTx *types.Tx
 		if tx := l.getTxDataByPoolTxId(txList, poolTx.ID); tx != nil {
-			resultTx = utils.ConvertTx(tx)
+			resultTx = utils.ConvertTx(tx, l.svcCtx.MemCache)
 		} else {
-			resultTx = utils.ConvertTx(poolTx)
-		}
-		if resultTx.AccountIndex >= 0 {
-			resultTx.L1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(resultTx.AccountIndex)
-		}
-		resultTx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(resultTx.AssetId)
-		if resultTx.ToAccountIndex >= 0 {
-			resultTx.ToL1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(resultTx.ToAccountIndex)
+			resultTx = utils.ConvertTx(poolTx, l.svcCtx.MemCache)
 		}
 		resultTxList = append(resultTxList, resultTx)
 	}
