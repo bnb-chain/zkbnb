@@ -242,7 +242,7 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 		},
 		{
 			Name:      types.OptionalBlockSizes,
-			Value:     svrConf.OptionalBlockSizes,
+			Value:     "[8,16]",
 			ValueType: "string",
 			Comment:   "OptionalBlockSizes config for committer and prover",
 		},
