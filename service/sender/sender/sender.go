@@ -1500,6 +1500,8 @@ func (s *Sender) TimeOut() {
 	if err == nil {
 		interval := time.Now().Unix() - commitBlock.CreatedAt.Unix()
 		runTimeIntervalMetric.WithLabelValues("commitBlockTimeOut").Set(float64(interval))
+	} else {
+		runTimeIntervalMetric.WithLabelValues("commitBlockTimeOut").Set(float64(0))
 	}
 	maxVerifyBlockInterval := sconfig.GetSenderConfig().MaxVerifyBlockInterval
 	maxVerifyBlockTime, _ := time.ParseDuration(fmt.Sprintf("-%ds", maxVerifyBlockInterval))
@@ -1508,6 +1510,8 @@ func (s *Sender) TimeOut() {
 	if err == nil {
 		interval := time.Now().Unix() - verifyBlock.CreatedAt.Unix()
 		runTimeIntervalMetric.WithLabelValues("verifyBlockTimeOut").Set(float64(interval))
+	} else {
+		runTimeIntervalMetric.WithLabelValues("verifyBlockTimeOut").Set(float64(0))
 	}
 
 }
