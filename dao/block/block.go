@@ -56,6 +56,7 @@ type (
 		GetCommittedBlocksCount() (count int64, err error)
 		GetVerifiedBlocksCount() (count int64, err error)
 		GetLatestVerifiedHeight() (height int64, err error)
+		GetLatestCommittedHeight() (height int64, err error)
 		GetBlockByCommitment(blockCommitment string) (block *Block, err error)
 		GetCommittedBlocksBetween(start, end int64) (blocks []*Block, err error)
 		GetBlocksTotalCount() (count int64, err error)
@@ -341,6 +342,20 @@ func (m *defaultBlockModel) GetCommittedBlocksBetween(start, end int64) (blocks 
 func (m *defaultBlockModel) GetLatestVerifiedHeight() (height int64, err error) {
 	block := &Block{}
 	dbTx := m.DB.Table(m.table).Where("block_status = ?", StatusVerifiedAndExecuted).
+		Order("block_height DESC").
+		Limit(1).
+		First(&block)
+	if dbTx.Error != nil {
+		return 0, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, types.DbErrNotFound
+	}
+	return block.BlockHeight, nil
+}
+
+func (m *defaultBlockModel) GetLatestCommittedHeight() (height int64, err error) {
+	block := &Block{}
+	dbTx := m.DB.Table(m.table).Where("block_status = ?", StatusCommitted).
 		Order("block_height DESC").
 		Limit(1).
 		First(&block)
