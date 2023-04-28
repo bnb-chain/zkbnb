@@ -29,7 +29,7 @@ const (
 
 const (
 	StatusFailed = iota
-	StatusNftIndex
+	StatusPending
 	NotConfirmed
 	Confirmed
 )
@@ -43,7 +43,9 @@ type (
 		GetL2NftMetadataHistoryList(status int) (history []*L2NftMetadataHistory, err error)
 		GetL2NftMetadataHistoryPage(status, limit, offset int) (history []*L2NftMetadataHistory, err error)
 		GetL2NftMetadataHistory(nftIndex int64) (history *L2NftMetadataHistory, err error)
+		GetL2NftMetadataHistoryByHash(txHash string) (history *L2NftMetadataHistory, err error)
 		UpdateL2NftMetadataHistoryInTransact(history *L2NftMetadataHistory) error
+		UpdateL2NftMetadataHistoryNoNftIndex(history *L2NftMetadataHistory) error
 	}
 
 	defaultL2NftMetadataHistoryModel struct {
@@ -127,9 +129,28 @@ func (m *defaultL2NftMetadataHistoryModel) GetL2NftMetadataHistory(nftIndex int6
 	return history, nil
 }
 
+func (m *defaultL2NftMetadataHistoryModel) GetL2NftMetadataHistoryByHash(txHash string) (history *L2NftMetadataHistory, err error) {
+	dbTx := m.DB.Table(m.table).Where("tx_hash = ?", txHash).Find(&history)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return history, nil
+}
+
 func (m *defaultL2NftMetadataHistoryModel) UpdateL2NftMetadataHistoryInTransact(history *L2NftMetadataHistory) error {
 	dbTx := m.DB.Table(m.table).
 		Select("*").Updates(history)
+	if dbTx.Error != nil {
+		return types.DbErrSqlOperation
+	}
+	return nil
+}
+
+func (m *defaultL2NftMetadataHistoryModel) UpdateL2NftMetadataHistoryNoNftIndex(history *L2NftMetadataHistory) error {
+	dbTx := m.DB.Table(m.table).
+		Select("*").Where("nft_index = ?", -1).Updates(history)
 	if dbTx.Error != nil {
 		return types.DbErrSqlOperation
 	}

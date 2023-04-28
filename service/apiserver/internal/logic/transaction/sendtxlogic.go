@@ -131,13 +131,13 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		history := &nft.L2NftMetadataHistory{
 			Nonce:    0,
 			TxHash:   newTx.BaseTx.TxHash,
-			NftIndex: newTx.BaseTx.NftIndex,
+			NftIndex: types2.NilNftIndex,
 			IpfsCid:  cid,
 			IpnsName: txInfo.IpnsName,
 			IpnsId:   txInfo.IpnsId,
 			Mutable:  txInfo.MutableAttributes,
 			Metadata: txInfo.MetaData,
-			Status:   nft.StatusNftIndex,
+			Status:   nft.StatusPending,
 		}
 		b, err := json.Marshal(txInfo)
 		if err != nil {

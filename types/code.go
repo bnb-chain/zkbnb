@@ -109,6 +109,8 @@ var (
 	AppErrUnsupportedTxType         = NewBusinessError(21412, "unsupported tx type")
 	AppErrPrepareNftFailed          = NewBusinessError(21413, "prepare nft failed")
 	AppErrChannelNameTooHigh        = NewBusinessError(21414, "ChannelName should not be larger than ")
+	AppErrPoolTxRunning             = NewBusinessError(21415, "pool tx is running")
+	AppErrPoolTxFailed              = NewBusinessError(21416, "pool tx is Failed")
 
 	// Offer
 	AppErrInvalidOfferType           = NewBusinessError(21500, "invalid offer type")
