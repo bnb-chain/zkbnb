@@ -33,12 +33,6 @@ type SenderConfig struct {
 
 	MaxCommitBlockInterval uint64
 	MaxVerifyBlockInterval uint64
-
-	CommitAvgUnitGasSwitch bool
-	VerifyAvgUnitGasSwitch bool
-
-	MaxCommitAvgUnitGas uint64
-	MaxVerifyAvgUnitGas uint64
 }
 
 type SenderUpdater struct {

@@ -60,6 +60,12 @@ const (
 	MaxErrorRetryCount = 3
 	// VM Exception while processing transaction: revert i
 	CallContractError = "revert"
+
+	RpcOverSized = "oversized data"
+
+	ReplacementTransactionUnderpriced = "replacement transaction underpriced"
+
+	TransactionUnderpriced = "transaction underpriced"
 )
 
 var (
@@ -406,7 +412,7 @@ func (s *Sender) CommitBlocks() (err error) {
 		return err
 	}
 
-	commitBlockData, err := s.PrepareCommitBlockData(lastHandledTx)
+	commitBlockData, shouldCommit, err := s.PrepareCommitBlockData(lastHandledTx)
 	if err != nil {
 		return err
 	}
@@ -430,10 +436,12 @@ func (s *Sender) CommitBlocks() (err error) {
 	ctx := log.NewCtxWithKV(log.BlockHeightContext, l2BlockHeight)
 
 	// Judge whether the blocks should be committed to the chain for better gas consumption
-	shouldCommit := s.ShouldCommitBlocks(compressedBlocks, estimatedFee, ctx)
 	if !shouldCommit {
-		logx.WithContext(ctx).Errorf("abandon commit block to l1, EstimateGas value is greater than MaxUnitGas!")
-		return nil
+		shouldCommit = s.ShouldCommitBlocks(compressedBlocks, estimatedFee, ctx)
+		if !shouldCommit {
+			logx.WithContext(ctx).Errorf("abandon commit block to l1, EstimateGas value is greater than MaxUnitGas!")
+			return nil
+		}
 	}
 
 	var txHash string
@@ -470,9 +478,14 @@ func (s *Sender) CommitBlocks() (err error) {
 			s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
 			commitExceptionHeightMetric.Set(float64(blockHeight))
-			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
+			if err.Error() == ReplacementTransactionUnderpriced || err.Error() == TransactionUnderpriced {
 				logx.WithContext(ctx).Errorf("failed to send commit tx,try again: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
 				retry = true
+				continue
+			}
+			if err.Error() == RpcOverSized {
+				logx.WithContext(ctx).Errorf("failed to send commit tx,try again after deleting one block: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
+				pendingCommitBlocks = pendingCommitBlocks[0 : len(pendingCommitBlocks)-1]
 				continue
 			}
 			s.HandleSendTxToL1Error(blockHeight, l1rolluptx.TxTypeCommit, txHash, err)
@@ -631,7 +644,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		return err
 	}
 
-	verifyAndExecuteBlockData, err := s.PrepareVerifyAndExecuteBlockData(lastHandledTx)
+	verifyAndExecuteBlockData, shouldVerifyAndExecute, err := s.PrepareVerifyAndExecuteBlockData(lastHandledTx)
 	if err != nil {
 		return err
 	}
@@ -655,10 +668,12 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	ctx := log.NewCtxWithKV(log.BlockHeightContext, l2BlockHeight)
 
 	// Judge whether the blocks should be verified and executed to the chain for better gas consumption
-	shouldVerifyAndExecute := s.ShouldVerifyAndExecuteBlocks(blocks, totalEstimatedFee, ctx)
 	if !shouldVerifyAndExecute {
-		logx.WithContext(ctx).Errorf("abandon verify and execute block to l1, EstimateGas value is greater than MaxUnitGas!")
-		return nil
+		shouldVerifyAndExecute := s.ShouldVerifyAndExecuteBlocks(blocks, totalEstimatedFee, ctx)
+		if !shouldVerifyAndExecute {
+			logx.WithContext(ctx).Errorf("abandon verify and execute block to l1, EstimateGas value is greater than MaxUnitGas!")
+			return nil
+		}
 	}
 
 	txHash := ""
@@ -693,9 +708,14 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			proofs, gasPrice, s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
 			verifyExceptionHeightMetric.Set(float64(blockHeight))
-			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
+			if err.Error() == ReplacementTransactionUnderpriced || err.Error() == TransactionUnderpriced {
 				logx.WithContext(ctx).Errorf("failed to send verify tx,try again: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
 				retry = true
+				continue
+			}
+			if err.Error() == RpcOverSized {
+				logx.WithContext(ctx).Errorf("failed to send verify tx,try again after deleting one block: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
+				pendingVerifyAndExecuteBlocks = pendingVerifyAndExecuteBlocks[0 : len(pendingVerifyAndExecuteBlocks)-1]
 				continue
 			}
 			s.HandleSendTxToL1Error(blockHeight, l1rolluptx.TxTypeVerifyAndExecute, txHash, err)
@@ -725,7 +745,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	return nil
 }
 
-func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*CommitBlockData, error) {
+func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*CommitBlockData, bool, error) {
 	commitTxCountLimit := sconfig.GetSenderConfig().CommitTxCountLimit
 	maxCommitBlockCount := sconfig.GetSenderConfig().MaxCommitBlockCount
 	maxCommitTotalGasFee := sconfig.GetSenderConfig().MaxCommitTotalGasFee
@@ -737,7 +757,7 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 	if lastHandledTx != nil {
 		latestCommittedHeight, err := s.blockModel.GetLatestCommittedHeight()
 		if err != nil && err != types.DbErrNotFound {
-			return nil, err
+			return nil, false, err
 		}
 		lastHandledTx.L2BlockHeight = common2.MaxInt64(latestCommittedHeight, lastHandledTx.L2BlockHeight)
 		start = lastHandledTx.L2BlockHeight + 1
@@ -746,22 +766,22 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 	for {
 		compressedBlocks, err := s.compressedBlockModel.GetCompressedBlocksBetween(start, start+int64(maxCommitBlockCount))
 		if err != nil && err != types.DbErrNotFound {
-			return nil, fmt.Errorf("failed to get compress block err: %v", err)
+			return nil, false, fmt.Errorf("failed to get compress block err: %v", err)
 		}
 		logx.Infof("GetCompressedBlocksForCommit: start:%d, maxCommitBlockCount:%d, compressed block count:%d",
 			start, maxCommitBlockCount, len(compressedBlocks))
 		if len(compressedBlocks) == 0 {
-			return nil, nil
+			return nil, false, nil
 		}
 
 		commitBlockList, err := ConvertBlocksForCommitToCommitBlockInfos(compressedBlocks, s.txModel)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get commit block info, err: %v", err)
+			return nil, false, fmt.Errorf("failed to get commit block info, err: %v", err)
 		}
 
 		lastStoredBlockInfo, err := s.PrepareLastStoredBlockInfo(lastHandledTx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get last stored block info, err: %v", err)
+			return nil, false, fmt.Errorf("failed to get last stored block info, err: %v", err)
 		}
 
 		l2BlockHeight := int64(commitBlockList[len(commitBlockList)-1].BlockNumber)
@@ -769,19 +789,19 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 
 		gasPrice, maxGasPrice, err := s.PrepareCommitGasPriceData(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get commit gas price data, err: %v", err)
+			return nil, false, fmt.Errorf("failed to get commit gas price data, err: %v", err)
 		}
 
 		nonce, err := s.PrepareCommitNonceValue()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get commit nonce value, err: %v", err)
+			return nil, false, fmt.Errorf("failed to get commit nonce value, err: %v", err)
 		}
 
 		// Judge the average tx gas consumption for the committing operation, if the average tx gas consumption is greater
 		// than the maxCommitAvgUnitGas, abandon commit operation for temporary
 		totalEstimatedFee, err := s.zkbnbClient.EstimateCommitGasWithNonce(lastStoredBlockInfo, commitBlockList, gasPrice, 0, nonce)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get estimated gas fee for committing,last stored block L2BlockHeight=%d err: %v", lastStoredBlockInfo.BlockNumber, err)
+			return nil, false, fmt.Errorf("failed to get estimated gas fee for committing,last stored block L2BlockHeight=%d err: %v", lastStoredBlockInfo.BlockNumber, err)
 		}
 
 		totalTxCount = s.CalculateTotalTxCountForCompressBlock(compressedBlocks)
@@ -795,13 +815,13 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 			commitBlockData.gasPrice = gasPrice
 			commitBlockData.nonce = nonce
 
-			return commitBlockData, nil
+			return commitBlockData, maxCommitBlockCount != sconfig.GetSenderConfig().MaxCommitBlockCount, nil
 		}
 
 		if maxCommitBlockCount > 1 {
 			maxCommitBlockCount--
 		} else {
-			return nil, nil
+			return nil, false, nil
 		}
 	}
 }
@@ -894,6 +914,15 @@ func (s *Sender) ShouldCommitBlocks(blocks []*compressedblock.CompressedBlock, e
 		return true
 	}
 
+	// Judge the count of the blocks waiting to be committed, if the time count is greater
+	// than the MaxCommitBlockCount, commit the blocks directly
+	maxCommitBlockCount := sconfig.GetSenderConfig().MaxCommitBlockCount
+	if uint64(len(blocks)) > maxCommitBlockCount {
+		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because blocks count > maxCommitBlockCount,"+
+			"blocks count:%d, maxCommitBlockInterval:%d", len(blocks), maxCommitBlockCount)
+		return true
+	}
+
 	// Judge the tx count waiting to be committed, if the tx count is greater
 	// than the maxCommitTxCount, commit the blocks directly
 	maxCommitTxCount := sconfig.GetSenderConfig().MaxCommitTxCount
@@ -914,29 +943,21 @@ func (s *Sender) ShouldCommitBlocks(blocks []*compressedblock.CompressedBlock, e
 		return true
 	}
 
-	// Only if CommitAvgUnitGasSwitch is switched on, perform this part of logic
-	if sconfig.GetSenderConfig().CommitAvgUnitGasSwitch {
-		// Judge the average tx gas consumption for the committing operation, if the average tx gas consumption is greater
-		// than the maxCommitAvgUnitGas, abandon commit operation for temporary
-		maxCommitAvgUnitGas := sconfig.GetSenderConfig().MaxCommitAvgUnitGas
-		unitGas := estimatedFee / totalTxCount
-		if unitGas > maxCommitAvgUnitGas {
-			logx.WithContext(ctx).Info("Abandon commit block to l1, UnitGasFee is greater than MaxCommitBlockUnitGas, UnitGasFee:", unitGas,
-				",MaxCommitAvgUnitGas:", maxCommitAvgUnitGas)
-			return false
-		}
-
-		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because unitGas <= maxCommitAvgUnitGas,"+
-			"unitGas:%d, maxCommitAvgUnitGas:%d", unitGas, maxCommitAvgUnitGas)
-		return true
-	}
-
 	return false
 }
 
 func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, totalEstimatedFee uint64, ctx context.Context) bool {
 	// If VerifyControlSwitch has been switched off, directly does not perform any control
 	if !sconfig.GetSenderConfig().VerifyControlSwitch {
+		return true
+	}
+
+	// Judge the count of the blocks waiting to be verified and executed, if the time count is greater
+	// than the MaxVerifyBlockCount, verify and execute the blocks directly
+	maxVerifyBlockCount := sconfig.GetSenderConfig().MaxVerifyBlockCount
+	if uint64(len(blocks)) > maxVerifyBlockCount {
+		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because blocks count > maxVerifyBlockCount,"+
+			"blocks count:%d, maxVerifyBlockCount:%d", len(blocks), maxVerifyBlockCount)
 		return true
 	}
 
@@ -962,25 +983,10 @@ func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, totalEstima
 		return true
 	}
 
-	// Only if VerifyAvgUnitGasSwitch is switched on, perform this part of logic
-	if sconfig.GetSenderConfig().VerifyAvgUnitGasSwitch {
-
-		maxVerifyAvgUnitGas := sconfig.GetSenderConfig().MaxVerifyAvgUnitGas
-		unitGas := totalEstimatedFee / totalTxCount
-		if unitGas > maxVerifyAvgUnitGas {
-			logx.WithContext(ctx).Info("abandon verify and execute block to l1, UnitGasFee is greater than maxVerifyAvgUnitGas, UnitGasFee:", unitGas,
-				",MaxVerifyAvgUnitGas:", maxVerifyAvgUnitGas)
-			return false
-		}
-
-		logx.WithContext(ctx).Infof("Should verify blocks to l1 network, because unitGas <= maxVerifyAvgUnitGas,"+
-			"unitGas:%d, maxVerifyAvgUnitGas:%d", unitGas, maxVerifyAvgUnitGas)
-		return true
-	}
 	return false
 }
 
-func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*VerifyAndExecuteBlockData, error) {
+func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*VerifyAndExecuteBlockData, bool, error) {
 
 	verifyTxCountLimit := sconfig.GetSenderConfig().VerifyTxCountLimit
 	maxVerifyBlockCount := sconfig.GetSenderConfig().MaxVerifyBlockCount
@@ -997,16 +1003,16 @@ func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1Ro
 	for {
 		blocks, err := s.blockModel.GetCommittedBlocksBetween(start, start+int64(maxVerifyBlockCount))
 		if err != nil && err != types.DbErrNotFound {
-			return nil, fmt.Errorf("unable to get blocks to prove, err: %v", err)
+			return nil, false, fmt.Errorf("unable to get blocks to prove, err: %v", err)
 		}
 		logx.Infof("GetBlocksForVerifyAndExecute: start:%d, maxVerifyBlockCount:%d, verify block count:%d", start, maxVerifyBlockCount, len(blocks))
 		if len(blocks) == 0 {
-			return nil, nil
+			return nil, false, nil
 		}
 
 		pendingVerifyAndExecuteBlocks, err := ConvertBlocksToVerifyAndExecuteBlockInfos(blocks)
 		if err != nil {
-			return nil, fmt.Errorf("unable to convert blocks to commit block infos: %v", err)
+			return nil, false, fmt.Errorf("unable to convert blocks to commit block infos: %v", err)
 		}
 		l2BlockHeight := int64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber)
 		ctx := log.NewCtxWithKV(log.BlockHeightContext, l2BlockHeight)
@@ -1014,28 +1020,28 @@ func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1Ro
 		blockProofs, err := s.proofModel.GetProofsBetween(start, start+int64(len(blocks))-1)
 		if err != nil {
 			if err == types.DbErrNotFound {
-				return nil, nil
+				return nil, false, nil
 			}
-			return nil, fmt.Errorf("unable to get proofs, err: %v", err)
+			return nil, false, fmt.Errorf("unable to get proofs, err: %v", err)
 		}
 
 		if err = s.CheckBlockAndProofData(blocks, blockProofs); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		proofs, err := s.PrepareProofData(blockProofs)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		nonce, err := s.PrepareVerifyNonceValue()
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		gasPrice, maxGasPrice, err := s.PrepareVerifyGasPriceData(ctx)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		// Judge the average tx gas consumption for the verifying and executing operation, if the average tx gas consumption is greater
@@ -1043,7 +1049,7 @@ func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1Ro
 		totalEstimatedFee, err := s.zkbnbClient.EstimateVerifyAndExecuteWithNonce(pendingVerifyAndExecuteBlocks, proofs, gasPrice, 0, nonce)
 		if err != nil {
 			logx.WithContext(ctx).Errorf("abandon verify block to l1, EstimateGas operation get some error:%s", err.Error())
-			return nil, err
+			return nil, false, err
 		}
 
 		verifyAndExecuteBlockData.nonce = nonce
@@ -1056,12 +1062,12 @@ func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1Ro
 
 		totalTxCount = s.CalculateTotalTxCountForBlock(blocks)
 		if totalTxCount < verifyTxCountLimit && totalEstimatedFee < maxVerifyTotalGasFee {
-			return verifyAndExecuteBlockData, nil
+			return verifyAndExecuteBlockData, maxVerifyBlockCount != sconfig.GetSenderConfig().MaxVerifyBlockCount, nil
 		}
 		if maxVerifyBlockCount > 1 {
 			maxVerifyBlockCount--
 		} else {
-			return nil, nil
+			return nil, false, nil
 		}
 	}
 }
@@ -1165,7 +1171,7 @@ func (s *Sender) CalculateTotalTxCountForCompressBlock(blocks []*compressedblock
 	var totalTxCount uint16 = 0
 	if len(blocks) > 0 {
 		for _, b := range blocks {
-			totalTxCount = totalTxCount + b.RealBlockSize
+			totalTxCount = totalTxCount + b.BlockSize
 		}
 	}
 	return uint64(totalTxCount)
