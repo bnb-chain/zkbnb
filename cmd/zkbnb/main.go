@@ -238,9 +238,6 @@ func main() {
 					if !cCtx.IsSet(flags.RollbackBlockHeightFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 
 					err := rollback.RollbackAll(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RollbackBlockHeightFlag.Name))
 					if err != nil {
@@ -261,9 +258,6 @@ func main() {
 					if !cCtx.IsSet(flags.RevertBlockHeightFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 
 					err := revertblock.RevertCommittedBlocks(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RevertBlockHeightFlag.Name))
 					if err != nil {
@@ -282,9 +276,6 @@ func main() {
 				},
 				Action: func(cCtx *cli.Context) error {
 					if !cCtx.IsSet(flags.RevertBlockHeightFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
 					err := rollbackwitnesssmt.RollbackWitnessSmt(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RevertBlockHeightFlag.Name))
@@ -383,8 +374,7 @@ func main() {
 						},
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ServiceNameFlag.Name) ||
-								!cCtx.IsSet(flags.BlockHeightFlag.Name) ||
-								!cCtx.IsSet(flags.ConfigFlag.Name) {
+								!cCtx.IsSet(flags.BlockHeightFlag.Name) {
 								return cli.ShowSubcommandHelp(cCtx)
 							}
 							recovery.RecoveryTreeDB(
@@ -412,11 +402,11 @@ func main() {
 							flags.ServiceNameFlag,
 							flags.BatchSizeFlag,
 							flags.RecoveryFromHistoryFlag,
+							flags.AccountIndexListFlag,
 						},
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ServiceNameFlag.Name) ||
-								!cCtx.IsSet(flags.BlockHeightFlag.Name) ||
-								!cCtx.IsSet(flags.ConfigFlag.Name) {
+								!cCtx.IsSet(flags.BlockHeightFlag.Name) {
 								return cli.ShowSubcommandHelp(cCtx)
 							}
 							query.QueryTreeDB(
@@ -424,7 +414,7 @@ func main() {
 								cCtx.Int64(flags.BlockHeightFlag.Name),
 								cCtx.String(flags.ServiceNameFlag.Name),
 								cCtx.Int(flags.BatchSizeFlag.Name),
-								cCtx.Bool(flags.RecoveryFromHistoryFlag.Name),
+								cCtx.Bool(flags.RecoveryFromHistoryFlag.Name), cCtx.String(flags.AccountIndexListFlag.Name),
 							)
 							return nil
 						},

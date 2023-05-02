@@ -6,7 +6,7 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
 	"github.com/bnb-chain/zkbnb/dao/proof"
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
-	"github.com/bnb-chain/zkbnb/tools/rollback/internal/config"
+	"github.com/bnb-chain/zkbnb/service/sender/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

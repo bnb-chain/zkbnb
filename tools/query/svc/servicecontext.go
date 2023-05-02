@@ -1,6 +1,7 @@
 package svc
 
 import (
+	"github.com/bnb-chain/zkbnb/tools/query/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/nft"
-	"github.com/bnb-chain/zkbnb/tools/query/internal/config"
 )
 
 type ServiceContext struct {

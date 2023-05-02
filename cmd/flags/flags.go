@@ -110,6 +110,11 @@ var (
 		Usage: "nftIndexList",
 		Value: "",
 	}
+	AccountIndexListFlag = &cli.StringFlag{
+		Name:  "accountIndexList",
+		Usage: "accountIndexList",
+		Value: "",
+	}
 	AddressFlag = &cli.StringFlag{
 		Name:  "address",
 		Usage: "address",

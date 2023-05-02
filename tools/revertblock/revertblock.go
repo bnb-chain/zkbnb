@@ -10,7 +10,7 @@ import (
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
-	"github.com/bnb-chain/zkbnb/tools/revertblock/internal/config"
+	"github.com/bnb-chain/zkbnb/service/sender/config"
 	"github.com/bnb-chain/zkbnb/tools/revertblock/internal/svc"
 	"github.com/bnb-chain/zkbnb/types"
 	"github.com/zeromicro/go-zero/core/logx"

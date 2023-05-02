@@ -1,12 +1,12 @@
 package recovery
 
 import (
+	"github.com/bnb-chain/zkbnb/tools/query"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 
 	bsmt "github.com/bnb-chain/zkbnb-smt"
-	"github.com/bnb-chain/zkbnb/tools/recovery/internal/config"
-	"github.com/bnb-chain/zkbnb/tools/recovery/internal/svc"
+	"github.com/bnb-chain/zkbnb/tools/query/svc"
 	"github.com/bnb-chain/zkbnb/tree"
 )
 
@@ -17,20 +17,16 @@ func RecoveryTreeDB(
 	batchSize int,
 	fromHistory bool,
 ) {
-	c := config.Config{}
-	if err := config.InitSystemConfiguration(&c, configFile); err != nil {
-		logx.Severef("failed to initiate system configuration, %v", err)
-		panic("failed to initiate system configuration, err:" + err.Error())
-	}
-	ctx := svc.NewServiceContext(c)
-	logx.MustSetup(c.LogConf)
+	configInfo := query.BuildConfig(configFile, serviceName)
+	ctx := svc.NewServiceContext(configInfo)
+	logx.MustSetup(configInfo.LogConf)
 	logx.DisableStat()
 	proc.AddShutdownListener(func() {
 		logx.Close()
 	})
 
 	// dbinitializer tree database
-	treeCtx, err := tree.NewContext(serviceName, c.TreeDB.Driver, true, false, c.TreeDB.RoutinePoolSize, &c.TreeDB.LevelDBOption, &c.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext(serviceName, configInfo.TreeDB.Driver, true, false, configInfo.TreeDB.RoutinePoolSize, &configInfo.TreeDB.LevelDBOption, &configInfo.TreeDB.RedisDBOption)
 	if err != nil {
 		logx.Errorf("Init tree database failed: %s", err)
 		return
@@ -51,7 +47,7 @@ func RecoveryTreeDB(
 		make([]int64, 0),
 		blockHeight,
 		treeCtx,
-		c.TreeDB.AssetTreeCacheSize,
+		configInfo.TreeDB.AssetTreeCacheSize,
 		fromHistory,
 	)
 	if err != nil {
