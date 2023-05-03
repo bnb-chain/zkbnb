@@ -1,15 +1,17 @@
 package query
 
 import (
+	"encoding/json"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
+	committerConfig "github.com/bnb-chain/zkbnb/service/committer/config"
+	witnessConfig "github.com/bnb-chain/zkbnb/service/witness/config"
+	"github.com/bnb-chain/zkbnb/tools/query/config"
+	"github.com/bnb-chain/zkbnb/tools/query/svc"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 	"strconv"
 
-	"github.com/bnb-chain/zkbnb/tools/query/internal/config"
-	"github.com/bnb-chain/zkbnb/tools/query/internal/svc"
 	"github.com/bnb-chain/zkbnb/tree"
 )
 
@@ -18,18 +20,26 @@ func QueryTreeDB(
 	blockHeight int64,
 	serviceName string,
 	batchSize int,
-	fromHistory bool,
+	fromHistory bool, AccountIndexesStr string,
+
 ) {
-	var c config.Config
-	conf.MustLoad(configFile, &c)
-	ctx := svc.NewServiceContext(c)
-	logx.MustSetup(c.LogConf)
+	configInfo := BuildConfig(configFile, serviceName)
+	ctx := svc.NewServiceContext(configInfo)
+	logx.MustSetup(configInfo.LogConf)
 	logx.DisableStat()
 	proc.AddShutdownListener(func() {
 		logx.Close()
 	})
 
-	treeCtx, err := tree.NewContext(serviceName, c.TreeDB.Driver, false, true, c.TreeDB.RoutinePoolSize, &c.TreeDB.LevelDBOption, &c.TreeDB.RedisDBOption)
+	var AccountIndexes []int64
+	if AccountIndexesStr != "" {
+		err := json.Unmarshal([]byte(AccountIndexesStr), &AccountIndexes)
+		if err != nil {
+			logx.Errorf("json.Unmarshal failed: %s", err)
+			return
+		}
+	}
+	treeCtx, err := tree.NewContext(serviceName, configInfo.TreeDB.Driver, false, true, configInfo.TreeDB.RoutinePoolSize, &configInfo.TreeDB.LevelDBOption, &configInfo.TreeDB.RedisDBOption)
 	if err != nil {
 		logx.Errorf("Init tree database failed: %s", err)
 		return
@@ -50,15 +60,15 @@ func QueryTreeDB(
 		make([]int64, 0),
 		blockHeight,
 		treeCtx,
-		c.TreeDB.AssetTreeCacheSize,
+		configInfo.TreeDB.AssetTreeCacheSize,
 		fromHistory,
 	)
 	if err != nil {
 		logx.Error("InitMerkleTree error:", err)
 		return
 	}
-	if len(ctx.Config.AccountIndexes) > 0 {
-		for _, accountIndex := range ctx.Config.AccountIndexes {
+	if len(AccountIndexes) > 0 {
+		for _, accountIndex := range AccountIndexes {
 			assetRoot := common.Bytes2Hex(accountAssetTrees.Get(accountIndex).Root())
 			logx.Infof("asset tree root accountIndex=%s,assetRoot=%s,versions=%s,latestVersion=%s", strconv.FormatInt(accountIndex, 10), assetRoot,
 				formatVersion(accountAssetTrees.Get(accountIndex).Versions()), strconv.FormatUint(uint64(accountAssetTrees.Get(accountIndex).LatestVersion()), 10))
@@ -99,4 +109,32 @@ func formatVersion(versions []bsmt.Version) string {
 	str += "]"
 
 	return str
+}
+
+func BuildConfig(configFile string, serviceName string) config.Config {
+	configInfo := config.Config{}
+	if serviceName == "committer" {
+		c := committerConfig.Config{}
+		if err := committerConfig.InitSystemConfiguration(&c, configFile); err != nil {
+			logx.Severef("failed to initiate system configuration, %v", err)
+			panic("failed to initiate system configuration, err:" + err.Error())
+		}
+		configInfo.TreeDB = c.TreeDB
+		configInfo.Postgres = c.Postgres
+		configInfo.CacheRedis = c.CacheRedis
+		configInfo.LogConf = c.LogConf
+
+	} else if serviceName == "witness" {
+		c := witnessConfig.Config{}
+		if err := witnessConfig.InitSystemConfiguration(&c, configFile); err != nil {
+			logx.Severef("failed to initiate system configuration, %v", err)
+			panic("failed to initiate system configuration, err:" + err.Error())
+		}
+		configInfo.TreeDB = c.TreeDB
+		configInfo.Postgres = c.Postgres
+		configInfo.LogConf = c.LogConf
+	} else {
+		logx.Error("there is no serviceName,%s", serviceName)
+	}
+	return configInfo
 }

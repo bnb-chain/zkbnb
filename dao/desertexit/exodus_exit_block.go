@@ -117,7 +117,7 @@ func (m *defaultBlockModel) BatchInsertOrUpdateInTransact(tx *gorm.DB, desertExi
 		return dbTx.Error
 	}
 	if int(dbTx.RowsAffected) != len(desertExitBlocks) {
-		logx.Errorf("BatchInsertOrUpdateInTransact failed,rows affected not equal desertExitBlocks length,dbTx.RowsAffected:%s,len(desertExitBlocks):%s", int(dbTx.RowsAffected), len(desertExitBlocks))
+		logx.Errorf("BatchInsertOrUpdateInTransact failed,rows affected not equal desertExitBlocks length,dbTx.RowsAffected:%d,len(desertExitBlocks):%d", int(dbTx.RowsAffected), len(desertExitBlocks))
 		return types.DbErrFailToUpdateAccount
 	}
 	return nil

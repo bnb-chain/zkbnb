@@ -2,7 +2,7 @@ package ratelimiter
 
 import (
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/cache"
-	"github.com/bnb-chain/zkbnb/service/apiserver/internal/config"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/fetcher/address"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 	"github.com/shirou/gopsutil/host"
@@ -28,6 +28,9 @@ var localhostID string
 
 var redisInstance *redis.Redis
 var memCache *cache.MemCache
+var fetcher *address.Fetcher
+
+var rateLimitConfig *RateLimitConfig
 
 var periodRateLimiter *PeriodRateLimiter
 var tokenRateLimiter *TokenRateLimiter
@@ -41,6 +44,13 @@ type RateLimitController func(*RateLimitParam, RateLimitController) error
 
 func RateLimitHandler(next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
+
+		// If rateLimitConfig has not been set or RateLimitSwitch has been set to false
+		// Do not perform any rate limit control and do the following process directly
+		if rateLimitConfig == nil || !rateLimitConfig.RateLimitSwitch {
+			next(writer, request)
+			return
+		}
 
 		// Parse the form before reading the parameter
 		request.ParseForm()
@@ -72,22 +82,28 @@ func RateLimitHandler(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func InitRateLimitControl(svcCtx *svc.ServiceContext, config config.Config) {
+func InitRateLimitControl(svcCtx *svc.ServiceContext) {
 
 	memCache = svcCtx.MemCache
+	fetcher = address.NewFetcher(svcCtx)
 	localhostID = InitLocalhostConfiguration()
-	rateLimitConfig := LoadApolloRateLimitConfig(config)
+	newRateLimitConfig := LoadApolloRateLimitConfig()
 
-	RefreshRateLimitControl(rateLimitConfig)
-
-	logx.Info("Initiate RateLimit Control Facility Successfully!")
+	RefreshRateLimitControl(newRateLimitConfig)
 }
 
-func RefreshRateLimitControl(rateLimitConfig *RateLimitConfig) {
-	redisInstance = InitRateLimitRedisInstance(rateLimitConfig.RedisConfig.Address)
+func RefreshRateLimitControl(newRateLimitConfig *RateLimitConfig) {
+	rateLimitConfig = newRateLimitConfig
+	if rateLimitConfig.RateLimitSwitch {
+		redisInstance = InitRateLimitRedisInstance(rateLimitConfig.RedisConfig.Address)
 
-	periodRateLimiter = InitRateLimitControlByPeriod(localhostID, rateLimitConfig, redisInstance)
-	tokenRateLimiter = InitRateLimitControlByToken(localhostID, rateLimitConfig, redisInstance)
+		periodRateLimiter = InitRateLimitControlByPeriod(localhostID, rateLimitConfig, redisInstance)
+		tokenRateLimiter = InitRateLimitControlByToken(localhostID, rateLimitConfig, redisInstance)
+
+		logx.Info("Initiate RateLimit Control Facility Successfully!")
+	} else {
+		logx.Info("RateLimitSwitch is Off, Do Not Initiate RateLimit Control Facility!")
+	}
 }
 
 func InitLocalhostConfiguration() string {
@@ -111,6 +127,16 @@ func ParseAccountL1Address(r *http.Request) string {
 		return ""
 	}
 
+	// For sending transaction interface, we get the l1 address in the below logic
+	if len(req.TxInfo) > 0 && req.TxType > 0 {
+		l1AddressList, err := fetcher.GetL1AddressByTx(req.TxType, req.TxInfo)
+		if err != nil || len(l1AddressList) == 0 {
+			return ""
+		}
+		return l1AddressList[0]
+	}
+
+	// If it is not the sending transaction request, we get the l1 address in the below logic again
 	if len(req.By) > 0 {
 		var accountIndex = int64(0)
 		var err error
@@ -133,6 +159,7 @@ func ParseAccountL1Address(r *http.Request) string {
 		return l1Address
 	}
 
+	// If account index is present in the request, we get the l1 address directly
 	l1Address, err := memCache.GetL1AddressByIndex(req.AccountIndex)
 	if err != nil {
 		return ""

@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/robfig/cron/v3"
-	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 
@@ -14,11 +13,12 @@ import (
 
 const GracefulShutdownTimeout = 30 * time.Second
 
-func Run(configFile string) error {
+func Run(configFile string, proverId uint) error {
 	var c config.Config
-	conf.MustLoad(configFile, &c)
-	logx.MustSetup(c.LogConf)
-	logx.DisableStat()
+	if err := config.InitSystemConfiguration(&c, configFile, proverId); err != nil {
+		logx.Severef("failed to initiate system configuration, %v", err)
+		panic("failed to initiate system configuration, err:" + err.Error())
+	}
 
 	p, _ := prover.NewProver(c)
 	cronJob := cron.New(cron.WithChain(
@@ -33,7 +33,7 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		logx.Severe("failed to start prove block task, %v", err)
+		logx.Severef("failed to start prove block task, %s", err.Error())
 		panic("failed to start prove block task, err:" + err.Error())
 	}
 	cronJob.Start()

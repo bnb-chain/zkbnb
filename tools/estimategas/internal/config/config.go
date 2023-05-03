@@ -10,11 +10,7 @@ type Config struct {
 	}
 	ChainConfig struct {
 		NetworkRPCSysConfigName string
-		RevertBlockSk           string
-		GasLimit                uint64
-		GasPrice                uint64
-		MaxWaitingTime          int64
-		ConfirmBlocksCount      uint64
+		CommitBlockSk           string
 	}
 	LogConf logx.LogConf
 }

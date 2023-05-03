@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/apollo"
 	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/dgraph-io/ristretto"
+	"github.com/panjf2000/ants/v2"
 	"gorm.io/plugin/dbresolver"
 	"math/big"
 	"time"
@@ -37,27 +38,25 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
+type TreeDB struct {
+	Driver tree.Driver
+	//nolint:staticcheck
+	LevelDBOption tree.LevelDBOption `json:",optional"`
+	//nolint:staticcheck
+	RedisDBOption tree.RedisDBOption `json:",optional"`
+	//nolint:staticcheck
+	RoutinePoolSize    int `json:",optional"`
+	AssetTreeCacheSize int
+}
+
 type ChainConfig struct {
-	Postgres struct {
-		MasterDataSource string
-		SlaveDataSource  string
-		LogLevel         logger.LogLevel `json:",optional"`
-	}
+	Postgres   apollo.Postgres
 	CacheRedis cache.CacheConf
 	//second
 	RedisExpiration int `json:",optional"`
 	//nolint:staticcheck
 	CacheConfig statedb.CacheConfig `json:",optional"`
-	TreeDB      struct {
-		Driver tree.Driver
-		//nolint:staticcheck
-		LevelDBOption tree.LevelDBOption `json:",optional"`
-		//nolint:staticcheck
-		RedisDBOption tree.RedisDBOption `json:",optional"`
-		//nolint:staticcheck
-		RoutinePoolSize    int `json:",optional"`
-		AssetTreeCacheSize int
-	}
+	TreeDB      TreeDB
 }
 
 type BlockChain struct {
@@ -172,7 +171,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	}
 	bc.Statedb.UpdateAccountIndex(types.NilAccountIndex)
 	if poolTx != nil {
-		bc.Statedb.UpdateAccountIndex(poolTx.AccountIndex)
+		bc.Statedb.UpdateAccountIndex(poolTx.ToAccountIndex)
 	}
 
 	latestRollback, err := bc.TxPoolModel.GetLatestRollback(tx.StatusPending, true)
@@ -535,6 +534,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 			return fmt.Errorf("unmarshal pollTxIds failed: %s", err.Error())
 
 		}
+		metrics.RollbackTxGauge.Set(float64(len(pollTxIds)))
 
 		fromTxHash := ""
 		fromPoolTxId := uint(0)
@@ -556,7 +556,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 }
 
 func verifyRollbackTableDataFunc(bc *BlockChain, curHeight int64) error {
-	logx.Infof("verify rollback start,height:%s", curHeight)
+	logx.Infof("verify rollback start,height:%d", curHeight)
 	blocks, err := bc.BlockModel.GetBlockByStatus([]int{block.StatusPacked})
 	if err != nil && err != types.DbErrNotFound {
 		return fmt.Errorf("get statusPacked block height failed: %s", err.Error())
@@ -657,11 +657,11 @@ func verifyRollbackTableDataFunc(bc *BlockChain, curHeight int64) error {
 }
 
 func verifyRollbackTreesFunc(bc *BlockChain, currentBlock *block.Block) error {
-	hFunc := poseidon.NewPoseidon()
+	hFunc := tree.NewGMimc()
 	hFunc.Write(bc.Statedb.AccountTree.Root())
 	hFunc.Write(bc.Statedb.NftTree.Root())
 	stateRoot := common.Bytes2Hex(hFunc.Sum(nil))
-	logx.Infof("smt tree stateRoot=%s equal currentBlock.StateRoot=%s,height:%s,AccountTree.Root=%s,NftTree.Root=%s", stateRoot, currentBlock.StateRoot, currentBlock.BlockHeight, common.Bytes2Hex(bc.Statedb.AccountTree.Root()), common.Bytes2Hex(bc.Statedb.NftTree.Root()))
+	logx.Infof("smt tree stateRoot=%s equal currentBlock.StateRoot=%s,height:%d,AccountTree.Root=%s,NftTree.Root=%s", stateRoot, currentBlock.StateRoot, currentBlock.BlockHeight, common.Bytes2Hex(bc.Statedb.AccountTree.Root()), common.Bytes2Hex(bc.Statedb.NftTree.Root()))
 	if stateRoot != currentBlock.StateRoot {
 		return fmt.Errorf("smt tree stateRoot=%s not equal currentBlock.StateRoot=%s,height:%d,AccountTree.Root=%s,NftTree.Root=%s", stateRoot, currentBlock.StateRoot, currentBlock.BlockHeight, common.Bytes2Hex(bc.Statedb.AccountTree.Root()), common.Bytes2Hex(bc.Statedb.NftTree.Root()))
 	}
@@ -670,6 +670,10 @@ func verifyRollbackTreesFunc(bc *BlockChain, currentBlock *block.Block) error {
 
 func (bc *BlockChain) ApplyTransaction(tx *tx.Tx) error {
 	return bc.processor.Process(tx)
+}
+
+func (bc *BlockChain) PreApplyTransaction(tx *tx.Tx, accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	bc.processor.PreProcess(tx, accountIndexMap, nftIndexMap, addressMap)
 }
 
 func (bc *BlockChain) InitNewBlock() (*block.Block, error) {
@@ -813,7 +817,6 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 		logx.Infof("committer verify nonce start,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
 		if nonce != expectNonce {
 			logx.Infof("committer verify nonce failed,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
-			bc.Statedb.SetPendingNonceToRedisCache(accountIndex, expectNonce-1)
 			return types.AppErrInvalidNonce
 		} else {
 			logx.Infof("committer verify nonce success,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
@@ -885,4 +888,115 @@ func (bc *BlockChain) resetCurrentBlockTimeStamp() {
 	}
 
 	bc.currentBlock.CreatedAt = time.Time{}
+}
+
+func (bc *BlockChain) LoadAllAccounts(pool *ants.Pool) error {
+	start := time.Now()
+	logx.Infof("load all accounts start")
+	totalTask := 0
+	errChan := make(chan error, 1)
+	defer close(errChan)
+
+	batchReloadSize := 1000
+	maxAccountIndex, err := bc.AccountModel.GetMaxAccountIndex()
+	if err != nil && err != types.DbErrNotFound {
+		return fmt.Errorf("load all accounts failed: %s", err.Error())
+	}
+	if maxAccountIndex == -1 {
+		return nil
+	}
+	for i := 0; int64(i) <= maxAccountIndex; i += batchReloadSize {
+		toAccountIndex := int64(i+batchReloadSize) - 1
+		if toAccountIndex > maxAccountIndex {
+			toAccountIndex = maxAccountIndex
+		}
+		totalTask++
+		err := func(fromAccountIndex int64, toAccountIndex int64) error {
+			return pool.Submit(func() {
+				start := time.Now()
+				accounts, err := bc.AccountModel.GetByAccountIndexRange(fromAccountIndex, toAccountIndex)
+				if err != nil && err != types.DbErrNotFound {
+					logx.Severef("load all accounts failed:%s", err.Error())
+					errChan <- err
+					return
+				}
+				for _, accountInfo := range accounts {
+					formatAccount, err := chain.ToFormatAccountInfo(accountInfo)
+					if err != nil {
+						logx.Severef("load all accounts failed:%s", err.Error())
+						errChan <- err
+						return
+					}
+					bc.Statedb.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
+					bc.Statedb.L1AddressCache.Add(formatAccount.L1Address, accountInfo.AccountIndex)
+				}
+				logx.Infof("GetByNftIndexRange cost time %v", float64(time.Since(start)))
+				errChan <- nil
+			})
+		}(int64(i), toAccountIndex)
+		if err != nil {
+			return fmt.Errorf("load all accounts failed: %s", err.Error())
+		}
+	}
+
+	for i := 0; i < totalTask; i++ {
+		err := <-errChan
+		if err != nil {
+			return fmt.Errorf("load all accounts failed:  %s", err.Error())
+		}
+	}
+	logx.Infof("load all accounts end. cost time %v", float64(time.Since(start)))
+	return nil
+}
+
+func (bc *BlockChain) LoadAllNfts(pool *ants.Pool) error {
+	start := time.Now()
+	logx.Infof("load all nfts start")
+	totalTask := 0
+	errChan := make(chan error, 1)
+	defer close(errChan)
+
+	batchReloadSize := 1000
+	maxNftIndex, err := bc.L2NftModel.GetMaxNftIndex()
+	if err != nil && err != types.DbErrNotFound {
+		return fmt.Errorf("load all nfts failed:  %s", err.Error())
+	}
+	if maxNftIndex == -1 {
+		return nil
+	}
+	for i := 0; int64(i) <= maxNftIndex; i += batchReloadSize {
+		toNftIndex := int64(i+batchReloadSize) - 1
+		if toNftIndex > maxNftIndex {
+			toNftIndex = maxNftIndex
+		}
+		totalTask++
+		err := func(fromNftIndex int64, toNftIndex int64) error {
+			return pool.Submit(func() {
+				start := time.Now()
+				nfts, err := bc.L2NftModel.GetByNftIndexRange(fromNftIndex, toNftIndex)
+				if err != nil && err != types.DbErrNotFound {
+					logx.Severef("load all nfts failed:%s", err.Error())
+					errChan <- err
+					return
+				}
+				for _, nftInfo := range nfts {
+					bc.Statedb.NftCache.Add(nftInfo.NftIndex, nftInfo)
+				}
+				logx.Infof("GetByNftIndexRange cost time %v", float64(time.Since(start)))
+				errChan <- nil
+			})
+		}(int64(i), toNftIndex)
+		if err != nil {
+			return fmt.Errorf("load all nfts failed:  %s", err.Error())
+		}
+	}
+
+	for i := 0; i < totalTask; i++ {
+		err := <-errChan
+		if err != nil {
+			return fmt.Errorf("load all nfts failed:  %s", err.Error())
+		}
+	}
+	logx.Infof("load all nfts end. cost time %v", float64(time.Since(start)))
+	return nil
 }

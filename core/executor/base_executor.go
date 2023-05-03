@@ -149,6 +149,9 @@ func (e *BaseExecutor) GeneratePubData() error {
 }
 
 func (e *BaseExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
+	e.tx.AccountIndex = e.iTxInfo.GetAccountIndex()
+	e.tx.FromAccountIndex = e.iTxInfo.GetFromAccountIndex()
+	e.tx.ToAccountIndex = e.iTxInfo.GetToAccountIndex()
 	if fromApi {
 		return e.tx, nil
 	}
@@ -157,9 +160,6 @@ func (e *BaseExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.TxStatus = tx.StatusExecuted
 	e.tx.PoolTxId = e.tx.ID
 	e.tx.BlockId = e.bc.CurrentBlock().ID
-	e.tx.AccountIndex = e.iTxInfo.GetAccountIndex()
-	e.tx.FromAccountIndex = e.iTxInfo.GetFromAccountIndex()
-	e.tx.ToAccountIndex = e.iTxInfo.GetToAccountIndex()
 	return e.tx, nil
 }
 

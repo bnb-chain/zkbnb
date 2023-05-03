@@ -1,5 +1,6 @@
 import sys
 
+
 def find_and_delete_func(func_name, lines):
     first_line = 0
     last_line = 0
@@ -7,7 +8,7 @@ def find_and_delete_func(func_name, lines):
         if lines[nu].count(func_name):
             first_line = nu
             current_brace = 1
-            for j in range(first_line+1, len(lines)):
+            for j in range(first_line + 1, len(lines)):
                 if lines[j].count("{"):
                     current_brace += 1
                 if lines[j].count("}"):
@@ -16,9 +17,14 @@ def find_and_delete_func(func_name, lines):
                     last_line = j
                     break
             break
-    lines = lines[:first_line] + lines[last_line+1:]
+    lines = lines[:first_line] + lines[last_line + 1:]
     print("function name ", func_name, "first line ", first_line, " last line ", last_line)
     return lines, first_line
+
+
+def getPoint(s):
+    return s[s.find("(") + 1:s.find(")")]
+
 
 if __name__ == "__main__":
     """
@@ -37,18 +43,26 @@ if __name__ == "__main__":
         exit(1)
 
     all_vks = []
+    all_ics = []
     for i in range(len(src_filenames)):
         vks = []
+        ics = []
         with open(src_filenames[i], "r") as f:
             lines = f.readlines()
             for nu in range(len(lines)):
-                if lines[nu].count("function verifyingKey()"):
+                s = lines[nu]
+                if s.count("function verifyingKey()"):
                     for i in range(6):
                         tmp = lines[nu + 1 + i].split("uint256")
                         for j in range(len(tmp) - 1):
-                            vks.append("".join([x for x in tmp[j+1] if x.isdigit()]))
-                    break
+                            vks.append("".join([x for x in tmp[j + 1] if x.isdigit()]))
+                if "vk_x.X = " in s or "mul_input[0] = " in s:
+                    ic_0 = getPoint(s)
+                    ic_1 = getPoint(lines[nu + 1])
+                    ics.append(ic_0)
+                    ics.append(ic_1)
         all_vks.append(vks)
+        all_ics.append(ics)
 
     lines = []
     with open(dest_filename, "r") as f:
@@ -80,14 +94,14 @@ if __name__ == "__main__":
                 new_lines.append("        } else if (block_size == " + src_block_sizes[i] + ") {\n")
             new_lines.append("            gammaABC = new uint256[](4);\n")
             for j in range(4):
-                new_lines.append("            gammaABC[" + str(j) + "] = " + all_vks[i][14 + j] + ";\n")
+                new_lines.append("            gammaABC[" + str(j) + "] = " + all_ics[i][j] + ";\n")
             new_lines.append("            return gammaABC;\n")
         new_lines.append("        } else {\n")
         new_lines.append("            revert(\"u\");\n")
         new_lines.append("        }\n")
         new_lines.append("    }\n\n")
         print(new_lines)
-        update_lines = lines[:first_line + 1] + new_lines + lines[first_line+1:]
+        update_lines = lines[:first_line + 1] + new_lines + lines[first_line + 1:]
         """
         for nu in range(len(lines)):
             if lines[nu].count("function verifyingKey(uint16 block_size)"):

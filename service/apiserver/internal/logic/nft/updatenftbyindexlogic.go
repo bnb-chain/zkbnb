@@ -40,7 +40,7 @@ func (l *UpdateNftByIndexLogic) UpdateNftByIndex(req *types.ReqUpdateNft) (resp 
 	if publicAddress != originAddress {
 		return nil, types2.AppErrFailToL1Signature
 	}
-	l2Nft, err := l.svcCtx.NftModel.GetNft(tx.NftIndex)
+	l2Nft, err := l.svcCtx.StateFetcher.GetLatestNft(tx.NftIndex)
 	if err != nil {
 		if err == types2.DbErrNotFound {
 			return nil, types2.AppErrNftNotFound
@@ -57,11 +57,11 @@ func (l *UpdateNftByIndexLogic) UpdateNftByIndex(req *types.ReqUpdateNft) (resp 
 		}
 		return nil, types2.AppErrInternal
 	}
-	if l2NftMetadataHistory.Nonce+1 != tx.Nonce {
-		return nil, types2.AppErrInvalidNftNonce
-	}
 	if l2NftMetadataHistory.Status != nft.Confirmed {
 		return nil, types2.AppErrInvalidNft
+	}
+	if l2NftMetadataHistory.Nonce+1 != tx.Nonce {
+		return nil, types2.AppErrInvalidNftNonce
 	}
 	if len(tx.MutableAttributes) > 2000 {
 		return nil, types2.AppErrInvalidMutableAttributes.RefineError(2000)

@@ -18,8 +18,6 @@
 package l1rolluptx
 
 import (
-	"fmt"
-
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/types"
@@ -45,8 +43,11 @@ type (
 		GetL1RollupTxsByStatus(txStatus int) (txs []*L1RollupTx, err error)
 		GetL1RollupTxsByHash(hash string) (txs []*L1RollupTx, err error)
 		DeleteL1RollupTx(tx *L1RollupTx) error
+		DeleteGreaterOrEqualToHeight(height int64, txType uint8) error
 		UpdateL1RollupTxsStatusInTransact(tx *gorm.DB, txs []*L1RollupTx) error
 		GetLatestByNonce(l1Nonce int64, txType int64) (tx *L1RollupTx, err error)
+		GetRecentById(id uint, txType int64) (tx *L1RollupTx, err error)
+		GetRecent2Transact(txType int64) (txs []*L1RollupTx, err error)
 	}
 
 	defaultL1RollupTxModel struct {
@@ -63,9 +64,11 @@ type (
 		// txVerification type: commit / verify
 		TxType uint8 `gorm:"index:idx_tx_status"`
 		// layer-2 block height
-		L2BlockHeight int64
+		L2BlockHeight int64 `gorm:"index:l2_block_height"`
 		// gas price
 		GasPrice int64
+		// gas used
+		GasUsed uint64
 		//l1 nonce
 		L1Nonce int64 `gorm:"index:idx_l1_nonce"`
 	}
@@ -133,6 +136,16 @@ func (m *defaultL1RollupTxModel) DeleteL1RollupTx(rollupTx *L1RollupTx) error {
 	})
 }
 
+func (m *defaultL1RollupTxModel) DeleteGreaterOrEqualToHeight(height int64, txType uint8) error {
+	return m.DB.Transaction(func(tx *gorm.DB) error {
+		dbTx := tx.Table(m.table).Unscoped().Where("l2_block_height >= ? and tx_type= ?", height, txType).Delete(&L1RollupTx{})
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		return nil
+	})
+}
+
 func (m *defaultL1RollupTxModel) GetLatestHandledTx(txType int64) (tx *L1RollupTx, err error) {
 	tx = &L1RollupTx{}
 
@@ -158,23 +171,16 @@ func (m *defaultL1RollupTxModel) GetLatestPendingTx(txType int64) (tx *L1RollupT
 }
 
 func (m *defaultL1RollupTxModel) UpdateL1RollupTxsStatusInTransact(tx *gorm.DB, txs []*L1RollupTx) error {
-	statusMap := map[int][]uint{}
-
-	for _, pendingUpdateTx := range txs {
-		statusMap[pendingUpdateTx.TxStatus] = append(statusMap[pendingUpdateTx.TxStatus], pendingUpdateTx.ID)
-	}
-
-	for status, ids := range statusMap {
-		dbTx := tx.Table(TableName).Where("id IN ?", ids).
-			Update("tx_status", status)
+	for _, rollupTx := range txs {
+		dbTx := tx.Table(TableName).Where("id = ?", rollupTx.ID).
+			Updates(map[string]interface{}{
+				"tx_status": rollupTx.TxStatus,
+				"gas_used":  rollupTx.GasUsed,
+			})
 		if dbTx.Error != nil {
 			return dbTx.Error
 		}
-		if dbTx.RowsAffected != int64(len(ids)) {
-			return fmt.Errorf("invalid rollup tx")
-		}
 	}
-
 	return nil
 }
 
@@ -188,4 +194,26 @@ func (m *defaultL1RollupTxModel) GetLatestByNonce(l1Nonce int64, txType int64) (
 		return nil, types.DbErrNotFound
 	}
 	return tx, nil
+}
+
+func (m *defaultL1RollupTxModel) GetRecentById(id uint, txType int64) (tx *L1RollupTx, err error) {
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type = ? AND id > ? and tx_status = ?", txType, id, StatusHandled).
+		Order("id asc").Limit(1).Find(&tx)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return tx, nil
+}
+
+func (m *defaultL1RollupTxModel) GetRecent2Transact(txType int64) (txs []*L1RollupTx, err error) {
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type = ? and tx_status = ?", txType, StatusHandled).
+		Order("id desc").Limit(2).Find(&txs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return txs, nil
 }

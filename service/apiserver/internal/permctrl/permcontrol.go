@@ -1,22 +1,18 @@
 package permctrl
 
 import (
-	"context"
-	"github.com/bnb-chain/zkbnb/service/apiserver/internal/config"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/fetcher/address"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/types"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-var permissionControlConfig *PermissionControlConfig
-
 type PermissionControl struct {
 	fetcher *address.Fetcher
 }
 
-func NewPermissionControl(ctx context.Context, svcCtx *svc.ServiceContext) *PermissionControl {
-	fetcher := address.NewFetcher(ctx, svcCtx)
+func NewPermissionControl(svcCtx *svc.ServiceContext) *PermissionControl {
+	fetcher := address.NewFetcher(svcCtx)
 	return &PermissionControl{
 		fetcher: fetcher,
 	}
@@ -41,18 +37,18 @@ func (c *PermissionControl) Control(txType uint32, txInfo string) error {
 
 	permissionControlItem := permissionControlConfig.GetPermissionControlConfigItem(txType)
 	if permissionControlItem.PermissionControlType == ControlByWhitelist {
-		if ok := containElement(l1AddressArray, permissionControlItem.ControlWhiteList); !ok {
+		if ok := containElements(l1AddressArray, permissionControlItem.ControlWhiteList); !ok {
 			return types.AppErrPermissionForbidden
 		}
 	} else if permissionControlItem.PermissionControlType == ControlByBlacklist {
-		if ok := containElement(l1AddressArray, permissionControlItem.ControlBlackList); ok {
+		if ok := containElements(l1AddressArray, permissionControlItem.ControlBlackList); ok {
 			return types.AppErrPermissionForbidden
 		}
 	}
 	return nil
 }
 
-func containElement(elementArray []string, array []string) bool {
+func containElements(elementArray []string, array []string) bool {
 	for _, element := range elementArray {
 		for _, value := range array {
 			if value == element {
@@ -61,10 +57,4 @@ func containElement(elementArray []string, array []string) bool {
 		}
 	}
 	return false
-}
-
-func InitPermissionControl(config config.Config) {
-	// Get the permission control configuration from the Apollo server
-	permissionControlConfig = LoadApolloPermissionControlConfig(config)
-	logx.Infof("Initiate Permission Control Facility Successfully!")
 }

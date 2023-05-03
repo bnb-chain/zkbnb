@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/bnb-chain/zkbnb/common/apollo"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 
@@ -8,10 +9,7 @@ import (
 )
 
 type Config struct {
-	Postgres struct {
-		MasterDataSource string
-		SlaveDataSource  string
-	}
+	Postgres   apollo.Postgres
 	CacheRedis cache.CacheConf
 	TreeDB     struct {
 		Driver tree.Driver
@@ -23,7 +21,5 @@ type Config struct {
 		RoutinePoolSize    int `json:",optional"`
 		AssetTreeCacheSize int
 	}
-	LogConf        logx.LogConf
-	AccountIndexes []int64 `json:",optional"`
-	NftIndexes     []uint  `json:",optional"`
+	LogConf logx.LogConf
 }

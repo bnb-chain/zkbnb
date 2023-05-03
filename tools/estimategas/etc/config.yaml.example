@@ -1,0 +1,11 @@
+Postgres:
+#  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MasterDataSource: host=10.23.34.152 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  LogLevel: 4
+
+ChainConfig:
+  NetworkRPCSysConfigName: BscTestNetworkRpc
+  #  NetworkRPCSysConfigName: BscTestNetworkRpc
+  CommitBlockSk: 3721e672963d8fb16f6146f091e12fca4ee09a3b47235d45370b4671943d3fac
+
+

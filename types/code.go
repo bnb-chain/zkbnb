@@ -108,6 +108,9 @@ var (
 	AppErrAccountNotNftOwner        = NewBusinessError(21411, "account is not owner of the nft")
 	AppErrUnsupportedTxType         = NewBusinessError(21412, "unsupported tx type")
 	AppErrPrepareNftFailed          = NewBusinessError(21413, "prepare nft failed")
+	AppErrChannelNameTooHigh        = NewBusinessError(21414, "ChannelName should not be larger than ")
+	AppErrPoolTxRunning             = NewBusinessError(21415, "pool tx is running")
+	AppErrPoolTxFailed              = NewBusinessError(21416, "pool tx is Failed")
 
 	// Offer
 	AppErrInvalidOfferType           = NewBusinessError(21500, "invalid offer type")
@@ -169,6 +172,7 @@ var (
 
 	// PermissionControl
 	AppErrPermissionForbidden = NewBusinessError(23100, "Something went wrong, please try a different account or counterparty account!")
+	AppErrPermissionControl   = NewBusinessError(23101, "Due to operation strategy, only whitelisted users are able to register zkBNB from now!")
 
 	// General System Error
 	AppErrInvalidGasAsset     = NewBusinessError(25003, "invalid gas asset")

@@ -2,10 +2,9 @@ package info
 
 import (
 	"context"
-	"strconv"
-	"strings"
-
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/zeromicro/go-zero/core/logx"
+	"strconv"
 
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
@@ -40,14 +39,15 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.Search, error) {
 		return resp, nil
 	}
 
-	if strings.Contains(req.Keyword, ".") {
+	ok := txtypes.IsValidL1Address(req.Keyword)
+	if ok {
 		if _, err = l.svcCtx.MemCache.GetAccountIndexByL1Address(req.Keyword); err != nil {
 			if err == types2.DbErrNotFound {
 				return nil, types2.AppErrAccountNotFound
 			}
 			return nil, types2.AppErrInternal
 		}
-		resp.DataType = types2.TypeAccountName
+		resp.DataType = types2.TypeAccountAddress
 		return resp, nil
 	}
 

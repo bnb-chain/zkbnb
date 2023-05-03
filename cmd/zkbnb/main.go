@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/tools/desertexit"
+	"github.com/bnb-chain/zkbnb/tools/estimategas"
 	"github.com/bnb-chain/zkbnb/tools/query"
 	"github.com/bnb-chain/zkbnb/tools/revertblock"
+	"github.com/bnb-chain/zkbnb/tools/rollback"
 	"github.com/bnb-chain/zkbnb/tools/rollbackwitnesssmt"
 	"os"
 	"runtime"
@@ -64,13 +66,11 @@ func main() {
 					flags.PProfEnabledFlag,
 					flags.PProfAddrFlag,
 					flags.PProfPortFlag,
+					flags.ProverIdFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
-					return prover.Run(cCtx.String(flags.ConfigFlag.Name))
+					return prover.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.Uint(flags.ProverIdFlag.Name))
 				},
 			},
 			{
@@ -86,9 +86,6 @@ func main() {
 					flags.PProfPortFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return witness.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
@@ -106,9 +103,6 @@ func main() {
 					flags.PProfPortFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return monitor.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
@@ -126,9 +120,6 @@ func main() {
 				},
 				Usage: "Run committer service",
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return committer.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
@@ -140,10 +131,6 @@ func main() {
 				},
 				Usage: "Run fullnode service",
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
-
 					return fullnode.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
 			},
@@ -160,9 +147,6 @@ func main() {
 					flags.PProfPortFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return sender.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
@@ -180,9 +164,6 @@ func main() {
 					flags.PProfPortFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return apiserver.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
@@ -247,6 +228,26 @@ func main() {
 				},
 			},
 			{
+				Name:  "rollback",
+				Usage: "Run rollback service",
+				Flags: []cli.Flag{
+					flags.ConfigFlag,
+					flags.RollbackBlockHeightFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.RollbackBlockHeightFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+
+					err := rollback.RollbackAll(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RollbackBlockHeightFlag.Name))
+					if err != nil {
+						logx.Severe(err)
+						return err
+					}
+					return nil
+				},
+			},
+			{
 				Name:  "revertblock",
 				Usage: "Run revertblock service",
 				Flags: []cli.Flag{
@@ -255,9 +256,6 @@ func main() {
 				},
 				Action: func(cCtx *cli.Context) error {
 					if !cCtx.IsSet(flags.RevertBlockHeightFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
 
@@ -280,13 +278,50 @@ func main() {
 					if !cCtx.IsSet(flags.RevertBlockHeightFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					err := rollbackwitnesssmt.RollbackWitnessSmt(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RevertBlockHeightFlag.Name))
 					if err != nil {
 						logx.Severe(err)
 						return err
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "estimategas",
+				Usage: "Run estimategas service",
+				Flags: []cli.Flag{
+					flags.ConfigFlag,
+					flags.EstimateGasFromHeightFlag,
+					flags.EstimateGasToHeightFlag,
+					flags.EstimateGasMaxBlockCountFlag,
+					flags.SendToL1Flag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.EstimateGasFromHeightFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.EstimateGasToHeightFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.EstimateGasMaxBlockCountFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+
+					err := estimategas.EstimateGas(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.EstimateGasFromHeightFlag.Name), cCtx.Int64(flags.EstimateGasToHeightFlag.Name), cCtx.Int64(flags.EstimateGasMaxBlockCountFlag.Name))
+					if err != nil {
+						logx.Severe(err)
+						return err
+					}
+
+					if cCtx.Int64(flags.SendToL1Flag.Name) > 0 {
+						err := estimategas.Send(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.EstimateGasFromHeightFlag.Name), cCtx.Int64(flags.EstimateGasToHeightFlag.Name), cCtx.Int64(flags.SendToL1Flag.Name))
+						if err != nil {
+							logx.Severe(err)
+							return err
+						}
 					}
 					return nil
 				},
@@ -304,6 +339,7 @@ func main() {
 							flags.DSNFlag,
 							flags.BSCTestNetworkRPCFlag,
 							flags.LocalTestNetworkRPCFlag,
+							flags.OptionalBlockSizesFlag,
 						},
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ContractAddrFlag.Name) ||
@@ -316,6 +352,7 @@ func main() {
 								cCtx.String(flags.ContractAddrFlag.Name),
 								cCtx.String(flags.BSCTestNetworkRPCFlag.Name),
 								cCtx.String(flags.LocalTestNetworkRPCFlag.Name),
+								cCtx.String(flags.OptionalBlockSizesFlag.Name),
 							)
 						},
 					},
@@ -337,8 +374,7 @@ func main() {
 						},
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ServiceNameFlag.Name) ||
-								!cCtx.IsSet(flags.BlockHeightFlag.Name) ||
-								!cCtx.IsSet(flags.ConfigFlag.Name) {
+								!cCtx.IsSet(flags.BlockHeightFlag.Name) {
 								return cli.ShowSubcommandHelp(cCtx)
 							}
 							recovery.RecoveryTreeDB(
@@ -366,11 +402,11 @@ func main() {
 							flags.ServiceNameFlag,
 							flags.BatchSizeFlag,
 							flags.RecoveryFromHistoryFlag,
+							flags.AccountIndexListFlag,
 						},
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ServiceNameFlag.Name) ||
-								!cCtx.IsSet(flags.BlockHeightFlag.Name) ||
-								!cCtx.IsSet(flags.ConfigFlag.Name) {
+								!cCtx.IsSet(flags.BlockHeightFlag.Name) {
 								return cli.ShowSubcommandHelp(cCtx)
 							}
 							query.QueryTreeDB(
@@ -378,7 +414,7 @@ func main() {
 								cCtx.Int64(flags.BlockHeightFlag.Name),
 								cCtx.String(flags.ServiceNameFlag.Name),
 								cCtx.Int(flags.BatchSizeFlag.Name),
-								cCtx.Bool(flags.RecoveryFromHistoryFlag.Name),
+								cCtx.Bool(flags.RecoveryFromHistoryFlag.Name), cCtx.String(flags.AccountIndexListFlag.Name),
 							)
 							return nil
 						},

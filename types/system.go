@@ -29,8 +29,11 @@ const (
 	SysGasFee               = "SysGasFee"
 	ProtocolRate            = "ProtocolRate"
 	ZkBNBContract           = "ZkBNBContract"
+	CommitAddress           = "CommitAddress"
+	VerifyAddress           = "VerifyAddress"
 	GovernanceContract      = "GovernanceContract"
 	AssetGovernanceContract = "AssetGovernanceContract"
+	OptionalBlockSizes      = "OptionalBlockSizes"
 	Validators              = "Validators"
 
 	Governor       = "Governor"

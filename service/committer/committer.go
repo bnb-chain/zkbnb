@@ -1,10 +1,11 @@
 package committer
 
 import (
+	"github.com/bnb-chain/zkbnb/service/committer/config"
+	"github.com/bnb-chain/zkbnb/types"
 	"github.com/robfig/cron/v3"
 	"time"
 
-	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 
@@ -14,10 +15,12 @@ import (
 const GracefulShutdownTimeout = 5 * time.Second
 
 func Run(configFile string) error {
-	var c committer.Config
-	conf.MustLoad(configFile, &c)
-	logx.MustSetup(c.LogConf)
-	logx.DisableStat()
+	var c config.Config
+	if err := config.InitSystemConfiguration(&c, configFile); err != nil {
+		logx.Severef("failed to initiate system configuration, %v", err)
+		panic("failed to initiate system configuration, err:" + err.Error())
+	}
+
 	committer, err := committer.NewCommitter(&c)
 	if err != nil {
 		logx.Severef("failed to create committer instance, %v", err)
@@ -47,11 +50,13 @@ func Run(configFile string) error {
 		logx.Info("========================= update NFT index =========================")
 		err = committer.SyncNftIndexServer()
 		if err != nil {
-			logx.Severef("failed to update NFT index, %v", err)
+			if err != types.DbErrNotFound {
+				logx.Severef("failed to update NFT index, %v", err)
+			}
 		}
 	})
 	if err != nil {
-		logx.Severe("failed to start the sync nft index server task, %v", err)
+		logx.Severef("failed to start the sync nft index server task, %s", err.Error())
 		panic("failed to start the sync nft index server task, err:" + err.Error())
 	}
 
@@ -59,7 +64,9 @@ func Run(configFile string) error {
 		logx.Info("========================= send message to ipns =========================")
 		err = committer.SendIpfsServer()
 		if err != nil {
-			logx.Severef("failed to send message to ipns, %v", err)
+			if err != types.DbErrNotFound {
+				logx.Severef("failed to send message to ipns, %v", err)
+			}
 		}
 	})
 	if err != nil {
@@ -71,7 +78,9 @@ func Run(configFile string) error {
 		logx.Info("========================= send message to refresh ipns =========================")
 		err = committer.RefreshServer()
 		if err != nil {
-			logx.Severef("failed to send message to refresh ipns, %v", err)
+			if err != types.DbErrNotFound {
+				logx.Severef("failed to send message to refresh ipns, %v", err)
+			}
 		}
 	})
 	if err != nil {

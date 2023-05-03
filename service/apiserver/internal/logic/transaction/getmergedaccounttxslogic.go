@@ -28,7 +28,6 @@ func NewGetMergedAccountTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *GetMergedAccountTxsLogic) GetMergedAccountTxs(req *types.ReqGetAccountTxs) (resp *types.Txs, err error) {
-
 	resp = &types.Txs{
 		Txs: make([]*types.Tx, 0, req.Limit),
 	}
@@ -46,60 +45,31 @@ func (l *GetMergedAccountTxsLogic) GetMergedAccountTxs(req *types.ReqGetAccountT
 		options = append(options, tx.GetTxWithTypes(req.Types))
 	}
 
-	poolTxCount, err := l.svcCtx.TxPoolModel.GetTxsCountByAccountIndex(accountIndex, options...)
+	totalTxCount, err := l.svcCtx.TxPoolModel.GetTxCountUnscopedByAccountIndex(accountIndex, options...)
 	if err != nil {
-		return nil, types2.DbErrSqlOperation
-	}
-	txCount, err := l.svcCtx.TxModel.GetTxsCountByAccountIndex(accountIndex, options...)
-	if err != nil {
-		return nil, types2.DbErrSqlOperation
-	}
-	replicateTxCount, err := l.svcCtx.TxModel.GetReplicateTxsCountByAccountIndex(accountIndex, options...)
-	if err != nil {
-		return nil, types2.DbErrSqlOperation
-	}
-
-	totalTxCount := poolTxCount + txCount - replicateTxCount
-	if totalTxCount == 0 || totalTxCount <= int64(req.Offset) {
-		return resp, nil
-	}
-
-	txsList := make([]*types.Tx, 0, req.Limit)
-
-	if (poolTxCount - replicateTxCount) < int64(req.Offset) {
-		txOffset := int64(req.Offset) - poolTxCount + replicateTxCount
-		txs, err := l.svcCtx.TxModel.GetTxsByAccountIndex(accountIndex, int64(req.Limit), txOffset, options...)
-		if err != nil && err != types2.DbErrNotFound {
-			return nil, types2.DbErrSqlOperation
+		if err == types2.DbErrNotFound {
+			return resp, nil
 		}
-		txsList = l.appendTxsList(txsList, txs)
-	} else {
-		poolTxLimit := poolTxCount - int64(req.Offset) - replicateTxCount
-		if poolTxLimit > int64(req.Limit) {
-			poolTxs, err := l.svcCtx.TxPoolModel.GetTxsByAccountIndex(accountIndex, int64(req.Limit), int64(req.Offset), options...)
-			if err != nil && err != types2.DbErrNotFound {
-				return nil, types2.DbErrSqlOperation
-			}
-			txsList = l.appendTxsList(txsList, poolTxs)
-		} else {
-			poolTxs, err := l.svcCtx.TxPoolModel.GetTxsByAccountIndex(accountIndex, poolTxLimit, int64(req.Offset), options...)
-			if err != nil && err != types2.DbErrNotFound {
-				return nil, types2.DbErrSqlOperation
-			}
-			txsList = l.appendTxsList(txsList, poolTxs)
-			txLimit := int64(req.Limit) - poolTxLimit
-			if txLimit > 0 {
-				txs, err := l.svcCtx.TxModel.GetTxsByAccountIndex(accountIndex, txLimit, 0, options...)
-				if err != nil && err != types2.DbErrNotFound {
-					return nil, types2.DbErrSqlOperation
-				}
-				txsList = l.appendTxsList(txsList, txs)
-			}
-		}
+		return nil, err
 	}
 
+	poolTxs, err := l.svcCtx.TxPoolModel.GetTxsUnscopedByAccountIndex(accountIndex, int64(req.Limit), int64(req.Offset), options...)
+	if err != nil {
+		if err == types2.DbErrNotFound {
+			return resp, nil
+		}
+		return nil, err
+	}
+
+	poolTxIds := l.preparePoolTxIds(poolTxs)
+	txs, err := l.svcCtx.TxModel.GetTxsByPoolTxIds(poolTxIds)
+	if err != nil && err != types2.DbErrNotFound {
+		return nil, err
+	}
+
+	resultTxList := l.mergeTxsList(poolTxs, txs)
 	resp = &types.Txs{
-		Txs:   txsList,
+		Txs:   resultTxList,
 		Total: uint32(totalTxCount),
 	}
 	return resp, nil
@@ -120,16 +90,37 @@ func (l *GetMergedAccountTxsLogic) fetchAccountIndexFromReq(req *types.ReqGetAcc
 	return 0, types2.AppErrInvalidParam.RefineError("param by should be account_index|l1_address")
 }
 
-func (l *GetMergedAccountTxsLogic) appendTxsList(txsResultList []*types.Tx, txList []*tx.Tx) []*types.Tx {
-
-	for _, dbTx := range txList {
-		tx := utils.ConvertTx(dbTx)
-		tx.L1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.AccountIndex)
-		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
-		if tx.ToAccountIndex >= 0 {
-			tx.ToL1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.ToAccountIndex)
+func (l *GetMergedAccountTxsLogic) mergeTxsList(poolTxList []*tx.Tx, txList []*tx.Tx) []*types.Tx {
+	resultTxList := make([]*types.Tx, 0, len(poolTxList))
+	for _, poolTx := range poolTxList {
+		var resultTx *types.Tx
+		if tx := l.getTxDataByPoolTxId(txList, poolTx.ID); tx != nil {
+			resultTx = utils.ConvertTx(tx, l.svcCtx.MemCache)
+		} else {
+			resultTx = utils.ConvertTx(poolTx, l.svcCtx.MemCache)
 		}
-		txsResultList = append(txsResultList, tx)
+		resultTxList = append(resultTxList, resultTx)
 	}
-	return txsResultList
+	return resultTxList
+}
+
+func (l *GetMergedAccountTxsLogic) getTxDataByPoolTxId(txList []*tx.Tx, poolTxId uint) *tx.Tx {
+	if txList != nil && len(txList) > 0 {
+		for _, tx := range txList {
+			if tx.PoolTxId == poolTxId {
+				return tx
+			}
+		}
+	}
+	return nil
+}
+
+func (l *GetMergedAccountTxsLogic) preparePoolTxIds(txs []*tx.Tx) []int64 {
+	poolTxIds := make([]int64, 0, len(txs))
+	if len(txs) > 0 {
+		for _, tx := range txs {
+			poolTxIds = append(poolTxIds, int64(tx.ID))
+		}
+	}
+	return poolTxIds
 }

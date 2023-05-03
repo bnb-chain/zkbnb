@@ -19,7 +19,8 @@ package test
 import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/utils"
-	"github.com/consensys/gnark/frontend/compiled"
+	"github.com/consensys/gnark-crypto/field/pool"
+	"github.com/consensys/gnark/test"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 	"path/filepath"
@@ -44,10 +45,19 @@ import (
 //
 // it converts the inputs to the API to big.Int (after a mod reduce using the curve base field)
 type engine struct {
-	backendID backend.ID
-	curveID   ecc.ID
-	opt       backend.ProverConfig
+	curveID ecc.ID
+	q       *big.Int
+	opt     backend.ProverConfig
 	// mHintsFunctions map[hint.ID]hintFunction
+	constVars  bool
+	apiWrapper test.ApiWrapper
+}
+
+var _modulus big.Int // q stored as big.Int
+
+func (e *engine) AddGKRInputsAndOutputsMarks(inputs, outputs []frontend.Variable, initialHash frontend.Variable) {
+	//TODO implement me
+	panic("implement me")
 }
 
 // IsSolved returns an error if the test execution engine failed to execute the given circuit
@@ -56,16 +66,11 @@ type engine struct {
 // The test execution engine implements frontend.API using big.Int operations.
 //
 // This is an experimental feature.
-func IsSolved(circuit, witness frontend.Circuit, curveID ecc.ID, b backend.ID, opts ...backend.ProverOption) (err error) {
-	// apply options
-	opt, err := backend.NewProverConfig(opts...)
-	if err != nil {
-		return err
-	}
-
-	e := &engine{backendID: b, curveID: curveID, opt: opt}
-	if opt.Force {
-		panic("ignoring errors in test.Engine is not supported")
+func IsSolved(circuit, witness frontend.Circuit, field *big.Int, opts ...test.TestEngineOption) (err error) {
+	e := &engine{
+		curveID:   ecc.BN254,
+		q:         new(big.Int).Set(field),
+		constVars: false,
 	}
 
 	// TODO handle opt.LoggerOut ?
@@ -73,12 +78,12 @@ func IsSolved(circuit, witness frontend.Circuit, curveID ecc.ID, b backend.ID, o
 	// we clone the circuit, in case the circuit has some attributes it uses in its Define function
 	// set by the user.
 	// then, we set all the variables values to the ones from the witness
-	//
-	//// clone the circuit
-	//c := shallowClone(circuit)
-	//
-	//// set the witness values
-	//copyWitness(c, witness)
+
+	// clone the circuit
+	c := shallowClone(circuit)
+
+	// set the witness values
+	copyWitness(c, witness)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -86,9 +91,16 @@ func IsSolved(circuit, witness frontend.Circuit, curveID ecc.ID, b backend.ID, o
 		}
 	}()
 
-	err = witness.Define(e)
+	err = c.Define(e)
 
 	return
+}
+
+func (e *engine) modulus() *big.Int {
+	return e.q
+}
+
+func (e *engine) RecordConstraintsForLazy(key string, finished bool, s *[]frontend.Variable) {
 }
 
 func (e *engine) Add(i1, i2 frontend.Variable, in ...frontend.Variable) frontend.Variable {
@@ -100,6 +112,19 @@ func (e *engine) Add(i1, i2 frontend.Variable, in ...frontend.Variable) frontend
 	}
 	b1.Mod(&b1, e.modulus())
 	return b1
+}
+
+func (e *engine) MulAcc(a, b, c frontend.Variable) frontend.Variable {
+	bc := pool.BigInt.Get()
+	bBi := e.toBigInt(b)
+	cBi := e.toBigInt(c)
+	bc.Mul(&bBi, &cBi)
+
+	_a := e.toBigInt(a)
+	_a.Add(&_a, bc).Mod(&_a, e.modulus())
+
+	pool.BigInt.Put(bc)
+	return _a
 }
 
 func (e *engine) Sub(i1, i2 frontend.Variable, in ...frontend.Variable) frontend.Variable {
@@ -160,7 +185,7 @@ func (e *engine) Inverse(i1 frontend.Variable) frontend.Variable {
 }
 
 func (e *engine) ToBinary(i1 frontend.Variable, n ...int) []frontend.Variable {
-	nbBits := e.bitLen()
+	nbBits := e.FieldBitLen()
 	if len(n) == 1 {
 		nbBits = n[0]
 		if nbBits < 0 {
@@ -177,7 +202,7 @@ func (e *engine) ToBinary(i1 frontend.Variable, n ...int) []frontend.Variable {
 	r := make([]frontend.Variable, nbBits)
 	ri := make([]frontend.Variable, nbBits)
 	for i := 0; i < len(r); i++ {
-		r[i] = (b1.Bit(i))
+		r[i] = b1.Bit(i)
 		ri[i] = r[i]
 	}
 
@@ -243,7 +268,7 @@ func (e *engine) Select(b frontend.Variable, i1, i2 frontend.Variable) frontend.
 	if b1.Uint64() == 1 {
 		return e.toBigInt(i1)
 	}
-	return (e.toBigInt(i2))
+	return e.toBigInt(i2)
 }
 
 // Lookup2 performs a 2-bit lookup between i1, i2, i3, i4 based on bits b0
@@ -267,7 +292,7 @@ func (e *engine) IsZero(i1 frontend.Variable) frontend.Variable {
 		return 1
 	}
 
-	return (0)
+	return 0
 }
 
 // Cmp returns 1 if i1>i2, 0 if i1==i2, -1 if i1<i2
@@ -347,7 +372,7 @@ func (e *engine) NewHint(f hint.Function, nbOutputs int, inputs ...frontend.Vari
 		res[i] = new(big.Int)
 	}
 
-	err := f(e.curveID, in, res)
+	err := f(e.curveID.ScalarField(), in, res)
 
 	if err != nil {
 		panic("NewHint: " + err.Error())
@@ -387,15 +412,6 @@ func (e *engine) MarkBoolean(v frontend.Variable) {
 	}
 }
 
-func (e *engine) Tag(name string) frontend.Tag {
-	// do nothing, we don't measure constraints with the test engine
-	return frontend.Tag{Name: name}
-}
-
-func (e *engine) AddCounter(from, to frontend.Tag) {
-	// do nothing, we don't measure constraints with the test engine
-}
-
 func (e *engine) toBigInt(i1 frontend.Variable) big.Int {
 	b := utils.FromInterface(i1)
 	b.Mod(&b, e.modulus())
@@ -403,8 +419,8 @@ func (e *engine) toBigInt(i1 frontend.Variable) big.Int {
 }
 
 // bitLen returns the number of bits needed to represent a fr.Element
-func (e *engine) bitLen() int {
-	return e.curveID.Info().Fr.Bits
+func (e *engine) FieldBitLen() int {
+	return e.q.BitLen()
 }
 
 func (e *engine) mustBeBoolean(b *big.Int) {
@@ -413,16 +429,12 @@ func (e *engine) mustBeBoolean(b *big.Int) {
 	}
 }
 
-func (e *engine) modulus() *big.Int {
-	return e.curveID.Info().Fr.Modulus()
+func Modulus() *big.Int {
+	return new(big.Int).Set(&_modulus)
 }
 
 func (e *engine) Curve() ecc.ID {
 	return e.curveID
-}
-
-func (e *engine) Backend() backend.ID {
-	return e.backendID
 }
 
 // shallowClone clones given circuit
@@ -447,46 +459,42 @@ func shallowClone(circuit frontend.Circuit) frontend.Circuit {
 }
 
 func copyWitness(to, from frontend.Circuit) {
-	var wValues []interface{}
+	var wValues []reflect.Value
 
-	var collectHandler schema.LeafHandler = func(visibility schema.Visibility, name string, tInput reflect.Value) error {
-		v := tInput.Interface().(frontend.Variable)
-
-		if visibility == schema.Secret || visibility == schema.Public {
-			if v == nil {
-				return fmt.Errorf("when parsing variable %s: missing assignment", name)
-			}
-			wValues = append(wValues, v)
+	collectHandler := func(f schema.LeafInfo, tInput reflect.Value) error {
+		if tInput.IsNil() {
+			// TODO @gbotrel test for missing assignment
+			return fmt.Errorf("when parsing variable %s: missing assignment", f.FullName())
 		}
+		wValues = append(wValues, tInput)
 		return nil
 	}
-	if _, err := schema.Parse(from, tVariable, collectHandler); err != nil {
+	if _, err := schema.Walk(from, tVariable, collectHandler); err != nil {
 		logx.Severef("failed to parse circuit data, %v", err)
 		panic("failed to parse circuit data, err:" + err.Error())
 	}
 
 	i := 0
-	var setHandler schema.LeafHandler = func(visibility schema.Visibility, name string, tInput reflect.Value) error {
-		if visibility == schema.Secret || visibility == schema.Public {
-			tInput.Set(reflect.ValueOf((wValues[i])))
-			i++
-		}
+	setHandler := func(f schema.LeafInfo, tInput reflect.Value) error {
+		tInput.Set(wValues[i])
+		i++
 		return nil
 	}
 	// this can't error.
-	_, _ = schema.Parse(to, tVariable, setHandler)
+	_, _ = schema.Walk(to, tVariable, setHandler)
 
+}
+
+func (e *engine) Field() *big.Int {
+	return e.q
 }
 
 func (e *engine) Compiler() frontend.Compiler {
 	return e
 }
 
-func (e *engine) AddInternalVariableWithLazy(lazyCnt int) frontend.Variable {
-	// Not implemented
-	return compiled.LinearExpression{
-		compiled.Pack(0, compiled.CoeffIdOne, schema.Internal),
-	}
+func (e *engine) Commit(v ...frontend.Variable) (frontend.Variable, error) {
+	panic("not implemented")
 }
 
 func (e *engine) AddLazyMimcEnc(s, h, v frontend.Variable) {

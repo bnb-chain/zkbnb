@@ -23,6 +23,7 @@ import (
 	"gorm.io/gorm"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/compressedblock"
@@ -49,11 +50,13 @@ type (
 		DropBlockTable() error
 		GetBlocks(limit int64, offset int64) (blocks []*Block, err error)
 		GetPendingBlocksBetween(start int64, end int64) (blocks []*Block, err error)
+		GetPendingBlocksBetweenWithoutTx(start int64, end int64) (blocks []*Block, err error)
 		GetBlockByHeight(blockHeight int64) (block *Block, err error)
 		GetBlockByHeightWithoutTx(blockHeight int64) (block *Block, err error)
 		GetCommittedBlocksCount() (count int64, err error)
 		GetVerifiedBlocksCount() (count int64, err error)
 		GetLatestVerifiedHeight() (height int64, err error)
+		GetLatestCommittedHeight() (height int64, err error)
 		GetBlockByCommitment(blockCommitment string) (block *Block, err error)
 		GetCommittedBlocksBetween(start, end int64) (blocks []*Block, err error)
 		GetBlocksTotalCount() (count int64, err error)
@@ -71,6 +74,8 @@ type (
 		GetBlockByStatus(statuses []int) (blocks []*Block, err error)
 		GetLatestHeight(statuses []int) (height int64, err error)
 		UpdateBlockToProposingInTransact(tx *gorm.DB, blockHeights []int64) error
+		UpdateGreaterOrEqualHeight(blockHeight int64, targetBlockStatus int64) error
+		GetBlockByStatusAndTime(status int, time time.Time) (block *Block, err error)
 	}
 
 	defaultBlockModel struct {
@@ -192,6 +197,18 @@ func (m *defaultBlockModel) GetPendingBlocksBetween(start int64, end int64) (blo
 				return txInfo.TxDetails[i].Order < txInfo.TxDetails[j].Order
 			})
 		}
+	}
+	return blocks, nil
+}
+
+func (m *defaultBlockModel) GetPendingBlocksBetweenWithoutTx(start int64, end int64) (blocks []*Block, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ? and block_status in ?", start, end, []int{StatusPending, StatusCommitted}).
+		Order("block_height").
+		Find(&blocks)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
 	}
 	return blocks, nil
 }
@@ -327,7 +344,21 @@ func (m *defaultBlockModel) GetLatestVerifiedHeight() (height int64, err error) 
 	dbTx := m.DB.Table(m.table).Where("block_status = ?", StatusVerifiedAndExecuted).
 		Order("block_height DESC").
 		Limit(1).
-		First(&block)
+		Find(&block)
+	if dbTx.Error != nil {
+		return 0, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, types.DbErrNotFound
+	}
+	return block.BlockHeight, nil
+}
+
+func (m *defaultBlockModel) GetLatestCommittedHeight() (height int64, err error) {
+	block := &Block{}
+	dbTx := m.DB.Table(m.table).Where("block_status = ?", StatusCommitted).
+		Order("block_height DESC").
+		Limit(1).
+		Find(&block)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -341,7 +372,7 @@ func (m *defaultBlockModel) GetLatestHeight(statuses []int) (height int64, err e
 	dbTx := m.DB.Table(m.table).Where("block_status in ?", statuses).
 		Order("block_height DESC").
 		Limit(1).
-		First(&block)
+		Find(&block)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -482,4 +513,28 @@ func (m *defaultBlockModel) UpdateBlockToProposingInTransact(tx *gorm.DB, blockH
 		return dbTx.Error
 	}
 	return nil
+}
+
+func (m *defaultBlockModel) UpdateGreaterOrEqualHeight(blockHeight int64, targetBlockStatus int64) error {
+	dbTx := m.DB.Model(&Block{}).Select("BlockStatus").Where("block_height >= ? and block_status != ?", blockHeight, StatusVerifiedAndExecuted).Updates(map[string]interface{}{
+		"block_status": targetBlockStatus,
+	})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	return nil
+}
+
+func (m *defaultBlockModel) GetBlockByStatusAndTime(status int, time time.Time) (block *Block, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_status = ? and created_at < ?", status, time).
+		Order("created_at").
+		Limit(1).
+		Find(&block)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrFailToUpdateBlock
+	}
+	return block, nil
 }

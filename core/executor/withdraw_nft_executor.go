@@ -41,6 +41,13 @@ func NewWithdrawNftExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxE
 	}, nil
 }
 
+func (e *WithdrawNftExecutor) PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	txInfo := e.TxInfo
+	accountIndexMap[txInfo.AccountIndex] = true
+	accountIndexMap[txInfo.GasAccountIndex] = true
+	nftIndexMap[txInfo.NftIndex] = true
+}
+
 func (e *WithdrawNftExecutor) Prepare() error {
 	txInfo := e.TxInfo
 
@@ -184,6 +191,7 @@ func (e *WithdrawNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
 	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
 	e.tx.NftIndex = e.TxInfo.NftIndex
+	e.tx.NativeAddress = e.TxInfo.ToAddress
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 

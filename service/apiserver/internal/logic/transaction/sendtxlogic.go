@@ -8,7 +8,6 @@ import (
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/redislock"
 	"github.com/bnb-chain/zkbnb/core/executor"
-	nftModels "github.com/bnb-chain/zkbnb/core/model"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/permctrl"
@@ -34,7 +33,7 @@ type SendTxLogic struct {
 }
 
 func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext, header http.Header) *SendTxLogic {
-	permissionControl := permctrl.NewPermissionControl(ctx, svcCtx)
+	permissionControl := permctrl.NewPermissionControl(svcCtx)
 	return &SendTxLogic{
 		Logger:            logx.WithContext(ctx),
 		ctx:               ctx,
@@ -53,10 +52,13 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		return nil, types2.AppErrInternal
 	}
 
+	channelName := s.header.Get("Channel-Name")
+	if len(channelName) > 64 {
+		return nil, types2.AppErrChannelNameTooHigh.RefineError(64)
+	}
 	if s.svcCtx.Config.TxPool.MaxPendingTxCount > 0 && pendingTxCount >= int64(s.svcCtx.Config.TxPool.MaxPendingTxCount) {
 		return nil, types2.AppErrTooManyTxs
 	}
-
 	// Control the permission list with the whitelist or blacklist
 	err = s.permissionControl.Control(req.TxType, req.TxInfo)
 	if err != nil {
@@ -83,7 +85,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		TxAmount:      types2.NilAssetAmount,
 		NativeAddress: types2.EmptyL1Address,
 
-		ChannelName: s.header.Get("Channel-Name"),
+		ChannelName: channelName,
 		BlockHeight: types2.NilBlockHeight,
 		TxStatus:    tx.StatusPending,
 	}
@@ -93,6 +95,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		return resp, err
 	}
 	accountIndex := executor.GetTxInfo().GetAccountIndex()
+	s.svcCtx.ChannelTxMetric.WithLabelValues(channelName, strconv.Itoa(executor.GetTxInfo().GetTxType())).Inc()
 	nonce := executor.GetTxInfo().GetNonce()
 	lock := redislock.GetRedisLock(s.svcCtx.RedisConn, "apiserver:senttx:"+strconv.FormatInt(accountIndex, 10)+"_"+strconv.FormatInt(nonce, 10), 30)
 	ok, err := lock.Acquire()
@@ -128,13 +131,13 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		history := &nft.L2NftMetadataHistory{
 			Nonce:    0,
 			TxHash:   newTx.BaseTx.TxHash,
-			NftIndex: newTx.BaseTx.NftIndex,
+			NftIndex: types2.NilNftIndex,
 			IpfsCid:  cid,
 			IpnsName: txInfo.IpnsName,
 			IpnsId:   txInfo.IpnsId,
 			Mutable:  txInfo.MutableAttributes,
 			Metadata: txInfo.MetaData,
-			Status:   nft.StatusNftIndex,
+			Status:   nft.StatusPending,
 		}
 		b, err := json.Marshal(txInfo)
 		if err != nil {
@@ -169,10 +172,7 @@ func sendToIpfs(txInfo *txtypes.MintNftTxInfo, txHash string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	cid, err := uploadIpfs(&nftModels.NftMetaData{
-		MetaData:          txInfo.MetaData,
-		MutableAttributes: fmt.Sprintf("%s%s", "ipns://", ipnsId.Id),
-	})
+	cid, err := uploadIpfs(txInfo.MetaData, fmt.Sprintf("%s%s", "ipns://", ipnsId.Id))
 	if err != nil {
 		return "", err
 	}
@@ -186,12 +186,18 @@ func sendToIpfs(txInfo *txtypes.MintNftTxInfo, txHash string) (string, error) {
 	return cid, nil
 }
 
-func uploadIpfs(data *nftModels.NftMetaData) (string, error) {
-	b, err := json.Marshal(data)
-	if err != nil {
-		return "", err
+func uploadIpfs(metaData string, mutableAttributes string) (string, error) {
+	meta := ""
+	if len(metaData) > 0 {
+		content := metaData[len(metaData)-1:]
+		if content == "}" {
+			metaData = metaData[:len(metaData)-1]
+		}
+		meta = fmt.Sprintf("%s,\"%s\":\"%s\"}", metaData, "mutable_attributes", mutableAttributes)
+	} else {
+		meta = fmt.Sprintf("{\"%s\":\"%s\"}", "mutable_attributes", mutableAttributes)
 	}
-	cid, err := common2.Ipfs.Upload(string(b))
+	cid, err := common2.Ipfs.Upload(meta)
 	if err != nil {
 		return "", err
 	}
