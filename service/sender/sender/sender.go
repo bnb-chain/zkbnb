@@ -761,7 +761,11 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 		if err != nil && err != types.DbErrNotFound {
 			return nil, false, err
 		}
-		lastHandledTx.L2BlockHeight = common2.MaxInt64(latestCommittedHeight, lastHandledTx.L2BlockHeight)
+		latestVerifiedHeight, err := s.blockModel.GetLatestVerifiedHeight()
+		if err != nil && err != types.DbErrNotFound {
+			return nil, false, err
+		}
+		lastHandledTx.L2BlockHeight = common2.MaxInt64(common2.MaxInt64(latestCommittedHeight, lastHandledTx.L2BlockHeight), latestVerifiedHeight)
 		start = lastHandledTx.L2BlockHeight + 1
 	}
 

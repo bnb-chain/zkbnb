@@ -2,9 +2,9 @@ tree recovery  --service committer --batch 1000 --height 4 --config ./tools/reco
 
 tree recovery  --service witness --batch 1000 --height 26 --config ./tools/recovery/etc/config.yaml
 
-treedb query  --service witness --height 54 --config ./tools/query/etc/config.yaml
+go run ./cmd/zkbnb/main.go treedb query  --service witness --height 10 --accountIndexList [0,1,2,3,4] --config ./tools/query/etc/config.yaml
 
-treedb query  --service committer --height 54 --config ./tools/query/etc/config.yaml
+go run ./cmd/zkbnb/main.go treedb query  --service committer --height 54 --config ./tools/query/etc/config.yaml
 
 revertblock --config ./tools/revertblock/etc/config.yaml --height 2
 

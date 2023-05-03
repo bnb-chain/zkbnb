@@ -20,7 +20,12 @@ echo "sleep 30s"
 sleep 30s
 
 echo "start rollback"
-go run ./cmd/zkbnb/main.go rollback --config ./tools/rollback/etc/config.yaml --height ${blockHeight}
+
+# get config from apollo
+go run ./cmd/zkbnb/main.go rollback --height ${blockHeight}
+
+# get config from file
+#go run ./cmd/zkbnb/main.go rollback --config ./tools/rollback/etc/config.yaml --height ${blockHeight}
 
 echo "start services"
 #pm2 start apiserver
