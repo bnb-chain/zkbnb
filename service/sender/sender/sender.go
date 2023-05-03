@@ -437,6 +437,7 @@ func (s *Sender) CommitBlocks() (err error) {
 
 	// Judge whether the blocks should be committed to the chain for better gas consumption
 	if !shouldCommit {
+		logx.Infof("check again if need to ShouldCommitBlocks,l2BlockHeight=%d", l2BlockHeight)
 		shouldCommit = s.ShouldCommitBlocks(compressedBlocks, estimatedFee, ctx)
 		if !shouldCommit {
 			logx.WithContext(ctx).Errorf("abandon commit block to l1, EstimateGas value is greater than MaxUnitGas!")
@@ -669,6 +670,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 
 	// Judge whether the blocks should be verified and executed to the chain for better gas consumption
 	if !shouldVerifyAndExecute {
+		logx.Infof("check again if need to ShouldVerifyAndExecuteBlocks,l2BlockHeight=%d", l2BlockHeight)
 		shouldVerifyAndExecute := s.ShouldVerifyAndExecuteBlocks(blocks, totalEstimatedFee, ctx)
 		if !shouldVerifyAndExecute {
 			logx.WithContext(ctx).Errorf("abandon verify and execute block to l1, EstimateGas value is greater than MaxUnitGas!")
