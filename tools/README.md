@@ -16,3 +16,4 @@ rollback --config ./tools/rollback/etc/config.yaml --height 5
 rollbackwitnesssmt --config ./tools/rollbackwitnesssmt/etc/config.yaml --height 2
 
 redis-cli -h 127.0.0.1 -p 6666 flushdb
+redis-cli -h 10.23.3.107 -p 6666 flushdb
