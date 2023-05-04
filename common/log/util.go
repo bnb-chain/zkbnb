@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	AccountIndexCtx     = "accountId"
+	AccountIndexCtx     = "accountIndex"
 	NftIndexCtx         = "nftIndex"
 	AssetIdCtx          = "assetId"
 	BlockHeightContext  = "blockHeight"

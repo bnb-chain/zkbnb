@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/log"
+	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -168,11 +169,11 @@ func (w *WitnessHelper) constructAccountWitness(
 	ctx context.Context,
 ) (
 	accountRootBefore []byte,
-// account before info, size is 7
+	// account before info, size is 7
 	accountsInfoBefore [NbAccountsPerTx]*cryptoTypes.Account,
-// before account asset merkle proof
+	// before account asset merkle proof
 	merkleProofsAccountAssetsBefore [NbAccountsPerTx][NbAccountAssetsPerAccount][AssetMerkleLevels][]byte,
-// before account merkle proof
+	// before account merkle proof
 	merkleProofsAccountBefore [NbAccountsPerTx][AccountMerkleLevels][]byte,
 	err error,
 ) {
@@ -243,6 +244,7 @@ func (w *WitnessHelper) constructAccountWitness(
 			}
 			err = w.assetTrees.GetAdapter(accountKey).SetWithVersion(uint64(accountAsset.AssetId), nAssetHash, bsmt.Version(oTx.BlockHeight))
 			if err != nil {
+				logx.WithContext(ctx).Errorf("fail to set asset tree value,accountIndex=%d,assetId=%d,err %v", accountKey, accountAsset.AssetId, err)
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
 
@@ -325,6 +327,7 @@ func (w *WitnessHelper) constructAccountWitness(
 		}
 		err = w.accountTree.SetWithVersion(uint64(accountKey), nAccountHash, bsmt.Version(oTx.BlockHeight))
 		if err != nil {
+			logx.WithContext(ctx).Errorf("fail to set account tree value,accountIndex=%d,err %v", accountKey, err)
 			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 		}
 
@@ -379,11 +382,11 @@ func (w *WitnessHelper) constructAccountWitness(
 func (w *WitnessHelper) constructNftWitness(
 	oTx *tx.Tx, proverNftInfo *NftWitnessInfo, ctx context.Context,
 ) (
-// nft root before
+	// nft root before
 	nftRootBefore []byte,
-// nft before
+	// nft before
 	nftBefore *cryptoTypes.Nft,
-// before nft tree merkle proof
+	// before nft tree merkle proof
 	merkleProofsNftBefore [NftMerkleLevels][]byte,
 	err error,
 ) {
@@ -448,6 +451,7 @@ func (w *WitnessHelper) constructNftWitness(
 	}
 	err = w.nftTree.SetWithVersion(uint64(proverNftInfo.NftInfo.NftIndex), nNftHash, bsmt.Version(oTx.BlockHeight))
 	if err != nil {
+		logx.WithContext(ctx).Errorf("fail to set nft tree value,nftIndex=%d,err %v", proverNftInfo.NftInfo.NftIndex, err)
 		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 	}
 	if err != nil {
@@ -777,6 +781,7 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 			}
 			err = w.assetTrees.GetAdapter(gasAccountIndex).SetWithVersion(uint64(assetId), nAssetHash, bsmt.Version(block.BlockHeight))
 			if err != nil {
+				logx.WithContext(ctx).Errorf("fail to set asset tree value,accountIndex=%d,assetId=%d,err %v", gasAccountIndex, assetId, err)
 				return nil, err
 			}
 		}
@@ -795,6 +800,7 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 		}
 		err = w.accountTree.SetWithVersion(uint64(gasAccountIndex), nAccountHash, bsmt.Version(block.BlockHeight))
 		if err != nil {
+			logx.WithContext(ctx).Errorf("fail to set account tree value,accountIndex=%d,err %v", gasAccountIndex, err)
 			return nil, err
 		}
 		gas = &circuit.Gas{
