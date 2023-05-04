@@ -328,7 +328,7 @@ func ComputeAccountAssetLeafHash(
 	e1 := txtypes.FromBigIntToFr(offerCanceledOrFinalizedBigInt)
 	ele := GMimcElements([]*fr.Element{e0, e1})
 	hash := ele.Bytes()
-	logx.Infof("compute account asset leaf hash,balance=%s,offerCanceledOrFinalized=%s,hash=%s",
+	logx.WithContext(ctx).Infof("compute account asset leaf hash,balance=%s,offerCanceledOrFinalized=%s,hash=%s",
 		balance, offerCanceledOrFinalized, common.Bytes2Hex(hash[:]))
 	return hash[:], nil
 }

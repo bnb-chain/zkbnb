@@ -423,7 +423,6 @@ func (s *Sender) CommitBlocks() (err error) {
 	lastStoredBlockInfo := commitBlockData.lastStoredBlockInfo
 	pendingCommitBlocks := commitBlockData.commitBlockList
 	compressedBlocks := commitBlockData.compressedBlocks
-	estimatedFee := commitBlockData.totalEstimatedFee
 	maxGasPrice := commitBlockData.maxGasPrice
 	gasPrice := commitBlockData.gasPrice
 	nonce := commitBlockData.nonce
@@ -438,7 +437,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	// Judge whether the blocks should be committed to the chain for better gas consumption
 	if !shouldCommit {
 		logx.Infof("check again if need to ShouldCommitBlocks,l2BlockHeight=%d", l2BlockHeight)
-		shouldCommit = s.ShouldCommitBlocks(compressedBlocks, estimatedFee, ctx)
+		shouldCommit = s.ShouldCommitBlocks(compressedBlocks, ctx)
 		if !shouldCommit {
 			logx.WithContext(ctx).Errorf("abandon commit block to l1, EstimateGas value is greater than MaxUnitGas!")
 			return nil
@@ -658,7 +657,6 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	proofs := verifyAndExecuteBlockData.proofs
 	gasPrice := verifyAndExecuteBlockData.gasPrice
 	maxGasPrice := verifyAndExecuteBlockData.maxGasPrice
-	totalEstimatedFee := verifyAndExecuteBlockData.totalEstimatedFee
 	pendingVerifyAndExecuteBlocks := verifyAndExecuteBlockData.verifyAndExecuteBlocksInfo
 
 	if len(blocks) == 0 {
@@ -671,7 +669,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	// Judge whether the blocks should be verified and executed to the chain for better gas consumption
 	if !shouldVerifyAndExecute {
 		logx.Infof("check again if need to ShouldVerifyAndExecuteBlocks,l2BlockHeight=%d", l2BlockHeight)
-		shouldVerifyAndExecute := s.ShouldVerifyAndExecuteBlocks(blocks, totalEstimatedFee, ctx)
+		shouldVerifyAndExecute := s.ShouldVerifyAndExecuteBlocks(blocks, ctx)
 		if !shouldVerifyAndExecute {
 			logx.WithContext(ctx).Errorf("abandon verify and execute block to l1, EstimateGas value is greater than MaxUnitGas!")
 			return nil
@@ -812,7 +810,7 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 
 		totalTxCount = s.CalculateTotalTxCountForCompressBlock(compressedBlocks)
 
-		if totalTxCount < commitTxCountLimit && totalEstimatedFee < maxCommitTotalGasFee {
+		if totalTxCount <= commitTxCountLimit && totalEstimatedFee <= maxCommitTotalGasFee {
 			commitBlockData.compressedBlocks = compressedBlocks
 			commitBlockData.commitBlockList = commitBlockList
 			commitBlockData.lastStoredBlockInfo = lastStoredBlockInfo
@@ -820,8 +818,9 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 			commitBlockData.maxGasPrice = maxGasPrice
 			commitBlockData.gasPrice = gasPrice
 			commitBlockData.nonce = nonce
-
-			return commitBlockData, maxCommitBlockCount != sconfig.GetSenderConfig().MaxCommitBlockCount, nil
+			shouldCommit := maxCommitBlockCount != sconfig.GetSenderConfig().MaxCommitBlockCount
+			logx.WithContext(ctx).Infof("PrepareCommitBlockData start height=%d,end height=%d,shouldCommit=%s,totalTxCount=%d,commitTxCountLimit=%d,totalEstimatedFee=%d,maxCommitTotalGasFee=%d", start, start+int64(maxCommitBlockCount), shouldCommit, totalTxCount, commitTxCountLimit, totalEstimatedFee, maxCommitTotalGasFee)
+			return commitBlockData, shouldCommit, nil
 		}
 
 		if maxCommitBlockCount > 1 {
@@ -914,7 +913,7 @@ func (s *Sender) PrepareCommitNonceValue() (uint64, error) {
 	return nonce, nil
 }
 
-func (s *Sender) ShouldCommitBlocks(blocks []*compressedblock.CompressedBlock, estimatedFee uint64, ctx context.Context) bool {
+func (s *Sender) ShouldCommitBlocks(blocks []*compressedblock.CompressedBlock, ctx context.Context) bool {
 	// If CommitControlSwitch has been switched off, directly does not perform any control
 	if !sconfig.GetSenderConfig().CommitControlSwitch {
 		return true
@@ -923,8 +922,8 @@ func (s *Sender) ShouldCommitBlocks(blocks []*compressedblock.CompressedBlock, e
 	// Judge the count of the blocks waiting to be committed, if the time count is greater
 	// than the MaxCommitBlockCount, commit the blocks directly
 	maxCommitBlockCount := sconfig.GetSenderConfig().MaxCommitBlockCount
-	if uint64(len(blocks)) > maxCommitBlockCount {
-		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because blocks count > maxCommitBlockCount,"+
+	if uint64(len(blocks)) >= maxCommitBlockCount {
+		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because blocks count >= maxCommitBlockCount,"+
 			"blocks count:%d, maxCommitBlockInterval:%d", len(blocks), maxCommitBlockCount)
 		return true
 	}
@@ -933,8 +932,8 @@ func (s *Sender) ShouldCommitBlocks(blocks []*compressedblock.CompressedBlock, e
 	// than the maxCommitTxCount, commit the blocks directly
 	maxCommitTxCount := sconfig.GetSenderConfig().MaxCommitTxCount
 	totalTxCount := s.CalculateTotalTxCountForCompressBlock(blocks)
-	if totalTxCount > maxCommitTxCount {
-		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because totalTxCount > maxCommitTxCount,"+
+	if totalTxCount >= maxCommitTxCount {
+		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because totalTxCount >= maxCommitTxCount,"+
 			"totalTxCount:%d, maxCommitTxCount:%d", totalTxCount, maxCommitTxCount)
 		return true
 	}
@@ -943,8 +942,8 @@ func (s *Sender) ShouldCommitBlocks(blocks []*compressedblock.CompressedBlock, e
 	// than the maxCommitBlockInterval, commit the blocks directly
 	maxCommitBlockInterval := sconfig.GetSenderConfig().MaxCommitBlockInterval
 	commitBlockInterval := s.CalculateBlockIntervalForCompressedBlock(blocks)
-	if commitBlockInterval > int64(maxCommitBlockInterval) {
-		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because commitBlockInterval > maxCommitBlockInterval,"+
+	if commitBlockInterval >= int64(maxCommitBlockInterval) {
+		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because commitBlockInterval >= maxCommitBlockInterval,"+
 			"commitBlockInterval:%d, maxCommitBlockInterval:%d", commitBlockInterval, maxCommitBlockInterval)
 		return true
 	}
@@ -952,7 +951,7 @@ func (s *Sender) ShouldCommitBlocks(blocks []*compressedblock.CompressedBlock, e
 	return false
 }
 
-func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, totalEstimatedFee uint64, ctx context.Context) bool {
+func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, ctx context.Context) bool {
 	// If VerifyControlSwitch has been switched off, directly does not perform any control
 	if !sconfig.GetSenderConfig().VerifyControlSwitch {
 		return true
@@ -961,8 +960,8 @@ func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, totalEstima
 	// Judge the count of the blocks waiting to be verified and executed, if the time count is greater
 	// than the MaxVerifyBlockCount, verify and execute the blocks directly
 	maxVerifyBlockCount := sconfig.GetSenderConfig().MaxVerifyBlockCount
-	if uint64(len(blocks)) > maxVerifyBlockCount {
-		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because blocks count > maxVerifyBlockCount,"+
+	if uint64(len(blocks)) >= maxVerifyBlockCount {
+		logx.WithContext(ctx).Infof("Should verify blocks to l1 network, because blocks count >= maxVerifyBlockCount,"+
 			"blocks count:%d, maxVerifyBlockCount:%d", len(blocks), maxVerifyBlockCount)
 		return true
 	}
@@ -971,9 +970,9 @@ func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, totalEstima
 	// than the maxVerifyTxCount, verify and execute the blocks directly
 	maxVerifyTxCount := sconfig.GetSenderConfig().MaxVerifyTxCount
 	totalTxCount := s.CalculateTotalTxCountForBlock(blocks)
-	if totalTxCount > maxVerifyTxCount {
+	if totalTxCount >= maxVerifyTxCount {
 
-		logx.WithContext(ctx).Infof("Should commit blocks to l1 network, because totalTxCount > maxVerifyTxCount,"+
+		logx.WithContext(ctx).Infof("Should verify blocks to l1 network, because totalTxCount >= maxVerifyTxCount,"+
 			"totalTxCount:%d, maxVerifyTxCount:%d", totalTxCount, maxVerifyTxCount)
 
 		return true
@@ -983,8 +982,8 @@ func (s *Sender) ShouldVerifyAndExecuteBlocks(blocks []*block.Block, totalEstima
 	// than the maxVerifyBlockInterval, verify and execute the blocks directly
 	maxVerifyBlockInterval := sconfig.GetSenderConfig().MaxVerifyBlockInterval
 	verifyBlockInterval := s.CalculateBlockIntervalForBlock(blocks)
-	if verifyBlockInterval > int64(maxVerifyBlockInterval) {
-		logx.WithContext(ctx).Infof("Should verify blocks to l1 network, because verifyBlockInterval > maxVerifyBlockInterval,"+
+	if verifyBlockInterval >= int64(maxVerifyBlockInterval) {
+		logx.WithContext(ctx).Infof("Should verify blocks to l1 network, because verifyBlockInterval >= maxVerifyBlockInterval,"+
 			"verifyBlockInterval:%d, maxVerifyBlockInterval:%d", verifyBlockInterval, maxVerifyBlockInterval)
 		return true
 	}
@@ -1067,8 +1066,10 @@ func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1Ro
 		verifyAndExecuteBlockData.verifyAndExecuteBlocksInfo = pendingVerifyAndExecuteBlocks
 
 		totalTxCount = s.CalculateTotalTxCountForBlock(blocks)
-		if totalTxCount < verifyTxCountLimit && totalEstimatedFee < maxVerifyTotalGasFee {
-			return verifyAndExecuteBlockData, maxVerifyBlockCount != sconfig.GetSenderConfig().MaxVerifyBlockCount, nil
+		if totalTxCount <= verifyTxCountLimit && totalEstimatedFee <= maxVerifyTotalGasFee {
+			shouldCommit := maxVerifyBlockCount != sconfig.GetSenderConfig().MaxVerifyBlockCount
+			logx.WithContext(ctx).Infof("PrepareVerifyAndExecuteBlockData start height=%d,end height=%d,shouldCommit=%s,totalTxCount=%d,verifyTxCountLimit=%d,totalEstimatedFee=%d,maxVerifyTotalGasFee=%d", start, start+int64(maxVerifyBlockCount), shouldCommit, totalTxCount, verifyTxCountLimit, totalEstimatedFee, maxVerifyTotalGasFee)
+			return verifyAndExecuteBlockData, shouldCommit, nil
 		}
 		if maxVerifyBlockCount > 1 {
 			maxVerifyBlockCount--
