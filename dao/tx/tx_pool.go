@@ -328,7 +328,7 @@ func (m *defaultTxPoolModel) GetPendingTxsByAccountIndex(accountIndex int64, opt
 }
 
 func (m *defaultTxPoolModel) GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error) {
-	dbTx := m.DB.Table(m.table).Select("nonce").Where("deleted_at is null and account_index = ?", accountIndex).Order("nonce desc").Limit(1).Find(&nonce)
+	dbTx := m.DB.Table(m.table).Select("nonce").Where("deleted_at is null and account_index = ? and tx_type in ?", accountIndex, types.GetL2TxTypes()).Order("nonce desc").Limit(1).Find(&nonce)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
