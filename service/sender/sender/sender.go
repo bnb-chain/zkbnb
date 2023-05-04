@@ -467,9 +467,9 @@ func (s *Sender) CommitBlocks() (err error) {
 		s.ValidOverSuggestGasPrice150Percent(gasPrice)
 
 		// commit blocks on-chain
-		blockHeight := pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber
-		if s.IsOverMaxErrorRetryCount(blockHeight, l1rolluptx.TxTypeCommit) {
-			return fmt.Errorf("Send tx to L1 has been called %d times, no more retries,please check.L2BlockHeight=%d,txType=%d ", MaxErrorRetryCount, blockHeight, l1rolluptx.TxTypeCommit)
+		l2BlockHeight := pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber
+		if s.IsOverMaxErrorRetryCount(int64(l2BlockHeight), l1rolluptx.TxTypeCommit) {
+			return fmt.Errorf("Send tx to L1 has been called %d times, no more retries,please check.L2BlockHeight=%d,txType=%d ", MaxErrorRetryCount, l2BlockHeight, l1rolluptx.TxTypeCommit)
 		}
 		txHash, err = s.zkbnbClient.CommitBlocksWithNonce(
 			lastStoredBlockInfo,
@@ -477,19 +477,19 @@ func (s *Sender) CommitBlocks() (err error) {
 			gasPrice,
 			s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
-			commitExceptionHeightMetric.Set(float64(blockHeight))
+			commitExceptionHeightMetric.Set(float64(l2BlockHeight))
 			if err.Error() == ReplacementTransactionUnderpriced || err.Error() == TransactionUnderpriced {
-				logx.WithContext(ctx).Errorf("failed to send commit tx,try again: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
+				logx.WithContext(ctx).Errorf("failed to send commit tx,try again: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, l2BlockHeight, nonce, gasPrice.String())
 				retry = true
 				continue
 			}
 			if err.Error() == RpcOverSized {
-				logx.WithContext(ctx).Errorf("failed to send commit tx,try again after deleting one block: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
+				logx.WithContext(ctx).Errorf("failed to send commit tx,try again after deleting one block: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, l2BlockHeight, nonce, gasPrice.String())
 				pendingCommitBlocks = pendingCommitBlocks[0 : len(pendingCommitBlocks)-1]
 				continue
 			}
-			s.HandleSendTxToL1Error(blockHeight, l1rolluptx.TxTypeCommit, txHash, err)
-			return fmt.Errorf("failed to send commit tx, errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
+			s.HandleSendTxToL1Error(int64(l2BlockHeight), l1rolluptx.TxTypeCommit, txHash, err)
+			return fmt.Errorf("failed to send commit tx, errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, l2BlockHeight, nonce, gasPrice.String())
 		}
 		break
 	}
@@ -699,27 +699,27 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		s.ValidOverSuggestGasPrice150Percent(gasPrice)
 
 		// Verify blocks on-chain
-		blockHeight := pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber
-		if s.IsOverMaxErrorRetryCount(blockHeight, l1rolluptx.TxTypeVerifyAndExecute) {
-			return fmt.Errorf("Send tx to L1 has been called %d times, no more retries,please check,L2BlockHeight=%d,txType=TxTypeVerifyAndExecute ", MaxErrorRetryCount, blockHeight)
+		l2BlockHeight = int64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber)
+		if s.IsOverMaxErrorRetryCount(l2BlockHeight, l1rolluptx.TxTypeVerifyAndExecute) {
+			return fmt.Errorf("Send tx to L1 has been called %d times, no more retries,please check,L2BlockHeight=%d,txType=TxTypeVerifyAndExecute ", MaxErrorRetryCount, l2BlockHeight)
 		}
 		txHash, err = s.zkbnbClient.VerifyAndExecuteBlocksWithNonce(
 			pendingVerifyAndExecuteBlocks,
 			proofs, gasPrice, s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
-			verifyExceptionHeightMetric.Set(float64(blockHeight))
+			verifyExceptionHeightMetric.Set(float64(l2BlockHeight))
 			if err.Error() == ReplacementTransactionUnderpriced || err.Error() == TransactionUnderpriced {
-				logx.WithContext(ctx).Errorf("failed to send verify tx,try again: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
+				logx.WithContext(ctx).Errorf("failed to send verify tx,try again: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, l2BlockHeight, nonce, gasPrice.String())
 				retry = true
 				continue
 			}
 			if err.Error() == RpcOverSized {
-				logx.WithContext(ctx).Errorf("failed to send verify tx,try again after deleting one block: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
+				logx.WithContext(ctx).Errorf("failed to send verify tx,try again after deleting one block: errL %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, l2BlockHeight, nonce, gasPrice.String())
 				pendingVerifyAndExecuteBlocks = pendingVerifyAndExecuteBlocks[0 : len(pendingVerifyAndExecuteBlocks)-1]
 				continue
 			}
-			s.HandleSendTxToL1Error(blockHeight, l1rolluptx.TxTypeVerifyAndExecute, txHash, err)
-			return fmt.Errorf("failed to send verify tx: %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, blockHeight, nonce, gasPrice.String())
+			s.HandleSendTxToL1Error(l2BlockHeight, l1rolluptx.TxTypeVerifyAndExecute, txHash, err)
+			return fmt.Errorf("failed to send verify tx: %v:%s,blockHeight=%d,nonce=%d,gasPrice=%s", err, txHash, l2BlockHeight, nonce, gasPrice.String())
 		}
 		break
 	}
@@ -1204,7 +1204,7 @@ func (s *Sender) GenerateConstructorForCommit() (zkbnb.TransactOptsConstructor, 
 	return nil, errors.New("both commitKmsKeyClient and commitAuthClient are all not initiated yet")
 }
 
-func (s *Sender) IsOverMaxErrorRetryCount(height uint32, txType uint) bool {
+func (s *Sender) IsOverMaxErrorRetryCount(height int64, txType uint) bool {
 	cacheKey := fmt.Sprintf("%s-%d-%d", SentBlockToL1ErrorPrefix, txType, height)
 	retryCount := 0
 	cacheValue, found := s.goCache.Get(cacheKey)
@@ -1217,7 +1217,7 @@ func (s *Sender) IsOverMaxErrorRetryCount(height uint32, txType uint) bool {
 	return false
 }
 
-func (s *Sender) HandleSendTxToL1Error(height uint32, txType uint, txHash string, err error) {
+func (s *Sender) HandleSendTxToL1Error(height int64, txType uint, txHash string, err error) {
 	if _, ok := err.(*url.Error); ok {
 		return
 	}
