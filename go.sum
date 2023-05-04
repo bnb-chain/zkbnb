@@ -179,8 +179,8 @@ github.com/bnb-chain/gnark v0.7.2-0.20230414030551-8be7c648aadc h1:Fk1+2WqK/1crH
 github.com/bnb-chain/gnark v0.7.2-0.20230414030551-8be7c648aadc/go.mod h1:fmHUzzss1n32K3COWMvrQj7uo7GjIeIr1wXzjj5gmj8=
 github.com/bnb-chain/gnark-crypto v0.8.1-0.20230412133626-30223a679fb7 h1:ME5Nif4WgGgWKH2omB6ybic5bsU22bHy43xBsgMBHgM=
 github.com/bnb-chain/gnark-crypto v0.8.1-0.20230412133626-30223a679fb7/go.mod h1:a2DQL4+5ywF6safEeZFEPGRiiGbjzGFRUN2sg06VuU4=
-github.com/bnb-chain/zkbnb-smt v0.0.3-0.20230416092034-57d4894ccfbd h1:6ZkWLfPlrSe6JNBLkgU/a+ZRjrFZ6x7t566dqANxmu0=
-github.com/bnb-chain/zkbnb-smt v0.0.3-0.20230416092034-57d4894ccfbd/go.mod h1:v1JFeuRviJkgUEdmXx0xO62win6N5SrRkii/3CRfE9o=
+github.com/bnb-chain/zkbnb-smt v0.0.3-0.20230504135928-45145aa0b5e7 h1:tJDVRq4v9Fi0fGC4D0aFdk0KyKeWPDHmomKL9UFt4fk=
+github.com/bnb-chain/zkbnb-smt v0.0.3-0.20230504135928-45145aa0b5e7/go.mod h1:v1JFeuRviJkgUEdmXx0xO62win6N5SrRkii/3CRfE9o=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d h1:pVrfxiGfwelyab6n21ZBkbkmbevaf+WvMIiR7sr97hw=
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
