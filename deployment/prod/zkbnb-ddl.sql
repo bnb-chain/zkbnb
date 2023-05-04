@@ -16,17 +16,17 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
-DROP DATABASE IF EXISTS "zkbnb";
+DROP DATABASE IF EXISTS "zkbnb-perf";
 --
--- Name: zkbnb; Type: DATABASE; Schema: -; Owner: cloud
+-- Name: zkbnb-perf; Type: DATABASE; Schema: -; Owner: cloud
 --
 
-CREATE DATABASE "zkbnb" WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'en_US.UTF-8';
+CREATE DATABASE "zkbnb-perf" WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'en_US.UTF-8';
 
 
-ALTER DATABASE "zkbnb" OWNER TO cloud;
+ALTER DATABASE "zkbnb-perf" OWNER TO cloud;
 
-\connect -reuse-previous=on "dbname='zkbnb'"
+\connect -reuse-previous=on "dbname='zkbnb-perf'"
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
