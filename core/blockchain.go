@@ -117,7 +117,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		return nil, fmt.Errorf("get block by height failed: %v,curHeight=%d", err.Error(), curHeight)
 	}
 
-	accountIndexList, nftIndexList, heights, err := preRollBackFunc(bc, redisCache)
+	accountIndexList, nftIndexList, heights, accountIndexMap, err := preRollBackFunc(bc, redisCache)
 	if err != nil {
 		return nil, fmt.Errorf("pre rollBack func failed: %v,curHeight=%d", err.Error(), curHeight)
 	}
@@ -149,7 +149,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		return nil, err
 	}
 
-	err = verifyRollbackTreesFunc(bc, bc.currentBlock)
+	err = verifyRollbackTreesFunc(bc, bc.currentBlock, accountIndexMap)
 	if err != nil {
 		return nil, err
 	}
@@ -247,23 +247,23 @@ func NewBlockChainForDesertExit(config *config.Config) (*BlockChain, error) {
 	return bc, nil
 }
 
-func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64, []int64, error) {
+func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64, []int64, map[int64]bool, error) {
 	accountIndexList := make([]int64, 0)
 	nftIndexList := make([]int64, 0)
 	heights := make([]int64, 0)
 
 	curHeight, err := bc.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("get current block height failed: %s", err.Error())
+		return nil, nil, nil, nil, fmt.Errorf("get current block height failed: %s", err.Error())
 	}
 	logx.Infof("get current block height: %d", curHeight)
 
 	blocks, err := bc.BlockModel.GetBlockByStatus([]int{block.StatusProposing, block.StatusPacked})
 	if err != nil && err != types.DbErrNotFound {
-		return nil, nil, nil, fmt.Errorf("get blocks by status (StatusProposing,StatusPacked) failed: %s", err.Error())
+		return nil, nil, nil, nil, fmt.Errorf("get blocks by status (StatusProposing,StatusPacked) failed: %s", err.Error())
 	}
 	if blocks == nil {
-		return accountIndexList, nftIndexList, heights, nil
+		return accountIndexList, nftIndexList, heights, nil, nil
 	}
 
 	accountIndexMap := make(map[int64]bool, 0)
@@ -274,7 +274,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 			var accountIndexes []int64
 			err = json.Unmarshal([]byte(blockInfo.AccountIndexes), &accountIndexes)
 			if err != nil {
-				return nil, nil, nil, fmt.Errorf("json err unmarshal failed: %s", err.Error())
+				return nil, nil, nil, nil, fmt.Errorf("json err unmarshal failed: %s", err.Error())
 			}
 			for _, accountIndex := range accountIndexes {
 				accountIndexMap[accountIndex] = true
@@ -285,7 +285,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 			var nftIndexes []int64
 			err = json.Unmarshal([]byte(blockInfo.NftIndexes), &nftIndexes)
 			if err != nil {
-				return nil, nil, nil, fmt.Errorf("json err unmarshal failed: %s", err.Error())
+				return nil, nil, nil, nil, fmt.Errorf("json err unmarshal failed: %s", err.Error())
 			}
 			for _, nftIndex := range nftIndexes {
 				nftIndexMap[nftIndex] = true
@@ -295,7 +295,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 		heights = append(heights, blockInfo.BlockHeight)
 	}
 	if len(heights) == 0 {
-		return accountIndexList, nftIndexList, heights, nil
+		return accountIndexList, nftIndexList, heights, nil, nil
 	}
 
 	for k := range accountIndexMap {
@@ -330,7 +330,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 		}
 	}
 
-	return accountIndexList, nftIndexList, heights, nil
+	return accountIndexList, nftIndexList, heights, accountIndexMap, nil
 }
 
 func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64, heights []int64, curHeight int64) (err error) {
@@ -656,7 +656,12 @@ func verifyRollbackTableDataFunc(bc *BlockChain, curHeight int64) error {
 	return nil
 }
 
-func verifyRollbackTreesFunc(bc *BlockChain, currentBlock *block.Block) error {
+func verifyRollbackTreesFunc(bc *BlockChain, currentBlock *block.Block, accountIndexMap map[int64]bool) error {
+	err := tree.CheckAssetRoot(accountIndexMap, currentBlock.BlockHeight, bc.Statedb.AccountAssetTrees, bc.AccountHistoryModel)
+	if err != nil {
+		return err
+	}
+
 	hFunc := tree.NewGMimc()
 	hFunc.Write(bc.Statedb.AccountTree.Root())
 	hFunc.Write(bc.Statedb.NftTree.Root())

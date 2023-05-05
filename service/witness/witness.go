@@ -20,7 +20,7 @@ func Run(configFile string) error {
 		panic("failed to initiate system configuration, err:" + err.Error())
 	}
 
-	w, err := witness.NewWitness(c)
+	w, err := witness.NewWitness(c, true)
 	if err != nil {
 		logx.Severef("failed to create witness instance, %v", err)
 		panic("failed to create witness instance, err:" + err.Error())

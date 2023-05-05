@@ -23,7 +23,7 @@ func RollbackWitnessSmt(
 		logx.Close()
 	})
 
-	w, err := witness.NewWitness(c)
+	w, err := witness.NewWitness(c, false)
 	if err != nil {
 		return fmt.Errorf("failed to create witness instance, %v", err)
 	}

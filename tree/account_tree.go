@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/log"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/panjf2000/ants/v2"
 	"hash"
 	"strconv"
@@ -173,7 +174,9 @@ func InitAccountTree(
 		}
 	}
 
+	accountIndexMap := make(map[int64]bool, 0)
 	for _, accountIndex := range accountIndexList {
+		accountIndexMap[accountIndex] = true
 		asset := accountAssetTrees.Get(accountIndex)
 		ctxLog := log.UpdateCtxWithKV(ctxLog, log.AccountIndexCtx, accountIndex, log.AssetIdCtx, asset)
 		if asset.LatestVersion() > bsmt.Version(blockHeight) && !asset.IsEmpty() {
@@ -183,7 +186,15 @@ func InitAccountTree(
 				logx.WithContext(ctxLog).Errorf("unable to rollback asset [%d] tree: %s, version: %d", accountIndex, err.Error(), blockHeight)
 				return nil, nil, err
 			}
+			if asset.LatestVersion() > bsmt.Version(blockHeight) {
+				logx.Errorf("call asset.Rollback successfully,but fail to rollback asset accountIndex:[%d] latestVersion: %d, blockHeight: %d", accountIndex, asset.LatestVersion(), blockHeight)
+			}
 		}
+	}
+
+	err = CheckAssetRoot(accountIndexMap, blockHeight, accountAssetTrees, accountHistoryModel)
+	if err != nil {
+		return nil, nil, err
 	}
 	return accountTree, accountAssetTrees, nil
 }
@@ -343,4 +354,31 @@ func NilAccountAssetNodeHashes(maxDepth uint8, nilHash []byte, hasher *bsmt.Hash
 		nilHash = nHash
 	}
 	return hashes
+}
+
+func CheckAssetRoot(accountIndexMap map[int64]bool, curHeight int64, assetTrees *AssetTreeCache, accountHistoryModel account.AccountHistoryModel) error {
+	accountIndexSlice := make([]int64, 0)
+	accountIndexLen := len(accountIndexMap)
+	for accountIndex := range accountIndexMap {
+		accountIndexLen--
+		accountIndexSlice = append(accountIndexSlice, accountIndex)
+		if len(accountIndexSlice) == 100 || accountIndexLen == 0 {
+			_, accountHistoryList, err := accountHistoryModel.GetLatestAccountHistories(accountIndexSlice, curHeight)
+			if err != nil && err != types.DbErrNotFound {
+				return fmt.Errorf("get latest account histories failed: %s", err.Error())
+			}
+			for _, accountHistory := range accountHistoryList {
+				asset := assetTrees.Get(accountHistory.AccountIndex)
+				assetRoot := common.Bytes2Hex(asset.Root())
+				if assetRoot != accountHistory.AssetRoot {
+					return fmt.Errorf("fail to rollback asset,accountIndex=%d,curHeight=%d,assetRoot=%s not equal accountHistory.AssetRoot=%s,asset.LatestVersion=%d", accountIndex, curHeight, assetRoot, accountHistory.AssetRoot, asset.LatestVersion())
+				}
+				if asset.LatestVersion() > bsmt.Version(curHeight) {
+					logx.Errorf("call asset.Rollback successfully,but fail to rollback asset accountIndex:[%d] asset.LatestVersion: %d, curHeight: %d", accountIndex, asset.LatestVersion(), curHeight)
+				}
+			}
+			accountIndexSlice = make([]int64, 0)
+		}
+	}
+	return nil
 }
