@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Import! set correct block sizes & key path
-OPTIONAL_BLOCK_SIZES=${BLOCK_SIZES:-"1,2"}
+OPTIONAL_BLOCK_SIZES=${BLOCK_SIZES:-"8,16,32,64"}
 KEY_PATH=~/zkbnb-deploy/zkbnb-crypto/circuit/solidity
 TEMPLATE="https://raw.githubusercontent.com/bnb-chain/zkbnb-contract/qa/contracts/ZkBNBVerifier.sol"
 

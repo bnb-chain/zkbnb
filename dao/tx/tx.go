@@ -332,7 +332,7 @@ func (m *defaultTxModel) GetOnChainTxsByHeight(blockHeight int64) (txList []*Tx,
 		return nil, nil
 	}
 
-	dbTx = m.DB.Table(m.table).Select("tx_type,tx_index,iD").Where("block_height = ? and tx_type in ?", blockHeight, types.GetOnChainTypes()).Find(&txList)
+	dbTx = m.DB.Table(m.table).Select("tx_type,tx_index,id").Where("block_height = ? and tx_type in ?", blockHeight, types.GetOnChainTypes()).Find(&txList)
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {

@@ -168,20 +168,8 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 	bnbGasFee[types.TxTypeCancelOffer] = 12000000000000
 	bnbGasFee[types.TxTypeWithdrawNft] = 20000000000000
 
-	busdGasFee := make(map[int]int64)
-	busdGasFee[types.TxTypeChangePubKey] = 10000000000000
-	busdGasFee[types.TxTypeTransfer] = 10000000000000
-	busdGasFee[types.TxTypeWithdraw] = 20000000000000
-	busdGasFee[types.TxTypeCreateCollection] = 10000000000000
-	busdGasFee[types.TxTypeMintNft] = 10000000000000
-	busdGasFee[types.TxTypeTransferNft] = 12000000000000
-	busdGasFee[types.TxTypeAtomicMatch] = 18000000000000
-	busdGasFee[types.TxTypeCancelOffer] = 12000000000000
-	busdGasFee[types.TxTypeWithdrawNft] = 20000000000000
-
 	gasFeeConfig := make(map[uint32]map[int]int64) // asset id -> (tx type -> gas fee value)
 	gasFeeConfig[types.BNBAssetId] = bnbGasFee     // bnb asset
-	gasFeeConfig[types.BUSDAssetId] = busdGasFee   // busd asset
 
 	gas, err := json.Marshal(gasFeeConfig)
 	if err != nil {
@@ -280,15 +268,6 @@ func initAssetsInfo(busdAddress string) []*asset.Asset {
 			L1Address:   types.BNBAddress,
 			AssetName:   "BNB",
 			AssetSymbol: "BNB",
-			Decimals:    18,
-			Status:      0,
-			IsGasAsset:  asset.IsGasAsset,
-		},
-		{
-			AssetId:     types.BUSDAssetId,
-			L1Address:   busdAddress,
-			AssetName:   "BUSD",
-			AssetSymbol: "BUSD",
 			Decimals:    18,
 			Status:      0,
 			IsGasAsset:  asset.IsGasAsset,
