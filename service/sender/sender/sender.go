@@ -467,7 +467,7 @@ func (s *Sender) CommitBlocks() (err error) {
 		s.ValidOverSuggestGasPrice150Percent(gasPrice)
 
 		// commit blocks on-chain
-		l2BlockHeight := pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber
+		l2BlockHeight = int64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber)
 		if s.IsOverMaxErrorRetryCount(int64(l2BlockHeight), l1rolluptx.TxTypeCommit) {
 			return fmt.Errorf("Send tx to L1 has been called %d times, no more retries,please check.L2BlockHeight=%d,txType=%d ", MaxErrorRetryCount, l2BlockHeight, l1rolluptx.TxTypeCommit)
 		}
