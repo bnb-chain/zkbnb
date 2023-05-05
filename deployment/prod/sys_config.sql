@@ -30,9 +30,6 @@ INSERT INTO public.sys_config
 VALUES(now(), now(), NULL, 'LocalTestNetworkRpc', 'http://127.0.0.1:8545/', 'string', 'Local network rpc');
 INSERT INTO public.sys_config
 (created_at, updated_at, deleted_at, "name", value, value_type, "comment")
-VALUES(now(), now(), NULL, 'ZnsPriceOracle', '0x67611D3E0fbB56C016C2B44d428Bb588B1943e9d', 'string', 'Zns Price Oracle');
-INSERT INTO public.sys_config
-(created_at, updated_at, deleted_at, "name", value, value_type, "comment")
 VALUES(now(), now(), NULL, 'DefaultNftFactory', '0xDA8c0929ec116C81a85280cAaf73218553848e9D', 'string', 'ZkBNB default nft factory contract on BSC');
 INSERT INTO public.sys_config
 (created_at, updated_at, deleted_at, "name", value, value_type, "comment")
