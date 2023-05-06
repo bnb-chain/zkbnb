@@ -16,4 +16,4 @@ go run ./cmd/zkbnb/main.go rollback --config ./tools/rollback/etc/config.yaml --
 go run ./cmd/zkbnb/main.go rollbackwitnesssmt --height 5 --config ./tools/rollbackwitnesssmt/etc/config.yaml
 
 redis-cli -h 127.0.0.1 -p 6666 flushdb
-redis-cli -h 10.23.3.107 -p 6666 flushdb
+

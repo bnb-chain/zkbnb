@@ -213,12 +213,13 @@ func NftAssetToNode(nftAsset *nft.L2Nft, ctx context.Context) (hashVal []byte, e
 func RollBackNftTree(treeHeight int64, nftTree bsmt.SparseMerkleTree) error {
 	ctxLog := log.NewCtxWithKV(log.BlockHeightContext, treeHeight)
 	logx.WithContext(ctxLog).Infof("start to rollback nft tree, latestVersion:%d,versions=%s,nftRoot:%s,rollback to height:%d", nftTree.LatestVersion(), common2.FormatVersion(nftTree.Versions()), common.Bytes2Hex(nftTree.Root()), treeHeight)
-	if nftTree.LatestVersion() > bsmt.Version(treeHeight) && nftTree.IsEmpty() {
+	if nftTree.LatestVersion() > bsmt.Version(treeHeight) && !nftTree.IsEmpty() {
 		logx.WithContext(ctxLog).Infof("nft tree latestVersion:%d is higher than block, rollback to %d", nftTree.LatestVersion(), treeHeight)
 		err := nftTree.Rollback(bsmt.Version(treeHeight))
 		if err != nil {
 			return fmt.Errorf("unable to rollback nft latestVersion:%d,err:%s", treeHeight, err.Error())
 		}
+		logx.WithContext(ctxLog).Infof("end to rollback nft tree, latestVersion:%d,versions=%s,nftRoot:%s,rollback to height:%d", nftTree.LatestVersion(), common2.FormatVersion(nftTree.Versions()), common.Bytes2Hex(nftTree.Root()), treeHeight)
 		if nftTree.LatestVersion() > bsmt.Version(treeHeight) {
 			return fmt.Errorf("call nftTree.Rollback successfully,but fail to rollback nftTree,latestVersion: %d,versions=%s", nftTree.LatestVersion(), common2.FormatVersion(nftTree.Versions()))
 		}

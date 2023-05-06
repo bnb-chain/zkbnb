@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/common/log"
 	committerConfig "github.com/bnb-chain/zkbnb/service/committer/config"
 	witnessConfig "github.com/bnb-chain/zkbnb/service/witness/config"
 	"github.com/bnb-chain/zkbnb/tools/query/config"
@@ -31,6 +32,7 @@ func QueryTreeDB(
 	proc.AddShutdownListener(func() {
 		logx.Close()
 	})
+	ctxLog := log.NewCtxWithKV(log.BlockHeightContext, blockHeight)
 
 	var AccountIndexes []int64
 	if AccountIndexesStr != "" {
@@ -70,21 +72,24 @@ func QueryTreeDB(
 	}
 	if len(AccountIndexes) > 0 {
 		for _, accountIndex := range AccountIndexes {
+			ctxLog := log.UpdateCtxWithKV(ctxLog, log.AccountIndexCtx, accountIndex)
 			assetRoot := common.Bytes2Hex(accountAssetTrees.Get(accountIndex).Root())
-			logx.Infof("asset tree root accountIndex=%s,assetRoot=%s,versions=%s,latestVersion=%s", strconv.FormatInt(accountIndex, 10), assetRoot,
+			logx.WithContext(ctxLog).Infof("asset tree root accountIndex=%s,assetRoot=%s,versions=%s,latestVersion=%s", strconv.FormatInt(accountIndex, 10), assetRoot,
 				common2.FormatVersion(accountAssetTrees.Get(accountIndex).Versions()), strconv.FormatUint(uint64(accountAssetTrees.Get(accountIndex).LatestVersion()), 10))
 			for i := 0; i < 20; i++ {
 				assetOne, err := accountAssetTrees.Get(accountIndex).Get(uint64(i), nil)
 				if err != nil {
 					continue
 				}
-				logx.Infof("asset tree accountIndex=%s,assetId=%s,assetRoot=%s", strconv.FormatInt(accountIndex, 10), strconv.FormatInt(int64(i), 10), common.Bytes2Hex(assetOne))
+				logx.WithContext(ctxLog).Infof("asset tree accountIndex=%s,assetId=%s,assetRoot=%s", strconv.FormatInt(accountIndex, 10), strconv.FormatInt(int64(i), 10), common.Bytes2Hex(assetOne))
 			}
 			//accountAssetTrees.Get(accountIndex).PrintLeaves()
 		}
 	}
+	ctxLog = log.NewCtxWithKV(log.BlockHeightContext, blockHeight)
+
 	stateRoot := common.Bytes2Hex(accountTree.Root())
-	logx.Infof("account tree accountRoot=%s,versions=%s,,latestVersion=%s", stateRoot, common2.FormatVersion(accountTree.Versions()), strconv.FormatUint(uint64(accountTree.LatestVersion()), 10))
+	logx.WithContext(ctxLog).Infof("account tree accountRoot=%s,versions=%s,,latestVersion=%s", stateRoot, common2.FormatVersion(accountTree.Versions()), strconv.FormatUint(uint64(accountTree.LatestVersion()), 10))
 	// dbinitializer nftTree
 	nftTree, err := tree.InitNftTree(
 		ctx.NftModel,
@@ -92,11 +97,11 @@ func QueryTreeDB(
 		blockHeight,
 		treeCtx, fromHistory)
 	if err != nil {
-		logx.Errorf("InitNftTree error: %s", err.Error())
+		logx.WithContext(ctxLog).Errorf("InitNftTree error: %s", err.Error())
 		return
 	}
 	nftRoot := common.Bytes2Hex(nftTree.Root())
-	logx.Infof("nft tree nftRoot=%s,versions=%s,,latestVersion=%s", nftRoot, common2.FormatVersion(nftTree.Versions()), strconv.FormatUint(uint64(nftTree.LatestVersion()), 10))
+	logx.WithContext(ctxLog).Infof("nft tree nftRoot=%s,versions=%s,,latestVersion=%s", nftRoot, common2.FormatVersion(nftTree.Versions()), strconv.FormatUint(uint64(nftTree.LatestVersion()), 10))
 }
 
 func BuildConfig(configFile string, serviceName string) config.Config {

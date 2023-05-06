@@ -377,6 +377,9 @@ func RollBackAssetTree(accountIndexList []int64, treeHeight int64, assetTrees *A
 			if err != nil {
 				return fmt.Errorf("unable to rollback asset accountIndex:%d, latestVersion: %d,tree err: %s", accountIndex, asset.LatestVersion(), err.Error())
 			}
+			assetRoot := common.Bytes2Hex(asset.Root())
+			logx.WithContext(ctxLog).Infof("end to rollback asset tree, accountIndex:%d, latestVersion:%d,versions=%s,assetRoot:%s,rollback to height:%d", accountIndex, asset.LatestVersion(), common2.FormatVersion(asset.Versions()), assetRoot, treeHeight)
+
 			if asset.LatestVersion() > bsmt.Version(treeHeight) {
 				logx.WithContext(ctxLog).Errorf("call asset.Rollback successfully,but fail to rollback asset accountIndex:%d latestVersion: %d,versions=%s", accountIndex, asset.LatestVersion(), common2.FormatVersion(asset.Versions()))
 			}
@@ -388,7 +391,7 @@ func RollBackAssetTree(accountIndexList []int64, treeHeight int64, assetTrees *A
 func RollBackAccountTree(treeHeight int64, accountTree bsmt.SparseMerkleTree) error {
 	ctxLog := log.NewCtxWithKV(log.BlockHeightContext, treeHeight)
 	logx.WithContext(ctxLog).Infof("start to rollback account tree, latestVersion:%d,versions=%s,accountRoot:%s,rollback to height:%d", accountTree.LatestVersion(), common2.FormatVersion(accountTree.Versions()), common.Bytes2Hex(accountTree.Root()), treeHeight)
-	if accountTree.LatestVersion() > bsmt.Version(treeHeight) && accountTree.IsEmpty() {
+	if accountTree.LatestVersion() > bsmt.Version(treeHeight) && !accountTree.IsEmpty() {
 		logx.WithContext(ctxLog).Infof("account tree latestVersion:%d is higher than block, rollback to %d", accountTree.LatestVersion(), treeHeight)
 		err := accountTree.Rollback(bsmt.Version(treeHeight))
 		if err != nil {
@@ -396,6 +399,8 @@ func RollBackAccountTree(treeHeight int64, accountTree bsmt.SparseMerkleTree) er
 				return fmt.Errorf("unable to rollback account latestVersion:%d,err:%s, ", treeHeight, err.Error())
 			}
 		}
+		logx.WithContext(ctxLog).Infof("end to rollback account tree, latestVersion:%d,versions=%s,accountRoot:%s,rollback to height:%d", accountTree.LatestVersion(), common2.FormatVersion(accountTree.Versions()), common.Bytes2Hex(accountTree.Root()), treeHeight)
+
 		if accountTree.LatestVersion() > bsmt.Version(treeHeight) {
 			logx.WithContext(ctxLog).Errorf("call accountTree.Rollback successfully,but fail to rollback accountTree,latestVersion: %d,versions=%s", accountTree.LatestVersion(), common2.FormatVersion(accountTree.Versions()))
 		}
@@ -415,7 +420,6 @@ func CheckStateRoot(height int64, accountTree bsmt.SparseMerkleTree, nftTree bsm
 	newStateRoot := ComputeStateRootHash(accountTreeRoot, nftTreeRoot)
 	newStateRootStr := common.Bytes2Hex(newStateRoot)
 	logx.WithContext(ctxLog).Infof("checkStateRoot account tree root=%s,nft tree root=%s,newStateRoot=%s,database StateRoot=%s", common.Bytes2Hex(accountTreeRoot), common.Bytes2Hex(nftTreeRoot), newStateRootStr, blockInfo.StateRoot)
-
 	if newStateRootStr != blockInfo.StateRoot {
 		return fmt.Errorf("checkStateRoot smt tree newStateRoot=%s not equal database StateRoot=%s,height:%d,AccountTree.Root=%s,NftTree.Root=%s", newStateRootStr, blockInfo.StateRoot, blockInfo.BlockHeight, common.Bytes2Hex(accountTreeRoot), common.Bytes2Hex(nftTreeRoot))
 	}
