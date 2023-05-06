@@ -20,8 +20,10 @@ package tree
 import (
 	"context"
 	"fmt"
+	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/log"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
 	"time"
@@ -129,14 +131,11 @@ func InitNftTree(
 	}
 
 	// It's not loading from RDB, need to check tree version
-	if nftTree.LatestVersion() > bsmt.Version(blockHeight) && !nftTree.IsEmpty() {
-		logx.WithContext(ctxLog).Infof("nft tree version [%d] is higher than block, rollback to %d", nftTree.LatestVersion(), blockHeight)
-		err := nftTree.Rollback(bsmt.Version(blockHeight))
-		if err != nil {
-			logx.WithContext(ctxLog).Errorf("unable to rollback nft tree: %s, version: %d", err.Error(), blockHeight)
-			return nil, err
-		}
+	err = RollBackNftTree(blockHeight, nftTree)
+	if err != nil {
+		return nil, err
 	}
+
 	return nftTree, nil
 }
 
@@ -209,4 +208,20 @@ func NftAssetToNode(nftAsset *nft.L2Nft, ctx context.Context) (hashVal []byte, e
 		return nil, err
 	}
 	return hashVal, nil
+}
+
+func RollBackNftTree(treeHeight int64, nftTree bsmt.SparseMerkleTree) error {
+	ctxLog := log.NewCtxWithKV(log.BlockHeightContext, treeHeight)
+	logx.WithContext(ctxLog).Infof("start to rollback nft tree, latestVersion:%d,versions=%s,nftRoot:%s,rollback to height:%d", nftTree.LatestVersion(), common2.FormatVersion(nftTree.Versions()), common.Bytes2Hex(nftTree.Root()), treeHeight)
+	if nftTree.LatestVersion() > bsmt.Version(treeHeight) && nftTree.IsEmpty() {
+		logx.WithContext(ctxLog).Infof("nft tree latestVersion:%d is higher than block, rollback to %d", nftTree.LatestVersion(), treeHeight)
+		err := nftTree.Rollback(bsmt.Version(treeHeight))
+		if err != nil {
+			return fmt.Errorf("unable to rollback nft latestVersion:%d,err:%s", treeHeight, err.Error())
+		}
+		if nftTree.LatestVersion() > bsmt.Version(treeHeight) {
+			return fmt.Errorf("call nftTree.Rollback successfully,but fail to rollback nftTree,latestVersion: %d,versions=%s", nftTree.LatestVersion(), common2.FormatVersion(nftTree.Versions()))
+		}
+	}
+	return nil
 }

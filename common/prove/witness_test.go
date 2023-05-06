@@ -20,6 +20,7 @@ package prove
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/log"
 	"os/exec"
 	"testing"
 	"time"
@@ -64,7 +65,8 @@ func TestConstructWitness(t *testing.T) {
 		err = witnessHelper.ResetCache(h)
 		assert.NoError(t, err)
 		for idx, tx := range b[0].Txs {
-			txWitness, err := witnessHelper.ConstructTxWitness(tx, uint64(0))
+			ctx := log.NewCtxWithKV(log.BlockHeightContext, h)
+			txWitness, err := witnessHelper.ConstructTxWitness(tx, uint64(0), ctx)
 			assert.NoError(t, err)
 			expectedBz, _ := json.Marshal(cBlock.Txs[idx])
 			actualBz, _ := json.Marshal(txWitness)

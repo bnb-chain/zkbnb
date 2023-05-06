@@ -2,7 +2,7 @@ go run ./cmd/zkbnb/main.go tree recovery  --service committer --batch 1000 --hei
 
 go run ./cmd/zkbnb/main.go tree recovery  --service witness --batch 1000 --height 26 --config ./tools/recovery/etc/config.yaml
 
-go run ./cmd/zkbnb/main.go treedb query  --service witness --height 10 --accountIndexList [0,1,2,3,4] --config ./tools/query/etc/config.yaml
+go run ./cmd/zkbnb/main.go treedb query  --service witness --height 5 --accountIndexList [1,2,3,4,146] --config ./tools/query/etc/config.yaml
 
 go run ./cmd/zkbnb/main.go treedb query  --service committer --height 54 --config ./tools/query/etc/config.yaml
 

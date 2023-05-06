@@ -27,7 +27,13 @@ func RollbackWitnessSmt(
 	if err != nil {
 		return fmt.Errorf("failed to create witness instance, %v", err)
 	}
-	err = w.Rollback(height)
+
+	toHeight, err := w.BlockModel.GetCurrentBlockHeight()
+	if err != nil {
+		return fmt.Errorf("get current block height failed: %s", err.Error())
+	}
+	logx.Infof("get current block height: %d", toHeight)
+	err = w.Rollback(height, toHeight)
 	if err != nil {
 		return fmt.Errorf("failed to rollback smt, %v", err)
 	}
