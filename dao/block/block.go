@@ -52,6 +52,7 @@ type (
 		GetPendingBlocksBetween(start int64, end int64) (blocks []*Block, err error)
 		GetPendingBlocksBetweenWithoutTx(start int64, end int64) (blocks []*Block, err error)
 		GetBlockByHeight(blockHeight int64) (block *Block, err error)
+		GetBlockByHeights(from int64, to int64) (blocks []*Block, err error)
 		GetBlockByHeightWithoutTx(blockHeight int64) (block *Block, err error)
 		GetCommittedBlocksCount() (count int64, err error)
 		GetVerifiedBlocksCount() (count int64, err error)
@@ -450,6 +451,16 @@ func (m *defaultBlockModel) GetProposingBlockHeights() (blockHeights []int64, er
 
 func (m *defaultBlockModel) GetBlockByStatus(statuses []int) (blocks []*Block, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_status in ?", statuses).Order("block_height").Find(&blocks)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return blocks, nil
+}
+
+func (m *defaultBlockModel) GetBlockByHeights(from int64, to int64) (blocks []*Block, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_height>= ? and block_height<= ? ", from, to).Order("block_height").Find(&blocks)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {

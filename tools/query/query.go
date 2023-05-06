@@ -3,6 +3,7 @@ package query
 import (
 	"encoding/json"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
+	common2 "github.com/bnb-chain/zkbnb/common"
 	committerConfig "github.com/bnb-chain/zkbnb/service/committer/config"
 	witnessConfig "github.com/bnb-chain/zkbnb/service/witness/config"
 	"github.com/bnb-chain/zkbnb/tools/query/config"
@@ -71,7 +72,7 @@ func QueryTreeDB(
 		for _, accountIndex := range AccountIndexes {
 			assetRoot := common.Bytes2Hex(accountAssetTrees.Get(accountIndex).Root())
 			logx.Infof("asset tree root accountIndex=%s,assetRoot=%s,versions=%s,latestVersion=%s", strconv.FormatInt(accountIndex, 10), assetRoot,
-				formatVersion(accountAssetTrees.Get(accountIndex).Versions()), strconv.FormatUint(uint64(accountAssetTrees.Get(accountIndex).LatestVersion()), 10))
+				common2.FormatVersion(accountAssetTrees.Get(accountIndex).Versions()), strconv.FormatUint(uint64(accountAssetTrees.Get(accountIndex).LatestVersion()), 10))
 			for i := 0; i < 20; i++ {
 				assetOne, err := accountAssetTrees.Get(accountIndex).Get(uint64(i), nil)
 				if err != nil {
@@ -83,7 +84,7 @@ func QueryTreeDB(
 		}
 	}
 	stateRoot := common.Bytes2Hex(accountTree.Root())
-	logx.Infof("account tree accountRoot=%s,versions=%s,,latestVersion=%s", stateRoot, formatVersion(accountTree.Versions()), strconv.FormatUint(uint64(accountTree.LatestVersion()), 10))
+	logx.Infof("account tree accountRoot=%s,versions=%s,,latestVersion=%s", stateRoot, common2.FormatVersion(accountTree.Versions()), strconv.FormatUint(uint64(accountTree.LatestVersion()), 10))
 	// dbinitializer nftTree
 	nftTree, err := tree.InitNftTree(
 		ctx.NftModel,
@@ -95,20 +96,7 @@ func QueryTreeDB(
 		return
 	}
 	nftRoot := common.Bytes2Hex(nftTree.Root())
-	logx.Infof("nft tree nftRoot=%s,versions=%s,,latestVersion=%s", nftRoot, formatVersion(nftTree.Versions()), strconv.FormatUint(uint64(nftTree.LatestVersion()), 10))
-}
-
-func formatVersion(versions []bsmt.Version) string {
-	str := "["
-	for _, version := range versions {
-		str += strconv.FormatUint(uint64(version), 10) + ","
-	}
-	if str != "[" {
-		str = str[0 : len(str)-1]
-	}
-	str += "]"
-
-	return str
+	logx.Infof("nft tree nftRoot=%s,versions=%s,,latestVersion=%s", nftRoot, common2.FormatVersion(nftTree.Versions()), strconv.FormatUint(uint64(nftTree.LatestVersion()), 10))
 }
 
 func BuildConfig(configFile string, serviceName string) config.Config {
