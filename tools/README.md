@@ -1,6 +1,6 @@
-go run ./cmd/zkbnb/main.go tree recovery  --service committer --batch 1000 --height 4 --config ./tools/recovery/etc/config.yaml
+go run ./cmd/zkbnb/main.go tree recovery  --service committer --batch 1000 --config ./tools/recovery/etc/config.yaml
 
-go run ./cmd/zkbnb/main.go tree recovery  --service witness --batch 1000 --height 26 --config ./tools/recovery/etc/config.yaml
+go run ./cmd/zkbnb/main.go tree recovery  --service witness --batch 1000  --config ./tools/recovery/etc/config.yaml
 
 go run ./cmd/zkbnb/main.go treedb query  --service witness --height 5 --accountIndexList [1,2,3,4,146] --config ./tools/query/etc/config.yaml
 
