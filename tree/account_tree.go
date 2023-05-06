@@ -381,7 +381,7 @@ func RollBackAssetTree(accountIndexList []int64, treeHeight int64, assetTrees *A
 			logx.WithContext(ctxLog).Infof("end to rollback asset tree, accountIndex:%d, latestVersion:%d,versions=%s,assetRoot:%s,rollback to height:%d", accountIndex, asset.LatestVersion(), common2.FormatVersion(asset.Versions()), assetRoot, treeHeight)
 
 			if asset.LatestVersion() > bsmt.Version(treeHeight) {
-				logx.WithContext(ctxLog).Errorf("call asset.Rollback successfully,but fail to rollback asset accountIndex:%d latestVersion: %d,versions=%s", accountIndex, asset.LatestVersion(), common2.FormatVersion(asset.Versions()))
+				return fmt.Errorf("call asset.Rollback successfully,but fail to rollback asset accountIndex:%d latestVersion: %d,versions=%s", accountIndex, asset.LatestVersion(), common2.FormatVersion(asset.Versions()))
 			}
 		}
 	}
@@ -395,14 +395,12 @@ func RollBackAccountTree(treeHeight int64, accountTree bsmt.SparseMerkleTree) er
 		logx.WithContext(ctxLog).Infof("account tree latestVersion:%d is higher than block, rollback to %d", accountTree.LatestVersion(), treeHeight)
 		err := accountTree.Rollback(bsmt.Version(treeHeight))
 		if err != nil {
-			if err != bsmt.ErrVersionTooOld {
-				return fmt.Errorf("unable to rollback account latestVersion:%d,err:%s, ", treeHeight, err.Error())
-			}
+			return fmt.Errorf("unable to rollback account latestVersion:%d,err:%s", treeHeight, err.Error())
 		}
 		logx.WithContext(ctxLog).Infof("end to rollback account tree, latestVersion:%d,versions=%s,accountRoot:%s,rollback to height:%d", accountTree.LatestVersion(), common2.FormatVersion(accountTree.Versions()), common.Bytes2Hex(accountTree.Root()), treeHeight)
 
 		if accountTree.LatestVersion() > bsmt.Version(treeHeight) {
-			logx.WithContext(ctxLog).Errorf("call accountTree.Rollback successfully,but fail to rollback accountTree,latestVersion: %d,versions=%s", accountTree.LatestVersion(), common2.FormatVersion(accountTree.Versions()))
+			return fmt.Errorf("call accountTree.Rollback successfully,but fail to rollback accountTree,latestVersion: %d,versions=%s", accountTree.LatestVersion(), common2.FormatVersion(accountTree.Versions()))
 		}
 	}
 	return nil
