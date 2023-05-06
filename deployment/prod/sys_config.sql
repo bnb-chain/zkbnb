@@ -1,6 +1,6 @@
 INSERT INTO public.sys_config
 (created_at, updated_at, deleted_at, "name", value, value_type, "comment")
-VALUES( now(), now(), NULL, 'SysGasFee', '{"0":{"1":150000000000000,"10":12000000000000,"11":800000000000000,"4":20000000000000,"5":200000000000000,"6":40000000000000,"7":33000000000000,"8":20000000000000,"9":18000000000000}}', 'string', 'based on BNB');
+VALUES( now(), now(), NULL, 'SysGasFee', '{"0":{"1":150000000000000,"10":20000000000000,"11":800000000000000,"4":20000000000000,"5":200000000000000,"6":40000000000000,"7":33000000000000,"8":20000000000000,"9":20000000000000},"1":{"1":10000000000000,"10":12000000000000,"11":20000000000000,"4":10000000000000,"5":20000000000000,"6":10000000000000,"7":10000000000000,"8":12000000000000,"9":18000000000000}}', 'string', 'based on BNB');
 INSERT INTO public.sys_config
 (created_at, updated_at, deleted_at, "name", value, value_type, "comment")
 VALUES(now(), now(), NULL, 'ProtocolRate', '200', 'int', 'protocol rate');
@@ -28,9 +28,6 @@ VALUES(now(), now(), NULL, 'BscTestNetworkRpc', 'https://bsc-testnet.nodereal.io
 INSERT INTO public.sys_config
 (created_at, updated_at, deleted_at, "name", value, value_type, "comment")
 VALUES(now(), now(), NULL, 'LocalTestNetworkRpc', 'http://127.0.0.1:8545/', 'string', 'Local network rpc');
-INSERT INTO public.sys_config
-(created_at, updated_at, deleted_at, "name", value, value_type, "comment")
-VALUES(now(), now(), NULL, 'ZnsPriceOracle', '0x67611D3E0fbB56C016C2B44d428Bb588B1943e9d', 'string', 'Zns Price Oracle');
 INSERT INTO public.sys_config
 (created_at, updated_at, deleted_at, "name", value, value_type, "comment")
 VALUES(now(), now(), NULL, 'DefaultNftFactory', '0xDA8c0929ec116C81a85280cAaf73218553848e9D', 'string', 'ZkBNB default nft factory contract on BSC');

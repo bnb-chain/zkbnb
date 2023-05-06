@@ -18,7 +18,7 @@ const (
 	queryBySymbol = "symbol"
 
 	// iconBaseUrl is used for showing icons for assets, asset owners should upload png files to the github repo
-	iconBaseUrl = "https://static.devfdg.net/cloud-dapp/shared/icon/coin/%s.svg"
+	iconBaseUrl = "https://teststatic.zkbnbchain.org/shared/icon/coin/%s.svg"
 )
 
 type GetAssetLogic struct {
