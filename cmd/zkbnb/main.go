@@ -367,22 +367,17 @@ func main() {
 						Usage: "Recovery treedb from the database",
 						Flags: []cli.Flag{
 							flags.ConfigFlag,
-							flags.BlockHeightFlag,
 							flags.ServiceNameFlag,
 							flags.BatchSizeFlag,
-							flags.RecoveryFromHistoryFlag,
 						},
 						Action: func(cCtx *cli.Context) error {
-							if !cCtx.IsSet(flags.ServiceNameFlag.Name) ||
-								!cCtx.IsSet(flags.BlockHeightFlag.Name) {
+							if !cCtx.IsSet(flags.ServiceNameFlag.Name) {
 								return cli.ShowSubcommandHelp(cCtx)
 							}
 							recovery.RecoveryTreeDB(
 								cCtx.String(flags.ConfigFlag.Name),
-								cCtx.Int64(flags.BlockHeightFlag.Name),
 								cCtx.String(flags.ServiceNameFlag.Name),
 								cCtx.Int(flags.BatchSizeFlag.Name),
-								cCtx.Bool(flags.RecoveryFromHistoryFlag.Name),
 							)
 							return nil
 						},

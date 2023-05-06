@@ -1,6 +1,7 @@
 package recovery
 
 import (
+	"github.com/bnb-chain/zkbnb/common/log"
 	"github.com/bnb-chain/zkbnb/tools/query"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
@@ -12,10 +13,8 @@ import (
 
 func RecoveryTreeDB(
 	configFile string,
-	blockHeight int64,
 	serviceName string,
 	batchSize int,
-	fromHistory bool,
 ) {
 	configInfo := query.BuildConfig(configFile, serviceName)
 	ctx := svc.NewServiceContext(configInfo)
@@ -25,10 +24,20 @@ func RecoveryTreeDB(
 		logx.Close()
 	})
 
+	latestVerifiedBlockNr, err := ctx.BlockModel.GetLatestVerifiedHeight()
+	if err != nil {
+		logx.Errorf("get latest verified fromHeight failed: %v", err)
+		return
+	}
+
+	ctxLog := log.NewCtxWithKV(log.BlockHeightContext, latestVerifiedBlockNr)
+
+	logx.WithContext(ctxLog).Infof("the latest verified height is %d,recovery to blockHeight=%d", latestVerifiedBlockNr)
+
 	// dbinitializer tree database
 	treeCtx, err := tree.NewContext(serviceName, configInfo.TreeDB.Driver, true, false, configInfo.TreeDB.RoutinePoolSize, &configInfo.TreeDB.LevelDBOption, &configInfo.TreeDB.RedisDBOption)
 	if err != nil {
-		logx.Errorf("Init tree database failed: %s", err)
+		logx.WithContext(ctxLog).Errorf("Init tree database failed: %s", err)
 		return
 	}
 
@@ -36,7 +45,7 @@ func RecoveryTreeDB(
 	treeCtx.SetBatchReloadSize(batchSize)
 	err = tree.SetupTreeDB(treeCtx)
 	if err != nil {
-		logx.Errorf("Init tree database failed: %s", err)
+		logx.WithContext(ctxLog).Errorf("Init tree database failed: %s", err)
 		return
 	}
 
@@ -45,27 +54,27 @@ func RecoveryTreeDB(
 		ctx.AccountModel,
 		ctx.AccountHistoryModel,
 		make([]int64, 0),
-		blockHeight,
+		latestVerifiedBlockNr,
 		treeCtx,
 		configInfo.TreeDB.AssetTreeCacheSize,
-		fromHistory,
+		true,
 	)
 	if err != nil {
-		logx.Error("InitMerkleTree error:", err)
+		logx.WithContext(ctxLog).Error("InitMerkleTree error:", err)
 		return
 	}
-	logx.Infof("recovery account smt successfully")
+	logx.WithContext(ctxLog).Infof("recovery account smt successfully")
 
 	// dbinitializer nftTree
 	_, err = tree.InitNftTree(
 		ctx.NftModel,
 		ctx.NftHistoryModel,
-		blockHeight,
-		treeCtx, fromHistory)
+		latestVerifiedBlockNr,
+		treeCtx, true)
 	if err != nil {
-		logx.Errorf("InitNftTree error: %s", err.Error())
+		logx.WithContext(ctxLog).Errorf("InitNftTree error: %s", err.Error())
 		return
 	}
-	logx.Infof("recovery nft smt successfully")
+	logx.WithContext(ctxLog).Infof("recovery nft smt successfully")
 
 }
