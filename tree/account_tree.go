@@ -20,6 +20,7 @@ package tree
 import (
 	"context"
 	"fmt"
+	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/panjf2000/ants/v2"
@@ -371,10 +372,10 @@ func CheckAssetRoot(accountIndexMap map[int64]bool, curHeight int64, assetTrees 
 				asset := assetTrees.Get(accountHistory.AccountIndex)
 				assetRoot := common.Bytes2Hex(asset.Root())
 				if assetRoot != accountHistory.AssetRoot {
-					return fmt.Errorf("fail to rollback asset,accountIndex=%d,curHeight=%d,assetRoot=%s not equal accountHistory.AssetRoot=%s,asset.LatestVersion=%d", accountIndex, curHeight, assetRoot, accountHistory.AssetRoot, asset.LatestVersion())
+					logx.Errorf("fail to rollback asset,accountIndex=%d,curHeight=%d,assetRoot=%s not equal accountHistory.AssetRoot=%s,asset.LatestVersion=%d,versions=%s", accountIndex, curHeight, assetRoot, accountHistory.AssetRoot, asset.LatestVersion(), common2.FormatVersion(asset.Versions()))
 				}
 				if asset.LatestVersion() > bsmt.Version(curHeight) {
-					logx.Errorf("call asset.Rollback successfully,but fail to rollback asset accountIndex:[%d] asset.LatestVersion: %d, curHeight: %d", accountIndex, asset.LatestVersion(), curHeight)
+					logx.Errorf("call asset.Rollback successfully,but fail to rollback asset accountIndex:%d asset.LatestVersion:%d,versions=%s, curHeight:%d", accountIndex, asset.LatestVersion(), common2.FormatVersion(asset.Versions()), curHeight)
 				}
 			}
 			accountIndexSlice = make([]int64, 0)

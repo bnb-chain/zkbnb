@@ -410,11 +410,12 @@ func (w *Witness) Shutdown() {
 }
 
 func (w *Witness) Rollback(height int64) (err error) {
+	ctxLog := log.NewCtxWithKV(log.BlockHeightContext, height)
 	curHeight, err := w.blockModel.GetCurrentBlockHeight()
 	if err != nil {
 		return fmt.Errorf("get current block height failed: %s", err.Error())
 	}
-	logx.Infof("get current block height: %d", curHeight)
+	logx.WithContext(ctxLog).Infof("get current block height: %d", curHeight)
 
 	latestVerifiedBlockNr, err := w.blockModel.GetLatestVerifiedHeight()
 	if err != nil {
@@ -448,9 +449,9 @@ func (w *Witness) Rollback(height int64) (err error) {
 	for accountIndex := range accountIndexMap {
 		asset := w.assetTrees.Get(accountIndex)
 		assetRoot := common.Bytes2Hex(asset.Root())
-		logx.Infof("start to rollback asset tree, accountIndex:%d, latestVersion:%d,versions=%s,assetRoot:%s,rollback to height:%d", accountIndex, asset.LatestVersion(), common2.FormatVersion(asset.Versions()), assetRoot, treeHeight)
+		logx.WithContext(ctxLog).Infof("start to rollback asset tree, accountIndex:%d, latestVersion:%d,versions=%s,assetRoot:%s,rollback to height:%d", accountIndex, asset.LatestVersion(), common2.FormatVersion(asset.Versions()), assetRoot, treeHeight)
 		if asset.LatestVersion() > bsmt.Version(treeHeight) && !asset.IsEmpty() {
-			logx.Infof("asset tree accountIndex:%d latestVersion:%d is higher than block, rollback to height:%d", accountIndex, asset.LatestVersion(), treeHeight)
+			logx.WithContext(ctxLog).Infof("asset tree accountIndex:%d latestVersion:%d is higher than block, rollback to height:%d", accountIndex, asset.LatestVersion(), treeHeight)
 			err := asset.Rollback(bsmt.Version(treeHeight))
 			if err != nil {
 				return fmt.Errorf("unable to rollback asset accountIndex:%d, latestVersion: %d,tree err: %s", accountIndex, asset.LatestVersion(), err.Error())
@@ -460,9 +461,9 @@ func (w *Witness) Rollback(height int64) (err error) {
 			}
 		}
 	}
-	logx.Infof("start to rollback account tree, latestVersion:%d,versions=%s,accountRoot:%s,rollback to height:%d", w.accountTree.LatestVersion(), common2.FormatVersion(w.accountTree.Versions()), common.Bytes2Hex(w.accountTree.Root()), treeHeight)
+	logx.WithContext(ctxLog).Infof("start to rollback account tree, latestVersion:%d,versions=%s,accountRoot:%s,rollback to height:%d", w.accountTree.LatestVersion(), common2.FormatVersion(w.accountTree.Versions()), common.Bytes2Hex(w.accountTree.Root()), treeHeight)
 	if w.accountTree.LatestVersion() > bsmt.Version(treeHeight) && !w.accountTree.IsEmpty() {
-		logx.Infof("account tree latestVersion:%d is higher than block, rollback to %d", w.accountTree.LatestVersion(), treeHeight)
+		logx.WithContext(ctxLog).Infof("account tree latestVersion:%d is higher than block, rollback to %d", w.accountTree.LatestVersion(), treeHeight)
 		err := w.accountTree.Rollback(bsmt.Version(treeHeight))
 		if err != nil {
 			if err != bsmt.ErrVersionTooOld {
@@ -475,9 +476,9 @@ func (w *Witness) Rollback(height int64) (err error) {
 		}
 	}
 
-	logx.Infof("start to rollback nft tree, latestVersion:%d,versions=%s,nftRoot:%s,rollback to height:%d", w.accountTree.LatestVersion(), common2.FormatVersion(w.accountTree.Versions()), common.Bytes2Hex(w.nftTree.Root()), treeHeight)
+	logx.WithContext(ctxLog).Infof("start to rollback nft tree, latestVersion:%d,versions=%s,nftRoot:%s,rollback to height:%d", w.accountTree.LatestVersion(), common2.FormatVersion(w.accountTree.Versions()), common.Bytes2Hex(w.nftTree.Root()), treeHeight)
 	if w.nftTree.LatestVersion() > bsmt.Version(treeHeight) && !w.nftTree.IsEmpty() {
-		logx.Infof("nft tree latestVersion:%d is higher than block, rollback to %d", w.nftTree.LatestVersion(), treeHeight)
+		logx.WithContext(ctxLog).Infof("nft tree latestVersion:%d is higher than block, rollback to %d", w.nftTree.LatestVersion(), treeHeight)
 		err := w.nftTree.Rollback(bsmt.Version(treeHeight))
 		if err != nil {
 			return fmt.Errorf("unable to rollback nft latestVersion:%d,err:%s", treeHeight, err.Error())
