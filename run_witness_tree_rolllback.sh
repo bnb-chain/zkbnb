@@ -12,4 +12,4 @@ go run ./cmd/zkbnb/main.go rollbackwitnesssmt --height ${blockHeight}
 # get config from file
 #go run ./cmd/zkbnb/main.go rollbackwitnesssmt --config ./tools/rollbackwitnesssmt/etc/config.yaml --height ${blockHeight}
 
-#  sh run_witness_tree_rolllback.sh > run_witness_tree_rolllback.log 2>&1
+#  sh run_witness_tree_rolllback.sh ${height} > run_witness_tree_rolllback.log 2>&1
