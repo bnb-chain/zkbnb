@@ -190,10 +190,6 @@ func (w *Witness) initState(shouldCheckStateRoot bool) error {
 	for _, accountIndex := range accountIndexes {
 		accountIndexMap[accountIndex] = true
 	}
-	err = tree.CheckAssetRoot(accountIndexMap, witnessHeight, w.assetTrees, w.accountHistoryModel)
-	if err != nil {
-		return err
-	}
 
 	w.nftTree, err = tree.InitNftTree(w.nftModel, w.nftHistoryModel, witnessHeight,
 		treeCtx, true)
@@ -202,6 +198,11 @@ func (w *Witness) initState(shouldCheckStateRoot bool) error {
 	}
 
 	if shouldCheckStateRoot {
+		err = tree.CheckAssetRoot(accountIndexMap, witnessHeight, w.assetTrees, w.accountHistoryModel)
+		if err != nil {
+			return err
+		}
+
 		err = tree.CheckStateRoot(witnessHeight, w.accountTree, w.nftTree, w.BlockModel)
 		if err != nil {
 			return err
