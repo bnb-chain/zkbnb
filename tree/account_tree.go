@@ -171,11 +171,13 @@ func InitAccountTree(
 	if err != nil {
 		return nil, nil, err
 	}
+	logx.WithContext(ctxLog).Infof("end to roll back asset tree,when initializing the account tree")
 
 	err = RollBackAccountTree(blockHeight, accountTree)
 	if err != nil {
 		return nil, nil, err
 	}
+	logx.WithContext(ctxLog).Infof("end to roll back account tree,when initializing the account tree")
 
 	return accountTree, accountAssetTrees, nil
 }

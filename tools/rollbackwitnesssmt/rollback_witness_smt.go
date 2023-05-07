@@ -33,6 +33,7 @@ func RollbackWitnessSmt(
 		return fmt.Errorf("get current block height failed: %s", err.Error())
 	}
 	logx.Infof("get current block height: %d", toHeight)
+
 	err = w.Rollback(height, toHeight)
 	if err != nil {
 		return fmt.Errorf("failed to rollback smt, %v", err)

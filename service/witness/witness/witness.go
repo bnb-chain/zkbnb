@@ -419,6 +419,9 @@ func (w *Witness) Shutdown() {
 }
 
 func (w *Witness) Rollback(fromHeight int64, toHeight int64) (err error) {
+	ctxLog := log.NewCtxWithKV(log.BlockHeightContext, fromHeight)
+	logx.WithContext(ctxLog).Infof("start to roll back witness tree")
+
 	latestVerifiedBlockNr, err := w.BlockModel.GetLatestVerifiedHeight()
 	if err != nil {
 		return fmt.Errorf("get latest verified fromHeight failed: %v", err)

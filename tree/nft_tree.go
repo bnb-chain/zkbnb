@@ -135,6 +135,7 @@ func InitNftTree(
 	if err != nil {
 		return nil, err
 	}
+	logx.WithContext(ctxLog).Infof("end to roll back nft tree,when initializing the nft tree")
 
 	return nftTree, nil
 }
