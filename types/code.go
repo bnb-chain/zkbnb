@@ -60,6 +60,7 @@ var (
 	AppErrFullExitNftPubDataInvalidSize = NewBusinessError(20006, "[ParseFullExitNftPubData] invalid size")
 
 	AppErrInvalidExpireTime   = NewBusinessError(21000, "invalid expired time")
+	AppErrInvalidGasFeeId     = NewBusinessError(21001, "gas fee asset id should be 0(BNB)")
 	AppErrInvalidGasFeeAmount = NewBusinessError(21001, "invalid gas fee amount")
 	AppErrBalanceNotEnough    = NewBusinessError(21002, "balance is not enough")
 	AppErrInvalidTreasuryRate = NewBusinessError(21003, "invalid treasury rate")

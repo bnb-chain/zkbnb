@@ -91,6 +91,10 @@ func (e *BaseExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 		}
 
 		gasAccountIndex, gasFeeAssetId, gasFeeAmount := txInfo.GetGas()
+		if 0 != gasFeeAssetId {
+			return types.AppErrInvalidGasFeeId
+		}
+
 		var start time.Time
 		start = time.Now()
 		err = e.bc.VerifyGas(gasAccountIndex, gasFeeAssetId, txInfo.GetTxType(), gasFeeAmount, skipGasAmtChk)
