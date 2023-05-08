@@ -96,7 +96,7 @@ func (m *defaultL2NftModel) GetNft(nftIndex int64) (nftAsset *L2Nft, err error) 
 }
 
 func (m *defaultL2NftModel) GetNftsByNftIndexes(nftIndexes []int64) (nftAssets []*L2Nft, err error) {
-	dbTx := m.DB.Table(m.table).Where("nftIndexes in ?", nftIndexes).Find(&nftAssets)
+	dbTx := m.DB.Table(m.table).Where("nft_index in ?", nftIndexes).Find(&nftAssets)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
