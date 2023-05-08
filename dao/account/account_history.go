@@ -48,8 +48,8 @@ type (
 
 	AccountHistory struct {
 		gorm.Model
-		AccountIndex    int64  `gorm:"index"`
-		PublicKey       string `gorm:"index"`
+		AccountIndex    int64 `gorm:"index"`
+		PublicKey       string
 		L1Address       string `gorm:"index"`
 		Nonce           int64
 		CollectionNonce int64

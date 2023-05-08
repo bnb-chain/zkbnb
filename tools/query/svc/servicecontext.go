@@ -1,6 +1,7 @@
 package svc
 
 import (
+	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/tools/query/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/driver/postgres"
@@ -14,6 +15,7 @@ import (
 type ServiceContext struct {
 	Config config.Config
 
+	BlockModel          block.BlockModel
 	AccountModel        account.AccountModel
 	AccountHistoryModel account.AccountHistoryModel
 	NftHistoryModel     nft.L2NftHistoryModel
@@ -36,6 +38,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 	return &ServiceContext{
 		Config:              c,
+		BlockModel:          block.NewBlockModel(db),
 		AccountModel:        account.NewAccountModel(db),
 		AccountHistoryModel: account.NewAccountHistoryModel(db),
 		NftHistoryModel:     nft.NewL2NftHistoryModel(db),

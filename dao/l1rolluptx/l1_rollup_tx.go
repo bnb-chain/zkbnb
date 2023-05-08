@@ -149,7 +149,7 @@ func (m *defaultL1RollupTxModel) DeleteGreaterOrEqualToHeight(height int64, txTy
 func (m *defaultL1RollupTxModel) GetLatestHandledTx(txType int64) (tx *L1RollupTx, err error) {
 	tx = &L1RollupTx{}
 
-	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, StatusHandled).Order("l2_block_height desc").Find(&tx)
+	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, StatusHandled).Order("l2_block_height desc").Limit(1).Find(&tx)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -161,7 +161,7 @@ func (m *defaultL1RollupTxModel) GetLatestHandledTx(txType int64) (tx *L1RollupT
 func (m *defaultL1RollupTxModel) GetLatestPendingTx(txType int64) (tx *L1RollupTx, err error) {
 	tx = &L1RollupTx{}
 
-	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, StatusPending).Find(&tx)
+	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, StatusPending).Limit(1).Find(&tx)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {

@@ -65,8 +65,8 @@ type (
 	*/
 	Account struct {
 		gorm.Model
-		AccountIndex    int64  `gorm:"uniqueIndex"`
-		PublicKey       string `gorm:"index"`
+		AccountIndex    int64 `gorm:"uniqueIndex"`
+		PublicKey       string
 		L1Address       string `gorm:"uniqueIndex"`
 		Nonce           int64
 		CollectionNonce int64

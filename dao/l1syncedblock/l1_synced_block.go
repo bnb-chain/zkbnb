@@ -75,7 +75,7 @@ func (m *defaultL1EventModel) DropL1SyncedBlockTable() error {
 }
 
 func (m *defaultL1EventModel) GetLatestL1SyncedBlockByType(blockType int) (blockInfo *L1SyncedBlock, err error) {
-	dbTx := m.DB.Table(m.table).Where("type = ?", blockType).Order("l1_block_height desc").Find(&blockInfo)
+	dbTx := m.DB.Table(m.table).Where("type = ?", blockType).Order("l1_block_height desc").Limit(1).Find(&blockInfo)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	}

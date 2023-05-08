@@ -20,7 +20,10 @@ package tree
 import (
 	"context"
 	"fmt"
+	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/log"
+	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/panjf2000/ants/v2"
 	"hash"
 	"strconv"
@@ -163,28 +166,19 @@ func InitAccountTree(
 		return accountTree, accountAssetTrees, nil
 	}
 
-	// It's not loading from RDB, need to check tree versionblock
-	if accountTree.LatestVersion() > bsmt.Version(blockHeight) && !accountTree.IsEmpty() {
-		logx.WithContext(ctxLog).Infof("account tree version [%d] is higher than block, rollback to %d", accountTree.LatestVersion(), blockHeight)
-		err := accountTree.Rollback(bsmt.Version(blockHeight))
-		if err != nil {
-			logx.WithContext(ctxLog).Errorf("unable to rollback account tree: %s, version: %d", err.Error(), blockHeight)
-			return nil, nil, err
-		}
+	// It's not loading from RDB, need to check tree version block
+	err = RollBackAssetTree(accountIndexList, blockHeight, accountAssetTrees)
+	if err != nil {
+		return nil, nil, err
 	}
+	logx.WithContext(ctxLog).Infof("end to roll back asset tree,when initializing the account tree")
 
-	for _, accountIndex := range accountIndexList {
-		asset := accountAssetTrees.Get(accountIndex)
-		ctxLog := log.UpdateCtxWithKV(ctxLog, log.AccountIndexCtx, accountIndex, log.AssetIdCtx, asset)
-		if asset.LatestVersion() > bsmt.Version(blockHeight) && !asset.IsEmpty() {
-			logx.WithContext(ctxLog).Infof("asset tree %d version [%d] is higher than block, rollback to %d", accountIndex, asset.LatestVersion(), blockHeight)
-			err := asset.Rollback(bsmt.Version(blockHeight))
-			if err != nil {
-				logx.WithContext(ctxLog).Errorf("unable to rollback asset [%d] tree: %s, version: %d", accountIndex, err.Error(), blockHeight)
-				return nil, nil, err
-			}
-		}
+	err = RollBackAccountTree(blockHeight, accountTree)
+	if err != nil {
+		return nil, nil, err
 	}
+	logx.WithContext(ctxLog).Infof("end to roll back account tree,when initializing the account tree")
+
 	return accountTree, accountAssetTrees, nil
 }
 
@@ -343,4 +337,111 @@ func NilAccountAssetNodeHashes(maxDepth uint8, nilHash []byte, hasher *bsmt.Hash
 		nilHash = nHash
 	}
 	return hashes
+}
+
+func CheckAssetRoot(accountIndexMap map[int64]bool, curHeight int64, assetTrees *AssetTreeCache, accountHistoryModel account.AccountHistoryModel) error {
+	accountIndexSlice := make([]int64, 0)
+	accountIndexLen := len(accountIndexMap)
+	for accountIndex := range accountIndexMap {
+		accountIndexLen--
+		accountIndexSlice = append(accountIndexSlice, accountIndex)
+		if len(accountIndexSlice) == 100 || accountIndexLen == 0 {
+			_, accountHistoryList, err := accountHistoryModel.GetLatestAccountHistories(accountIndexSlice, curHeight)
+			if err != nil && err != types.DbErrNotFound {
+				return fmt.Errorf("get latest account histories failed: %s", err.Error())
+			}
+			for _, accountHistory := range accountHistoryList {
+				asset := assetTrees.Get(accountHistory.AccountIndex)
+				assetRoot := common.Bytes2Hex(asset.Root())
+
+				//check assetRoot,the asset tree root must be equal to the asset tree root stored in the database
+				if rootNotBeEqual(assetRoot, accountHistory.AssetRoot) {
+					return fmt.Errorf("check asset root error,accountIndex=%d,curHeight=%d,assetRoot=%s not equal accountHistory.AssetRoot=%s,asset.LatestVersion=%d,versions=%s", accountIndex, curHeight, assetRoot, accountHistory.AssetRoot, asset.LatestVersion(), common2.FormatVersion(asset.Versions()))
+				}
+
+				//check version,the asset tree version cannot be greater than the block height
+				if versionBeGreaterThanHeight(asset.LatestVersion(), bsmt.Version(curHeight)) {
+					return fmt.Errorf("check asset root error,accountIndex=%d asset.LatestVersion=%d,versions=%s, curHeight=%d", accountIndex, asset.LatestVersion(), common2.FormatVersion(asset.Versions()), curHeight)
+				}
+			}
+			accountIndexSlice = make([]int64, 0)
+		}
+	}
+	return nil
+}
+
+func RollBackAssetTree(accountIndexList []int64, treeHeight int64, assetTrees *AssetTreeCache) error {
+	ctxLog := log.NewCtxWithKV(log.BlockHeightContext, treeHeight)
+	for _, accountIndex := range accountIndexList {
+		asset := assetTrees.Get(accountIndex)
+		ctxLog := log.UpdateCtxWithKV(ctxLog, log.AccountIndexCtx, accountIndex)
+		assetRoot := common.Bytes2Hex(asset.Root())
+		logx.WithContext(ctxLog).Infof("check to rollback asset tree, accountIndex:%d, latestVersion:%d,versions=%s,assetRoot:%s,rollback to height:%d", accountIndex, asset.LatestVersion(), common2.FormatVersion(asset.Versions()), assetRoot, treeHeight)
+
+		if asset.LatestVersion() > bsmt.Version(treeHeight) {
+			logx.WithContext(ctxLog).Infof("asset tree accountIndex:%d latestVersion:%d is higher than block, rollback to height:%d", accountIndex, asset.LatestVersion(), treeHeight)
+
+			err := asset.Rollback(bsmt.Version(treeHeight))
+			if err != nil {
+				return fmt.Errorf("unable to rollback asset accountIndex:%d, latestVersion: %d,tree err: %s", accountIndex, asset.LatestVersion(), err.Error())
+			}
+			assetRoot := common.Bytes2Hex(asset.Root())
+			logx.WithContext(ctxLog).Infof("end to rollback asset tree, accountIndex:%d, latestVersion:%d,versions=%s,assetRoot:%s,rollback to height:%d", accountIndex, asset.LatestVersion(), common2.FormatVersion(asset.Versions()), assetRoot, treeHeight)
+
+			//check version,the asset tree version cannot be greater than the block height
+			if versionBeGreaterThanHeight(asset.LatestVersion(), bsmt.Version(treeHeight)) {
+				return fmt.Errorf("call asset.Rollback successfully,but fail to rollback asset accountIndex:%d latestVersion: %d,versions=%s", accountIndex, asset.LatestVersion(), common2.FormatVersion(asset.Versions()))
+			}
+		}
+	}
+	return nil
+}
+
+func RollBackAccountTree(treeHeight int64, accountTree bsmt.SparseMerkleTree) error {
+	ctxLog := log.NewCtxWithKV(log.BlockHeightContext, treeHeight)
+	logx.WithContext(ctxLog).Infof("check to rollback account tree, latestVersion:%d,versions=%s,accountRoot:%s,rollback to height:%d", accountTree.LatestVersion(), common2.FormatVersion(accountTree.Versions()), common.Bytes2Hex(accountTree.Root()), treeHeight)
+
+	if accountTree.LatestVersion() > bsmt.Version(treeHeight) {
+		logx.WithContext(ctxLog).Infof("account tree latestVersion:%d is higher than block, rollback to %d", accountTree.LatestVersion(), treeHeight)
+
+		err := accountTree.Rollback(bsmt.Version(treeHeight))
+		if err != nil {
+			return fmt.Errorf("unable to rollback account latestVersion:%d,err:%s", treeHeight, err.Error())
+		}
+		logx.WithContext(ctxLog).Infof("end to rollback account tree, latestVersion:%d,versions=%s,accountRoot:%s,rollback to height:%d", accountTree.LatestVersion(), common2.FormatVersion(accountTree.Versions()), common.Bytes2Hex(accountTree.Root()), treeHeight)
+
+		//check version,the account tree version cannot be greater than the block height
+		if versionBeGreaterThanHeight(accountTree.LatestVersion(), bsmt.Version(treeHeight)) {
+			return fmt.Errorf("call accountTree.Rollback successfully,but fail to rollback accountTree,latestVersion: %d,versions=%s", accountTree.LatestVersion(), common2.FormatVersion(accountTree.Versions()))
+		}
+	}
+	return nil
+}
+
+func CheckStateRoot(height int64, accountTree bsmt.SparseMerkleTree, nftTree bsmt.SparseMerkleTree, blockModel block.BlockModel) (err error) {
+	ctxLog := log.NewCtxWithKV(log.BlockHeightContext, height)
+	blockInfo, err := blockModel.GetBlockByHeightWithoutTx(height)
+	if err != nil {
+		return fmt.Errorf("failed to get block info by height=%d error=%v", height, err)
+	}
+
+	accountTreeRoot := accountTree.Root()
+	nftTreeRoot := nftTree.Root()
+	newStateRoot := ComputeStateRootHash(accountTreeRoot, nftTreeRoot)
+	newStateRootStr := common.Bytes2Hex(newStateRoot)
+	logx.WithContext(ctxLog).Infof("checkStateRoot account tree root=%s,nft tree root=%s,newStateRoot=%s,database StateRoot=%s", common.Bytes2Hex(accountTreeRoot), common.Bytes2Hex(nftTreeRoot), newStateRootStr, blockInfo.StateRoot)
+
+	//check stateRoot,the state root must be equal to the state root stored in the database
+	if rootNotBeEqual(newStateRootStr, blockInfo.StateRoot) {
+		return fmt.Errorf("checkStateRoot smt tree newStateRoot=%s not equal database StateRoot=%s,height:%d,AccountTree.Root=%s,NftTree.Root=%s", newStateRootStr, blockInfo.StateRoot, blockInfo.BlockHeight, common.Bytes2Hex(accountTreeRoot), common.Bytes2Hex(nftTreeRoot))
+	}
+	return nil
+}
+
+func rootNotBeEqual(rootStoredInCache string, rootStoredInDb string) bool {
+	return rootStoredInCache != rootStoredInDb
+}
+
+func versionBeGreaterThanHeight(version bsmt.Version, height bsmt.Version) bool {
+	return version > height
 }

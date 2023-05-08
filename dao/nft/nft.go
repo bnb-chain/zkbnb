@@ -107,7 +107,7 @@ func (m *defaultL2NftModel) GetNftsByNftIndexes(nftIndexes []int64) (nftAssets [
 
 func (m *defaultL2NftModel) GetLatestNftIndex() (nftIndex int64, err error) {
 	var nftInfo *L2Nft
-	dbTx := m.DB.Table(m.table).Order("nft_index desc").Find(&nftInfo)
+	dbTx := m.DB.Table(m.table).Order("nft_index desc").Limit(1).Find(&nftInfo)
 	if dbTx.Error != nil {
 		return -1, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {

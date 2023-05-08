@@ -11,8 +11,10 @@ import (
 	"testing"
 )
 
-const networkRpc = "https://bsc-testnet.nodereal.io/v1/a1cee760ac744f449416a711f20d99dd"
-const hash = "0xa4d20fae8559728f347d2202363a01051060ad56b03516b7fff88e877efcb30f"
+//const networkRpc = "https://bsc-testnet.nodereal.io/v1/a1cee760ac744f449416a711f20d99dd"
+const networkRpc = "https://data-seed-prebsc-1-s3.binance.org:8545"
+
+const hash = "0x9d7d438a39ade2a28e83a588ec2c1a8b4e958719b6d70faaf6ef381a27d9f735"
 
 func TestDesertExit_getCommitBlocksCallData(t *testing.T) {
 	client, err := rpc.NewClient(networkRpc)

@@ -83,7 +83,7 @@ type Witness struct {
 
 	// The data access object
 	db                  *gorm.DB
-	blockModel          block.BlockModel
+	BlockModel          block.BlockModel
 	accountModel        account.AccountModel
 	accountHistoryModel account.AccountHistoryModel
 	nftHistoryModel     nft.L2NftHistoryModel
@@ -92,7 +92,7 @@ type Witness struct {
 	blockWitnessModel   blockwitness.BlockWitnessModel
 }
 
-func NewWitness(c config.Config) (*Witness, error) {
+func NewWitness(c config.Config, shouldCheckStateRoot bool) (*Witness, error) {
 
 	if err := prometheus.Register(l2BlockWitnessGenerateHeightMetric); err != nil {
 		return nil, fmt.Errorf("prometheus.Register l2BlockWitnessGenerateHeightMetric error: %v", err)
@@ -125,7 +125,7 @@ func NewWitness(c config.Config) (*Witness, error) {
 	w := &Witness{
 		config:              c,
 		db:                  db,
-		blockModel:          block.NewBlockModel(db),
+		BlockModel:          block.NewBlockModel(db),
 		blockWitnessModel:   blockwitness.NewBlockWitnessModel(db),
 		accountModel:        account.NewAccountModel(db),
 		accountHistoryModel: account.NewAccountHistoryModel(db),
@@ -133,11 +133,11 @@ func NewWitness(c config.Config) (*Witness, error) {
 		nftModel:            nft.NewL2NftModel(db),
 		proofModel:          proof.NewProofModel(db),
 	}
-	err = w.initState()
+	err = w.initState(shouldCheckStateRoot)
 	return w, err
 }
 
-func (w *Witness) initState() error {
+func (w *Witness) initState(shouldCheckStateRoot bool) error {
 	witnessHeight, err := w.blockWitnessModel.GetLatestBlockWitnessHeight()
 	if err != nil {
 		if err != types.DbErrNotFound {
@@ -159,7 +159,7 @@ func (w *Witness) initState() error {
 		return fmt.Errorf("init tree database failed %v", err)
 	}
 	w.treeCtx = treeCtx
-	blockInfo, err := w.blockModel.GetBlockByHeightWithoutTx(witnessHeight + 1)
+	blockInfo, err := w.BlockModel.GetBlockByHeightWithoutTx(witnessHeight + 1)
 	if err != nil && err != types.DbErrNotFound {
 		logx.Error("get block failed: ", err)
 		panic("get block failed: " + err.Error())
@@ -186,15 +186,27 @@ func (w *Witness) initState() error {
 		return fmt.Errorf("initMerkleTree error: %v", err)
 	}
 
+	accountIndexMap := make(map[int64]bool, 0)
+	for _, accountIndex := range accountIndexes {
+		accountIndexMap[accountIndex] = true
+	}
+
 	w.nftTree, err = tree.InitNftTree(w.nftModel, w.nftHistoryModel, witnessHeight,
 		treeCtx, true)
 	if err != nil {
 		return fmt.Errorf("initNftTree error: %v", err)
 	}
 
-	err = w.checkStateRoot(witnessHeight)
-	if err != nil {
-		return err
+	if shouldCheckStateRoot {
+		err = tree.CheckAssetRoot(accountIndexMap, witnessHeight, w.assetTrees, w.accountHistoryModel)
+		if err != nil {
+			return err
+		}
+
+		err = tree.CheckStateRoot(witnessHeight, w.accountTree, w.nftTree, w.BlockModel)
+		if err != nil {
+			return err
+		}
 	}
 	w.helper = utils.NewWitnessHelper(w.treeCtx, w.accountTree, w.nftTree, w.assetTrees, w.accountModel, w.accountHistoryModel)
 	return nil
@@ -207,7 +219,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		return err
 	}
 	// get next batch of blocks
-	blocks, err := w.blockModel.GetPendingBlocksBetween(latestWitnessHeight+1, latestWitnessHeight+BlockProcessDelta)
+	blocks, err := w.BlockModel.GetPendingBlocksBetween(latestWitnessHeight+1, latestWitnessHeight+BlockProcessDelta)
 	if err != nil {
 		if err != types.DbErrNotFound {
 			return err
@@ -215,7 +227,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		return nil
 	}
 	// get latestVerifiedBlockNr
-	latestVerifiedBlockNr, err := w.blockModel.GetLatestVerifiedHeight()
+	latestVerifiedBlockNr, err := w.BlockModel.GetLatestVerifiedHeight()
 	if err != nil {
 		return err
 	}
@@ -244,7 +256,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		l2WitnessHeightMetrics.Set(float64(blockWitness.Height))
 		if err != nil {
 			// rollback trees
-			rollBackErr := tree.RollBackTrees(uint64(block.BlockHeight)-1, w.accountTree, w.assetTrees, w.nftTree)
+			rollBackErr := w.Rollback(blockWitness.Height, blockWitness.Height)
 			if rollBackErr != nil {
 				logx.WithContext(ctx).Errorf("unable to rollback trees %v", rollBackErr)
 			}
@@ -406,83 +418,68 @@ func (w *Witness) Shutdown() {
 	}
 }
 
-func (w *Witness) Rollback(height int64) (err error) {
-	witnessHeight, err := w.blockWitnessModel.GetLatestBlockWitnessHeight()
+func (w *Witness) Rollback(fromHeight int64, toHeight int64) (err error) {
+	ctxLog := log.NewCtxWithKV(log.BlockHeightContext, fromHeight)
+	logx.WithContext(ctxLog).Infof("start to roll back witness tree")
+
+	latestVerifiedBlockNr, err := w.BlockModel.GetLatestVerifiedHeight()
 	if err != nil {
-		if err != types.DbErrNotFound {
-			return fmt.Errorf("GetLatestBlockWitness error: %v", err)
-		}
-		witnessHeight = 0
+		return fmt.Errorf("get latest verified fromHeight failed: %v", err)
 	}
-	latestVerifiedBlockNr, err := w.blockModel.GetLatestVerifiedHeight()
+	if fromHeight <= latestVerifiedBlockNr {
+		return fmt.Errorf("failed to rollback,fromHeight must be more than %d", latestVerifiedBlockNr)
+	}
+
+	blocks, err := w.BlockModel.GetBlockByHeights(fromHeight, toHeight)
 	if err != nil {
-		return fmt.Errorf("get latest verified height failed: %v", err)
+		return fmt.Errorf("failed to GetBlockByHeights,from fromHeight=%d,toHeight=%d,err %v", fromHeight, toHeight, err)
 	}
-	if height <= latestVerifiedBlockNr {
-		return fmt.Errorf("failed to rollback,height must be more than %d", latestVerifiedBlockNr)
-	}
-	for witnessHeight >= height {
-		blockInfo, err := w.blockModel.GetBlockByHeightWithoutTx(witnessHeight)
-		if err != nil && err != types.DbErrNotFound {
-			return fmt.Errorf("get block failed: %v", err)
-		}
+
+	accountIndexMap := make(map[int64]bool, 0)
+	for _, blockInfo := range blocks {
 		accountIndexes := make([]int64, 0)
 		if blockInfo != nil && blockInfo.AccountIndexes != "[]" && blockInfo.AccountIndexes != "" {
 			err = json.Unmarshal([]byte(blockInfo.AccountIndexes), &accountIndexes)
 			if err != nil {
-				return fmt.Errorf("json err unmarshal failed")
+				return fmt.Errorf("json err unmarshal failed,fromHeight=%d", blockInfo.BlockHeight)
 			}
 		}
+
 		for _, accountIndex := range accountIndexes {
-			asset := w.assetTrees.Get(accountIndex)
-			if asset.LatestVersion() > bsmt.Version(witnessHeight-1) && !asset.IsEmpty() {
-				logx.Infof("asset tree %d version [%d] is higher than block, rollback to %d", accountIndex, asset.LatestVersion(), witnessHeight-1)
-				err := asset.Rollback(bsmt.Version(witnessHeight - 1))
-				if err != nil {
-					return fmt.Errorf("unable to rollback asset [%d] tree: %s, version: %d", accountIndex, err.Error(), witnessHeight)
-				}
-			}
+			accountIndexMap[accountIndex] = true
 		}
-
-		if w.accountTree.LatestVersion() > bsmt.Version(witnessHeight-1) && !w.accountTree.IsEmpty() {
-			logx.Infof("account tree version [%d] is higher than block, rollback to %d", w.accountTree.LatestVersion(), witnessHeight-1)
-			err := w.accountTree.Rollback(bsmt.Version(witnessHeight - 1))
-			if err != nil {
-				return fmt.Errorf("unable to rollback account tree: %s, version: %d", err.Error(), witnessHeight)
-			}
-		}
-
-		if w.nftTree.LatestVersion() > bsmt.Version(witnessHeight-1) && !w.nftTree.IsEmpty() {
-			logx.Infof("nft tree version [%d] is higher than block, rollback to %d", w.nftTree.LatestVersion(), witnessHeight-1)
-			err := w.nftTree.Rollback(bsmt.Version(witnessHeight - 1))
-			if err != nil {
-				return fmt.Errorf("unable to rollback nft tree: %s, version: %d", err.Error(), witnessHeight)
-			}
-		}
-		witnessHeight--
 	}
 
-	err = w.checkStateRoot(height - 1)
+	treeHeight := fromHeight - 1
+	accountIndexList := make([]int64, 0)
+	for accountIndex := range accountIndexMap {
+		accountIndexList = append(accountIndexList, accountIndex)
+	}
+
+	err = tree.RollBackAssetTree(accountIndexList, treeHeight, w.assetTrees)
 	if err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func (w *Witness) checkStateRoot(height int64) (err error) {
-	accountTreeRoot := w.accountTree.Root()
-	nftTreeRoot := w.nftTree.Root()
-	logx.Infof("witness account tree root=%s,nft tree root=%s", common.Bytes2Hex(accountTreeRoot), common.Bytes2Hex(nftTreeRoot))
-	newStateRoot := tree.ComputeStateRootHash(accountTreeRoot, nftTreeRoot)
-	newStateRootStr := common.Bytes2Hex(newStateRoot)
-	blockInfo, err := w.blockModel.GetBlockByHeightWithoutTx(height)
+	err = tree.RollBackAccountTree(treeHeight, w.accountTree)
 	if err != nil {
-		return fmt.Errorf("failed to get block info by height=%d error=%v", height, err)
+		return err
 	}
 
-	if newStateRootStr != blockInfo.StateRoot {
-		return fmt.Errorf("state root not matched between witness and committer: %d, witness: %s, committer: %s", height, newStateRootStr, blockInfo.StateRoot)
+	err = tree.RollBackNftTree(treeHeight, w.accountTree)
+	if err != nil {
+		return err
 	}
+
+	err = tree.CheckAssetRoot(accountIndexMap, treeHeight, w.assetTrees, w.accountHistoryModel)
+	if err != nil {
+		return err
+	}
+
+	err = tree.CheckStateRoot(treeHeight, w.accountTree, w.nftTree, w.BlockModel)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

@@ -38,3 +38,4 @@ pm2 start monitor
 pm2 start nft-server
 
 
+# sh run_whole_rolllback.sh ${height} > run_whole_rolllback.log 2>&1
