@@ -810,14 +810,19 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 
 		totalTxCount = s.CalculateTotalTxCountForCompressBlock(compressedBlocks)
 
+		commitBlockData.compressedBlocks = compressedBlocks
+		commitBlockData.commitBlockList = commitBlockList
+		commitBlockData.lastStoredBlockInfo = lastStoredBlockInfo
+		commitBlockData.totalEstimatedFee = totalEstimatedFee
+		commitBlockData.maxGasPrice = maxGasPrice
+		commitBlockData.gasPrice = gasPrice
+		commitBlockData.nonce = nonce
+
+		if !sconfig.GetSenderConfig().CommitControlSwitch {
+			return commitBlockData, true, nil
+		}
+
 		if totalTxCount <= commitTxCountLimit && totalEstimatedFee <= maxCommitTotalGasFee {
-			commitBlockData.compressedBlocks = compressedBlocks
-			commitBlockData.commitBlockList = commitBlockList
-			commitBlockData.lastStoredBlockInfo = lastStoredBlockInfo
-			commitBlockData.totalEstimatedFee = totalEstimatedFee
-			commitBlockData.maxGasPrice = maxGasPrice
-			commitBlockData.gasPrice = gasPrice
-			commitBlockData.nonce = nonce
 			shouldCommit := maxCommitBlockCount != sconfig.GetSenderConfig().MaxCommitBlockCount
 			logx.WithContext(ctx).Infof("PrepareCommitBlockData start height=%d,end height=%d,shouldCommit=%s,totalTxCount=%d,commitTxCountLimit=%d,totalEstimatedFee=%d,maxCommitTotalGasFee=%d", start, start+int64(maxCommitBlockCount), shouldCommit, totalTxCount, commitTxCountLimit, totalEstimatedFee, maxCommitTotalGasFee)
 			return commitBlockData, shouldCommit, nil
@@ -1064,6 +1069,10 @@ func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1Ro
 		verifyAndExecuteBlockData.maxGasPrice = maxGasPrice
 		verifyAndExecuteBlockData.totalEstimatedFee = totalEstimatedFee
 		verifyAndExecuteBlockData.verifyAndExecuteBlocksInfo = pendingVerifyAndExecuteBlocks
+
+		if !sconfig.GetSenderConfig().VerifyControlSwitch {
+			return verifyAndExecuteBlockData, true, nil
+		}
 
 		totalTxCount = s.CalculateTotalTxCountForBlock(blocks)
 		if totalTxCount <= verifyTxCountLimit && totalEstimatedFee <= maxVerifyTotalGasFee {
