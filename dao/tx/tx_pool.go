@@ -84,7 +84,7 @@ type (
 
 		// Assigned when created in the tx pool.
 		TxHash           string `gorm:"uniqueIndex"`
-		TxType           int64
+		TxType           int64  `gorm:"index"`
 		TxInfo           string
 		AccountIndex     int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:1"`
 		Nonce            int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:2"`
@@ -95,7 +95,7 @@ type (
 		// Assigned after executed.
 		GasFee          string
 		GasFeeAssetId   int64
-		NftIndex        int64
+		NftIndex        int64 `gorm:"index"`
 		CollectionId    int64
 		AssetId         int64
 		TxAmount        string
@@ -107,8 +107,8 @@ type (
 		TxIndex     int64
 		ChannelName string
 		BlockHeight int64 `gorm:"index"`
-		BlockId     uint  `gorm:"index"`
-		TxStatus    int   `gorm:"index"`
+		BlockId     uint
+		TxStatus    int `gorm:"index"`
 
 		TxDetails []*TxDetail `gorm:"-"`
 	}

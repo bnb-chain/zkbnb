@@ -52,11 +52,11 @@ type (
 		// related txVerification hash
 		L1TxHash string
 		// related block height
-		L1BlockHeight int64
+		L1BlockHeight int64 `gorm:"index"`
 		// sender
 		SenderAddress string
 		// request id
-		RequestId int64
+		RequestId int64 `gorm:"index"`
 		// tx type
 		TxType int64
 		// pub data
@@ -64,7 +64,7 @@ type (
 		// expirationBlock
 		ExpirationBlock int64
 		// status
-		Status int
+		Status int `gorm:"index"`
 		// L2TxHash for the relation to tx table
 		L2TxHash string `gorm:"index"`
 	}
