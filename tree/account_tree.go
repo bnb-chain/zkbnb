@@ -378,7 +378,7 @@ func RollBackAssetTree(accountIndexList []int64, treeHeight int64, assetTrees *A
 		assetRoot := common.Bytes2Hex(asset.Root())
 		logx.WithContext(ctxLog).Infof("check to rollback asset tree, accountIndex:%d, latestVersion:%d,versions=%s,assetRoot:%s,rollback to height:%d", accountIndex, asset.LatestVersion(), common2.FormatVersion(asset.Versions()), assetRoot, treeHeight)
 
-		if asset.LatestVersion() > bsmt.Version(treeHeight) {
+		if GetTreeLatestVersion(asset.Versions()) > bsmt.Version(treeHeight) {
 			logx.WithContext(ctxLog).Infof("asset tree accountIndex:%d latestVersion:%d is higher than block, rollback to height:%d", accountIndex, asset.LatestVersion(), treeHeight)
 
 			err := asset.Rollback(bsmt.Version(treeHeight))
@@ -401,7 +401,7 @@ func RollBackAccountTree(treeHeight int64, accountTree bsmt.SparseMerkleTree) er
 	ctxLog := log.NewCtxWithKV(log.BlockHeightContext, treeHeight)
 	logx.WithContext(ctxLog).Infof("check to rollback account tree, latestVersion:%d,versions=%s,accountRoot:%s,rollback to height:%d", accountTree.LatestVersion(), common2.FormatVersion(accountTree.Versions()), common.Bytes2Hex(accountTree.Root()), treeHeight)
 
-	if accountTree.LatestVersion() > bsmt.Version(treeHeight) {
+	if GetTreeLatestVersion(accountTree.Versions()) > bsmt.Version(treeHeight) {
 		logx.WithContext(ctxLog).Infof("account tree latestVersion:%d is higher than block, rollback to %d", accountTree.LatestVersion(), treeHeight)
 
 		err := accountTree.Rollback(bsmt.Version(treeHeight))
