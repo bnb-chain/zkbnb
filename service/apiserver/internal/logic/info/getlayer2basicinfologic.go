@@ -30,7 +30,6 @@ var (
 		"ZkBNBContract",
 		"GovernanceContract",
 		"DefaultNftFactory",
-		"ZnsPriceOracle",
 		"AssetGovernanceContract",
 	}
 )
