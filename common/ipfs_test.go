@@ -161,6 +161,7 @@ func TestPK(t *testing.T) {
 func TestValue(t *testing.T) {
 	fbalance := new(big.Float)
 	fbalance.SetString("0.00002")
+
 	ethValue := new(big.Float).Mul(fbalance, big.NewFloat(math.Pow10(18)))
 	fmt.Println(fmt.Sprintf("%.0f", ethValue))
 }
