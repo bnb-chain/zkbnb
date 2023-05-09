@@ -859,7 +859,7 @@ func (s *Sender) PrepareLastStoredBlockInfo(lastHandledTx *l1rolluptx.L1RollupTx
 	// get last block info
 	lastStoredBlockInfo := DefaultBlockHeader()
 	if lastHandledTx != nil {
-		lastHandledBlockInfo, err := s.blockModel.GetBlockByHeight(lastHandledTx.L2BlockHeight)
+		lastHandledBlockInfo, err := s.blockModel.GetBlockByHeightWithoutTx(lastHandledTx.L2BlockHeight)
 		if err != nil {
 			return lastStoredBlockInfo, fmt.Errorf("failed to get last stored block info, err: %v", err)
 		}

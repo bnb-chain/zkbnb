@@ -159,7 +159,7 @@ func EstimateCommitBlockGas(ctx *svc.ServiceContext, cli *rpc.ProviderClient, zk
 		if err != nil {
 			return fmt.Errorf("failed to get block info, err: %v", err)
 		}
-		lastHandledBlockInfo, err := ctx.BlockModel.GetBlockByHeight(blocks[0].BlockHeight - 1)
+		lastHandledBlockInfo, err := ctx.BlockModel.GetBlockByHeightWithoutTx(blocks[0].BlockHeight - 1)
 		if err != nil {
 			return fmt.Errorf("failed to get block info, err: %v", err)
 		}
@@ -200,7 +200,7 @@ func CommitBlocks(ctx *svc.ServiceContext, cli *rpc.ProviderClient, zkBNBClient 
 	if err != nil {
 		return fmt.Errorf("failed to get block info, err: %v", err)
 	}
-	lastHandledBlockInfo, err := ctx.BlockModel.GetBlockByHeight(blocks[0].BlockHeight - 1)
+	lastHandledBlockInfo, err := ctx.BlockModel.GetBlockByHeightWithoutTx(blocks[0].BlockHeight - 1)
 	if err != nil {
 		return fmt.Errorf("failed to get block info, err: %v", err)
 	}

@@ -130,6 +130,11 @@ var (
 		Usage: "height",
 		Value: 0,
 	}
+	RevertBlockByBlockFlag = &cli.Int64Flag{
+		Name:  "byBlock",
+		Usage: "byBlock",
+		Value: 1,
+	}
 	RollbackBlockHeightFlag = &cli.Int64Flag{
 		Name:  "height",
 		Usage: "height",

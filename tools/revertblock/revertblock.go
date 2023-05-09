@@ -7,12 +7,16 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
+	"github.com/bnb-chain/zkbnb/common/abicoder"
 	"github.com/bnb-chain/zkbnb/common/chain"
+	monitor2 "github.com/bnb-chain/zkbnb/common/monitor"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
 	"github.com/bnb-chain/zkbnb/service/sender/config"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/desertexit"
 	"github.com/bnb-chain/zkbnb/tools/revertblock/internal/svc"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 	"math/big"
@@ -21,7 +25,7 @@ import (
 	"time"
 )
 
-func RevertCommittedBlocks(configFile string, height int64) (err error) {
+func RevertCommittedBlocks(configFile string, height int64, byBlock bool) (err error) {
 	c := config.Config{}
 	if err := config.InitSystemConfiguration(&c, configFile); err != nil {
 		logx.Severef("failed to initiate system configuration, %v", err)
@@ -45,10 +49,6 @@ func RevertCommittedBlocks(configFile string, height int64) (err error) {
 	endHeight := int64(0)
 	if lastHandledTx != nil {
 		endHeight = lastHandledTx.L2BlockHeight
-	}
-
-	if height > endHeight {
-		return fmt.Errorf("the latest height of TxTypeCommit is %d,it is less than input param height %d,pls check", endHeight, height)
 	}
 
 	l1RPCEndpoint, err := ctx.SysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
@@ -98,18 +98,18 @@ func RevertCommittedBlocks(configFile string, height int64) (err error) {
 		}
 		zkBNBClient.RevertConstructor = commitAuthClient
 	}
+
 	storedBlockInfoList := make([]zkbnb.StorageStoredBlockInfo, 0)
-	for height <= endHeight {
-		blockInfo, err := ctx.BlockModel.GetBlockByHeight(height)
+	if byBlock == true {
+		storedBlockInfoList, err = buildStoredBlockInfoByBlock(height, endHeight, ctx.BlockModel)
 		if err != nil {
-			return fmt.Errorf("failed to get block info, err: %v", err)
+			return err
 		}
-		if blockInfo.BlockStatus != block.StatusCommitted {
-			return fmt.Errorf("invalid block status, blockHeight=%d,status=%d", height, blockInfo.BlockStatus)
+	} else {
+		storedBlockInfoList, err = buildStoredBlockInfoByRollup(height, cli, ctx.L1RollupTxModel)
+		if err != nil {
+			return err
 		}
-		storedBlockInfo := chain.ConstructStoredBlockInfo(blockInfo)
-		storedBlockInfoList = append(storedBlockInfoList, storedBlockInfo)
-		height++
 	}
 
 	sort.Slice(storedBlockInfoList, func(i, j int) bool {
@@ -142,6 +142,44 @@ func RevertCommittedBlocks(configFile string, height int64) (err error) {
 	return nil
 }
 
+func buildStoredBlockInfoByBlock(height int64, endHeight int64, blockModel block.BlockModel) ([]zkbnb.StorageStoredBlockInfo, error) {
+	if height > endHeight {
+		return nil, fmt.Errorf("the latest height of TxTypeCommit is %d,it is less than input param height %d,pls check", endHeight, height)
+	}
+
+	storedBlockInfoList := make([]zkbnb.StorageStoredBlockInfo, 0)
+	for height <= endHeight {
+		blockInfo, err := blockModel.GetBlockByHeightWithoutTx(height)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get block info, err: %v", err)
+		}
+		if blockInfo.BlockStatus != block.StatusCommitted {
+			return nil, fmt.Errorf("invalid block status, blockHeight=%d,status=%d", height, blockInfo.BlockStatus)
+		}
+		storedBlockInfo := chain.ConstructStoredBlockInfo(blockInfo)
+		storedBlockInfoList = append(storedBlockInfoList, storedBlockInfo)
+		height++
+	}
+	return storedBlockInfoList, nil
+}
+
+func buildStoredBlockInfoByRollup(height int64, cli *rpc.ProviderClient, l1RollupTxModel l1rolluptx.L1RollupTxModel) ([]zkbnb.StorageStoredBlockInfo, error) {
+	storedBlockInfoList := make([]zkbnb.StorageStoredBlockInfo, 0)
+	handledTxs, err := l1RollupTxModel.GetHandledCommitTxList(height)
+	if err != nil && err != types.DbErrNotFound {
+		return nil, fmt.Errorf("getHandledCommitTxList error %v", err)
+	}
+	for _, handledTx := range handledTxs {
+		storedBlockInfo, err := getStoredBlockInfoFromL1(cli, handledTx.L1TxHash)
+		if err != nil {
+			return nil, fmt.Errorf("failed to getStoredBlockInfoFromL1, err: %v", err)
+		}
+
+		storedBlockInfoList = append(storedBlockInfoList, storedBlockInfo)
+	}
+	return storedBlockInfoList, nil
+}
+
 func checkRevertBlock(cli *rpc.ProviderClient, c config.Config, txHash string) error {
 	startDate := time.Now()
 	for {
@@ -166,4 +204,29 @@ func checkRevertBlock(cli *rpc.ProviderClient, c config.Config, txHash string) e
 			return nil
 		}
 	}
+}
+
+func getStoredBlockInfoFromL1(cli *rpc.ProviderClient, hash string) (storedBlockInfo zkbnb.StorageStoredBlockInfo, err error) {
+	transaction, _, err := cli.TransactionByHash(context.Background(), common.HexToHash(hash))
+	if err != nil {
+		return storedBlockInfo, err
+	}
+
+	storageStoredBlockInfo := desertexit.StorageStoredBlockInfo{}
+	newBlocksData := make([]desertexit.ZkBNBCommitBlockInfo, 0)
+	callData := desertexit.CommitBlocksCallData{LastCommittedBlockData: &storageStoredBlockInfo, NewBlocksData: newBlocksData}
+	newABIDecoder := abicoder.NewABIDecoder(monitor2.ZkBNBContractAbi)
+	if err := newABIDecoder.UnpackIntoInterface(&callData, "commitBlocks", transaction.Data()[4:]); err != nil {
+		return storedBlockInfo, err
+	}
+	storedBlockInfo = zkbnb.StorageStoredBlockInfo{
+		BlockSize:                    storageStoredBlockInfo.BlockSize,
+		BlockNumber:                  storageStoredBlockInfo.BlockNumber,
+		PriorityOperations:           storageStoredBlockInfo.PriorityOperations,
+		PendingOnchainOperationsHash: storageStoredBlockInfo.PendingOnchainOperationsHash,
+		Timestamp:                    storageStoredBlockInfo.Timestamp,
+		StateRoot:                    storageStoredBlockInfo.StateRoot,
+		Commitment:                   storageStoredBlockInfo.Commitment,
+	}
+	return storedBlockInfo, nil
 }

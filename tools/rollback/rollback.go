@@ -27,7 +27,7 @@ func RollbackAll(configFile string, height int64) error {
 	})
 
 	logx.Infof("revert CommittedBlocks,start height=%d", height)
-	err := revertblock.RevertCommittedBlocks(configFile, height)
+	err := revertblock.RevertCommittedBlocks(configFile, height, true)
 	if err != nil {
 		return err
 	}

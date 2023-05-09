@@ -40,6 +40,7 @@ type (
 		CreateL1RollupTx(tx *L1RollupTx) error
 		GetLatestHandledTx(txType int64) (tx *L1RollupTx, err error)
 		GetLatestPendingTx(txType int64) (tx *L1RollupTx, err error)
+		GetHandledCommitTxList(height int64) (txs []*L1RollupTx, err error)
 		GetL1RollupTxsByStatus(txStatus int) (txs []*L1RollupTx, err error)
 		GetL1RollupTxsByHash(hash string) (txs []*L1RollupTx, err error)
 		DeleteL1RollupTx(tx *L1RollupTx) error
@@ -156,6 +157,16 @@ func (m *defaultL1RollupTxModel) GetLatestHandledTx(txType int64) (tx *L1RollupT
 		return nil, types.DbErrNotFound
 	}
 	return tx, nil
+}
+
+func (m *defaultL1RollupTxModel) GetHandledCommitTxList(height int64) (txs []*L1RollupTx, err error) {
+	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ? and l2_block_height>= ?", TxTypeCommit, StatusHandled, height).Order("l2_block_height desc").Find(&txs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return txs, nil
 }
 
 func (m *defaultL1RollupTxModel) GetLatestPendingTx(txType int64) (tx *L1RollupTx, err error) {

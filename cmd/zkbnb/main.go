@@ -253,13 +253,14 @@ func main() {
 				Flags: []cli.Flag{
 					flags.ConfigFlag,
 					flags.RevertBlockHeightFlag,
+					flags.RevertBlockByBlockFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
 					if !cCtx.IsSet(flags.RevertBlockHeightFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
 
-					err := revertblock.RevertCommittedBlocks(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RevertBlockHeightFlag.Name))
+					err := revertblock.RevertCommittedBlocks(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RevertBlockHeightFlag.Name), cCtx.Int64(flags.RevertBlockByBlockFlag.Name) == 1)
 					if err != nil {
 						logx.Severe(err)
 						return err
