@@ -46,5 +46,11 @@ func (l *GetNftByNftIndexLogic) GetNftByNftIndex(req *types.ReqGetNft) (resp *ty
 		CollectionId:        nft.CollectionId,
 		IpfsId:              common.GenerateCid(nft.NftContentHash),
 	}
+	histoty, err := l.svcCtx.NftMetadataHistoryModel.GetL2NftMetadataHistory(req.NftIndex)
+	if err == nil {
+		resp.Nft.IpnsId = histoty.IpnsId
+		resp.Nft.Metadata = histoty.Metadata
+		resp.Nft.MutableAttributes = histoty.Mutable
+	}
 	return resp, nil
 }
