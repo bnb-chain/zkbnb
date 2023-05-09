@@ -120,7 +120,7 @@ func (m *defaultL2NftMetadataHistoryModel) GetL2NftMetadataHistoryPage(status, l
 }
 
 func (m *defaultL2NftMetadataHistoryModel) GetL2NftMetadataHistory(nftIndex int64) (history *L2NftMetadataHistory, err error) {
-	dbTx := m.DB.Table(m.table).Where("nft_index = ?", nftIndex).Find(&history)
+	dbTx := m.DB.Table(m.table).Where("nft_index = ?", nftIndex).Limit(1).Find(&history)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
