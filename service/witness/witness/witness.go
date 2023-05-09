@@ -466,7 +466,7 @@ func (w *Witness) Rollback(fromHeight int64, toHeight int64) (err error) {
 		return err
 	}
 
-	err = tree.RollBackNftTree(treeHeight, w.accountTree)
+	err = tree.RollBackNftTree(treeHeight, w.nftTree)
 	if err != nil {
 		return err
 	}
