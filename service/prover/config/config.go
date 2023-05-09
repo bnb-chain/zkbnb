@@ -44,7 +44,7 @@ func InitSystemConfiguration(config *Config, configFile string, proverId uint) e
 }
 
 func InitSystemConfigFromEnvironment(c *Config, proverId uint) error {
-	commonConfig, err := apollo.InitCommonConfig()
+	commonConfig, err := apollo.InitCommonConfig(apollo.CommonAppId)
 	if err != nil {
 		return err
 	}
