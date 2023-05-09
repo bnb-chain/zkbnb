@@ -66,7 +66,7 @@ type CommonConfig struct {
 var apolloClientMap = make(map[string]agollo.Client)
 
 func InitCommonConfig(appId string) (*CommonConfig, error) {
-	if commonConfigString, err := LoadApolloConfigFromEnvironment(appId, CommonNamespace, CommonConfigKey); err != nil {
+	if commonConfigString, err := LoadApolloConfigFromEnvironment(CommonAppId, CommonNamespace, CommonConfigKey); err != nil {
 		return nil, err
 	} else {
 		// Convert the configuration value to the common config data
