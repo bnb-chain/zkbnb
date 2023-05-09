@@ -334,3 +334,10 @@ func GetAssetLatestVerifiedHeight(height int64, versions []bsmt.Version) int64 {
 	}
 	return latestVerifiedHeight
 }
+
+func GetTreeLatestVersion(versions []bsmt.Version) bsmt.Version {
+	if versions == nil || len(versions) == 0 {
+		return bsmt.Version(0)
+	}
+	return versions[len(versions)-1]
+}
