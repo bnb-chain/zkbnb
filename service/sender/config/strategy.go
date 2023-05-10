@@ -15,6 +15,9 @@ var senderConfig = &SenderConfig{}
 var senderUpdater = &SenderUpdater{}
 
 type SenderConfig struct {
+	DisableCommitBlock bool
+	DisableVerifyBlock bool
+
 	CommitControlSwitch bool
 	VerifyControlSwitch bool
 

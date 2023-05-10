@@ -37,7 +37,7 @@ func Run(configFile string) error {
 
 	_, err := cronJob.AddFunc("@every 10s", func() {
 		logx.Info("========================= start commit task =========================")
-		if c.ChainConfig.DisableCommitBlock {
+		if config.GetSenderConfig().DisableCommitBlock {
 			logx.Info("disable commit block")
 			return
 		}
@@ -53,7 +53,7 @@ func Run(configFile string) error {
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
 		logx.Info("========================= start verify task =========================")
-		if c.ChainConfig.DisableVerifyBlock {
+		if config.GetSenderConfig().DisableVerifyBlock {
 			logx.Info("disable verify block")
 			return
 		}
