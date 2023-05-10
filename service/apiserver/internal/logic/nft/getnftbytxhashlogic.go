@@ -2,7 +2,6 @@ package nft
 
 import (
 	"context"
-	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	types2 "github.com/bnb-chain/zkbnb/types"
@@ -43,21 +42,21 @@ func (l *GetNftByTxHashLogic) GetNftByTxHash(req *types.ReqGetNftIndex) (resp *t
 	} else if poolTx.TxStatus == tx.StatusFailed {
 		return nil, types2.AppErrPoolTxFailed
 	}
-	txInfo, err := types2.ParseMintNftTxInfo(poolTx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse mint nft tx failed: %s", err.Error())
-		return nil, types2.AppErrInvalidTxInfo
-	}
 	history, err := l.svcCtx.NftMetadataHistoryModel.GetL2NftMetadataHistoryByHash(req.TxHash)
 	if err == nil {
 		if history.NftIndex == types2.NilNftIndex {
 			history.NftIndex = poolTx.NftIndex
 			history.Status = nft.NotConfirmed
+			l.svcCtx.NftMetadataHistoryModel.UpdateL2NftMetadataHistoryInTransact(history)
 		}
-		l.svcCtx.NftMetadataHistoryModel.UpdateL2NftMetadataHistoryInTransact(history)
+	} else {
+		return nil, types2.AppErrNftNotFound
 	}
 	return &types.NftIndex{
-		Index:  poolTx.NftIndex,
-		IpfsId: common.GenerateCid(txInfo.NftContentHash),
+		Index:             poolTx.NftIndex,
+		IpfsId:            history.IpfsCid,
+		IpnsId:            history.IpnsId,
+		Metadata:          history.Metadata,
+		MutableAttributes: history.Mutable,
 	}, nil
 }
