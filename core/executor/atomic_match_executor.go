@@ -181,13 +181,18 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 			txInfo.BuyChannelAmount),
 			txInfo.GasFeeAssetAmount)
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(totalBalance) < 0 {
-			return types.AppErrSellerBalanceNotEnough
+			return types.AppErrBuyerBalanceNotEnough
 		}
 	} else {
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-			return types.AppErrSellerBalanceNotEnough
+			if txInfo.AccountIndex == txInfo.BuyOffer.AccountIndex {
+				return types.AppErrBuyerBalanceNotEnough
+			} else if txInfo.AccountIndex == txInfo.SellOffer.AccountIndex {
+				return types.AppErrSellerBalanceNotEnough
+			} else {
+				return types.AppErrCommitNotEnough
+			}
 		}
-
 		buyDeltaAmount := ffmath.Add(ffmath.Add(ffmath.Add(
 			txInfo.BuyOffer.AssetAmount, txInfo.BuyOffer.ProtocolAmount),
 			txInfo.RoyaltyAmount),
