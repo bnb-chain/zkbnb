@@ -21,9 +21,9 @@ redis-cli -h 127.0.0.1 -p 6666 flushdb
 
 #ec2
 ./zkbnb treedb query  --service witness --height 5
-./zkbnb revertblock  --height 111
+./zkbnb revertblock  --height 220
 
-./zkbnb  rollbackwitnesssmt  --height 111
+./zkbnb  rollbackwitnesssmt  --height 220
 
 ./zkbnb tree recovery  --service committer
 ./zkbnb tree recovery  --service witness

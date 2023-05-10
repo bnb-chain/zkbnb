@@ -66,6 +66,8 @@ const (
 	ReplacementTransactionUnderpriced = "replacement transaction underpriced"
 
 	TransactionUnderpriced = "transaction underpriced"
+
+	GasRequiredExceedsAllowance = "gas required exceeds allowance"
 )
 
 var (
@@ -805,7 +807,14 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 		// than the maxCommitAvgUnitGas, abandon commit operation for temporary
 		totalEstimatedFee, err := s.zkbnbClient.EstimateCommitGasWithNonce(lastStoredBlockInfo, commitBlockList, gasPrice, 0, nonce)
 		if err != nil {
-			return nil, false, fmt.Errorf("failed to get estimated gas fee for committing,last stored block L2BlockHeight=%d err: %v", lastStoredBlockInfo.BlockNumber, err)
+			logx.WithContext(ctx).Errorf("failed to get estimated gas fee for committing,last stored block L2BlockHeight=%d err: %v", lastStoredBlockInfo.BlockNumber, err)
+			if GasRequiredExceedsAllowance == err.Error() {
+				if maxCommitBlockCount > 1 {
+					maxCommitBlockCount--
+					continue
+				}
+			}
+			return nil, false, err
 		}
 
 		totalTxCount = s.CalculateTotalTxCountForCompressBlock(compressedBlocks)
@@ -1059,6 +1068,12 @@ func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1Ro
 		totalEstimatedFee, err := s.zkbnbClient.EstimateVerifyAndExecuteWithNonce(pendingVerifyAndExecuteBlocks, proofs, gasPrice, 0, nonce)
 		if err != nil {
 			logx.WithContext(ctx).Errorf("abandon verify block to l1, EstimateGas operation get some error:%s", err.Error())
+			if GasRequiredExceedsAllowance == err.Error() {
+				if maxVerifyBlockCount > 1 {
+					maxVerifyBlockCount--
+					continue
+				}
+			}
 			return nil, false, err
 		}
 
