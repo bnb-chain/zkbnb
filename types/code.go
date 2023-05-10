@@ -131,6 +131,7 @@ var (
 	AppErrInvalidBuyOfferState       = NewBusinessError(21512, "invalid buy offer state, already canceled or finalized")
 	AppErrInvalidAssetOfOffer        = NewBusinessError(21513, "invalid asset of offer")
 	AppErrInvalidPlatformRate        = NewBusinessError(21514, "invalid platform rate")
+	AppErrCommitNotEnough            = NewBusinessError(21515, "account balance is not enough")
 
 	// Nft
 	AppErrNftAlreadyExist          = NewBusinessError(21600, "invalid nft index, already exist")
