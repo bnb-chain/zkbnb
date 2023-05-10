@@ -135,8 +135,7 @@ func RevertCommittedBlocks(configFile string, height int64, byBlock bool) (err e
 	logx.Infof("send revert block success,tx hash=%s,startHeight=%d ~ endHeight=%d", txHash, startHeight, endHeight)
 	err = checkRevertBlock(cli, c, txHash)
 	if err != nil {
-		logx.Severe(err)
-		return nil
+		return err
 	}
 	logx.Infof("revert block success,tx hash=%s,startHeight=%d ~ endHeight=%d", txHash, startHeight, endHeight)
 	return nil
@@ -191,9 +190,7 @@ func checkRevertBlock(cli *rpc.ProviderClient, c config.Config, txHash string) e
 			}
 			continue
 		}
-		if receipt.Status == 0 {
-			return fmt.Errorf("failed to revert block, tx_hash=%s,receipt.Status=0", txHash)
-		}
+
 		latestL1Height, err := cli.GetHeight()
 		if err != nil {
 			return fmt.Errorf("failed to get l1 block height, err: %v", err)
@@ -201,6 +198,9 @@ func checkRevertBlock(cli *rpc.ProviderClient, c config.Config, txHash string) e
 		if latestL1Height < receipt.BlockNumber.Uint64()+c.ChainConfig.ConfirmBlocksCount {
 			continue
 		} else {
+			if receipt.Status == 0 {
+				return fmt.Errorf("failed to revert block, tx_hash=%s,receipt.Status=0", txHash)
+			}
 			return nil
 		}
 	}
