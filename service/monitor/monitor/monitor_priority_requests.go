@@ -60,10 +60,12 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		txHash := ComputeL1TxTxHash(request.RequestId, request.L1TxHash)
 
 		poolTx := &tx.PoolTx{BaseTx: tx.BaseTx{
-			TxHash:       txHash,
-			AccountIndex: types.NilAccountIndex,
-			Nonce:        types.NilNonce,
-			ExpiredAt:    types.NilExpiredAt,
+			TxHash:           txHash,
+			AccountIndex:     types.NilAccountIndex,
+			FromAccountIndex: types.NilAccountIndex,
+			ToAccountIndex:   types.NilAccountIndex,
+			Nonce:            types.NilNonce,
+			ExpiredAt:        types.NilExpiredAt,
 
 			GasFeeAssetId: types.NilAssetId,
 			GasFee:        types.NilAssetAmount,
@@ -98,16 +100,9 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err == nil {
 				poolTx.ToAccountIndex = accountIndex
+				poolTx.AccountIndex = accountIndex
 			} else {
 				logx.Errorf("unable to get account index : %v", err)
-			}
-			NativeAccountIndex, err := m.GetAccountIndex(poolTx.NativeAddress)
-			if err == nil {
-				poolTx.AccountIndex = NativeAccountIndex
-				poolTx.FromAccountIndex = NativeAccountIndex
-			} else {
-				poolTx.AccountIndex = types.NilAccountIndex
-				poolTx.FromAccountIndex = types.NilAccountIndex
 			}
 		case monitor.TxTypeDepositNft:
 			txInfo, err := chain.ParseDepositNftPubData(common.FromHex(request.Pubdata))
@@ -125,16 +120,9 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err == nil {
 				poolTx.ToAccountIndex = accountIndex
+				poolTx.AccountIndex = accountIndex
 			} else {
 				logx.Errorf("unable to get account index : %v", err)
-			}
-			NativeAccountIndex, err := m.GetAccountIndex(poolTx.NativeAddress)
-			if err == nil {
-				poolTx.AccountIndex = NativeAccountIndex
-				poolTx.FromAccountIndex = NativeAccountIndex
-			} else {
-				poolTx.AccountIndex = types.NilAccountIndex
-				poolTx.FromAccountIndex = types.NilAccountIndex
 			}
 		case monitor.TxTypeFullExit:
 			txInfo, err := chain.ParseFullExitPubData(common.FromHex(request.Pubdata))
@@ -153,7 +141,6 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err == nil {
 				poolTx.AccountIndex = accountIndex
 				poolTx.FromAccountIndex = accountIndex
-				poolTx.ToAccountIndex = accountIndex
 			} else {
 				logx.Errorf("unable to get account index : %v", err)
 			}
@@ -174,7 +161,6 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err == nil {
 				poolTx.AccountIndex = accountIndex
 				poolTx.FromAccountIndex = accountIndex
-				poolTx.ToAccountIndex = accountIndex
 			} else {
 				logx.Errorf("unable to get account index : %v", err)
 			}
