@@ -1059,6 +1059,8 @@ func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1Ro
 		totalEstimatedFee, err := s.zkbnbClient.EstimateVerifyAndExecuteWithNonce(pendingVerifyAndExecuteBlocks, proofs, gasPrice, 0, nonce)
 		if err != nil {
 			logx.WithContext(ctx).Errorf("abandon verify block to l1, EstimateGas operation get some error:%s", err.Error())
+			return nil, false, err
+
 		}
 
 		verifyAndExecuteBlockData.nonce = nonce
