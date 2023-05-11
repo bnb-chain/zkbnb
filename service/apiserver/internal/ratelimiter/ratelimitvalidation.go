@@ -36,25 +36,25 @@ func (c *RateLimitConfig) validateDefaultRateLimitConfig() error {
 	}
 
 	periodRateLimitItem := rateLimitConfigItem.PeriodRateLimitItem
-	if periodRateLimitItem.GlobalRateSecond <= 0 || periodRateLimitItem.GlobalRateQuota <= 0 {
+	if periodRateLimitItem.GlobalRateSecond <= 0 || periodRateLimitItem.GlobalRateQuota < 0 {
 		return errors.New("globalRateSecond or globalRateQuota in periodRateLimitItem " +
 			"for the default rate limit config should be greater than zero")
 	}
-	if periodRateLimitItem.SingleRateSecond <= 0 || periodRateLimitItem.SingleRateQuota <= 0 {
+	if periodRateLimitItem.SingleRateSecond <= 0 || periodRateLimitItem.SingleRateQuota < 0 {
 		return errors.New("singleRateSecond or singleRateQuota in periodRateLimitItem " +
 			"for the default rate limit config should be greater than zero")
 	}
-	if periodRateLimitItem.UserRateSecond <= 0 || periodRateLimitItem.UserRateQuota <= 0 {
+	if periodRateLimitItem.UserRateSecond <= 0 || periodRateLimitItem.UserRateQuota < 0 {
 		return errors.New("userRateSecond or userRateQuota in periodRateLimitItem " +
 			"for the default rate limit config should be greater than zero")
 	}
 
 	tokenRateLimitItem := rateLimitConfigItem.TokenRateLimitItem
-	if tokenRateLimitItem.GlobalRate <= 0 || tokenRateLimitItem.GlobalBurst <= 0 {
+	if tokenRateLimitItem.GlobalRate <= 0 || tokenRateLimitItem.GlobalBurst < 0 {
 		return errors.New("globalRate or globalBurst in tokenRateLimitItem " +
 			"for the default rate limit config should be greater than zero")
 	}
-	if tokenRateLimitItem.SingleRate <= 0 || tokenRateLimitItem.SingleBurst <= 0 {
+	if tokenRateLimitItem.SingleRate <= 0 || tokenRateLimitItem.SingleBurst < 0 {
 		return errors.New("singleRate or singleBurst in tokenRateLimitItem " +
 			"for the default rate limit config should be greater than zero")
 	}
@@ -64,11 +64,18 @@ func (c *RateLimitConfig) validateDefaultRateLimitConfig() error {
 func (c *RateLimitConfig) validatePathRateLimitConfig() error {
 	pathRateLimitMap := c.PathRateLimitMap
 	for _, item := range pathRateLimitMap {
-		if item.RateLimitType == LimitTypePeriod || item.RateLimitType == LimitTypeBoth {
+		if item.RateLimitType == LimitTypeBoth {
 			if err := validatePeriodRateLimitConfigItem(item.PeriodRateLimitItem); err != nil {
 				return err
 			}
-		} else if item.RateLimitType == LimitTypeToken || item.RateLimitType == LimitTypeBoth {
+			if err := validateTokenRateLimitConfigItem(item.TokenRateLimitItem); err != nil {
+				return err
+			}
+		} else if item.RateLimitType == LimitTypePeriod {
+			if err := validatePeriodRateLimitConfigItem(item.PeriodRateLimitItem); err != nil {
+				return err
+			}
+		} else if item.RateLimitType == LimitTypeToken {
 			if err := validateTokenRateLimitConfigItem(item.TokenRateLimitItem); err != nil {
 				return err
 			}
@@ -80,15 +87,15 @@ func (c *RateLimitConfig) validatePathRateLimitConfig() error {
 }
 
 func validatePeriodRateLimitConfigItem(periodRateLimitItem PeriodRateLimitItem) error {
-	if periodRateLimitItem.GlobalRateSecond <= 0 || periodRateLimitItem.GlobalRateQuota <= 0 {
+	if periodRateLimitItem.GlobalRateSecond <= 0 || periodRateLimitItem.GlobalRateQuota < 0 {
 		return errors.New("globalRateSecond or globalRateQuota in periodRateLimitItem " +
 			"for the path rate limit config should be greater than zero")
 	}
-	if periodRateLimitItem.SingleRateSecond <= 0 || periodRateLimitItem.SingleRateQuota <= 0 {
+	if periodRateLimitItem.SingleRateSecond <= 0 || periodRateLimitItem.SingleRateQuota < 0 {
 		return errors.New("singleRateSecond or singleRateQuota in periodRateLimitItem " +
 			"for the default rate limit config should be greater than zero")
 	}
-	if periodRateLimitItem.UserRateSecond <= 0 || periodRateLimitItem.UserRateQuota <= 0 {
+	if periodRateLimitItem.UserRateSecond <= 0 || periodRateLimitItem.UserRateQuota < 0 {
 		return errors.New("userRateSecond or userRateQuota in periodRateLimitItem " +
 			"for the default rate limit config should be greater than zero")
 	}
@@ -96,11 +103,11 @@ func validatePeriodRateLimitConfigItem(periodRateLimitItem PeriodRateLimitItem) 
 }
 
 func validateTokenRateLimitConfigItem(tokenRateLimitItem TokenRateLimitItem) error {
-	if tokenRateLimitItem.GlobalRate <= 0 || tokenRateLimitItem.GlobalBurst <= 0 {
+	if tokenRateLimitItem.GlobalRate <= 0 || tokenRateLimitItem.GlobalBurst < 0 {
 		return errors.New("globalRate or globalBurst in tokenRateLimitItem " +
 			"for the default rate limit config should be greater than zero")
 	}
-	if tokenRateLimitItem.SingleRate <= 0 || tokenRateLimitItem.SingleBurst <= 0 {
+	if tokenRateLimitItem.SingleRate <= 0 || tokenRateLimitItem.SingleBurst < 0 {
 		return errors.New("singleRate or singleBurst in tokenRateLimitItem " +
 			"for the default rate limit config should be greater than zero")
 	}

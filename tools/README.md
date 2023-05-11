@@ -27,3 +27,6 @@ redis-cli -h 127.0.0.1 -p 6666 flushdb
 
 ./zkbnb tree recovery  --service committer
 ./zkbnb tree recovery  --service witness
+
+
+./zkbnb rollback --height 493
