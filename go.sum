@@ -46,8 +46,8 @@ github.com/15000785133/zkbnb-crypto v0.0.8-0.20230511202500-83ab2c615a6f h1:cl8v
 github.com/15000785133/zkbnb-crypto v0.0.8-0.20230511202500-83ab2c615a6f/go.mod h1:Bi+kI5RYhV3Fgu6upQyAXz2HVxp+Ah9AzvwIBuBDYMM=
 github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230421201753-4f608602d198 h1:rW+Eu0rTTnQn/lTVtkhrKopVh4GPTj3HvgDhbDu6tEA=
 github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230421201753-4f608602d198/go.mod h1:zZ9uTj1GJOc5OxgojQbA8TZjEQhESUnp4MEWOYk/OVs=
-github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230419121257-8a1ad12ef62f h1:LAfPZib6KjAXWwpxTonFW9KXNvnYITSK/K44X8eVqPc=
-github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230419121257-8a1ad12ef62f/go.mod h1:D2AHcZZV+t5mx0yYZ3Rp88Ly8Gzon+Yq/dk69xccnqk=
+github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230511204654-319e95cc2b84 h1:mNB56u+qOhiLt91p/8+gKB0v0/pB14jMtnjNXC5ClEA=
+github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230511204654-319e95cc2b84/go.mod h1:N1lpwcAGNBnwL6kvwuNqKVHCFs1PFYAV4JfYUTOl51o=
 github.com/AndreasBriese/bbloom v0.0.0-20190306092124-e2d15f34fcf9/go.mod h1:bOvUY6CB00SOBii9/FifXqc0awNKxLFCL/+pkDPuyl8=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v0.21.1/go.mod h1:fBF9PQNqB8scdgpZ3ufzaLntG0AG7C1WjPMsiFOmfHM=
 github.com/Azure/azure-sdk-for-go/sdk/internal v0.8.3/go.mod h1:KLF4gFr6DcKFZwSuH8w8yEK6DpFl3LP5rhdvAb7Yz5I=
@@ -175,8 +175,8 @@ github.com/bketelsen/crypt v0.0.4/go.mod h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqO
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
-github.com/bnb-chain/gnark v0.7.2-0.20230414030551-8be7c648aadc h1:Fk1+2WqK/1crH/EcJV926uHY5tnBXxkWZDiCcLXuNOM=
-github.com/bnb-chain/gnark v0.7.2-0.20230414030551-8be7c648aadc/go.mod h1:fmHUzzss1n32K3COWMvrQj7uo7GjIeIr1wXzjj5gmj8=
+github.com/bnb-chain/gnark v0.7.2-0.20230425010344-8e482963e1ae h1:4b/b0pp1RAWQ60lL+UaL/X9M0zDguukI3+6Yq6ECfD8=
+github.com/bnb-chain/gnark v0.7.2-0.20230425010344-8e482963e1ae/go.mod h1:fmHUzzss1n32K3COWMvrQj7uo7GjIeIr1wXzjj5gmj8=
 github.com/bnb-chain/gnark-crypto v0.8.1-0.20230412133626-30223a679fb7 h1:ME5Nif4WgGgWKH2omB6ybic5bsU22bHy43xBsgMBHgM=
 github.com/bnb-chain/gnark-crypto v0.8.1-0.20230412133626-30223a679fb7/go.mod h1:a2DQL4+5ywF6safEeZFEPGRiiGbjzGFRUN2sg06VuU4=
 github.com/bnb-chain/zkbnb-smt v0.0.3-0.20230508070814-8aeaf4b1c080 h1:QW0egljrvg7m4e/F6B93J75CsNmbaOtzIxBbSLnJxnk=
