@@ -1,6 +1,7 @@
 package rollback
 
 import (
+	"fmt"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
 	"github.com/bnb-chain/zkbnb/service/sender/config"
@@ -25,6 +26,10 @@ func RollbackAll(configFile string, height int64) error {
 	proc.AddShutdownListener(func() {
 		logx.Close()
 	})
+
+	if !c.EnableRollback {
+		return fmt.Errorf("rollback switch not turned on")
+	}
 
 	logx.Infof("revert CommittedBlocks,start height=%d", height)
 	err := revertblock.RevertCommittedBlocks(configFile, height, true)

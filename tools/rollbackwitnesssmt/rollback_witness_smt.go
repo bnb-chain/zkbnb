@@ -23,6 +23,10 @@ func RollbackWitnessSmt(
 		logx.Close()
 	})
 
+	if !c.EnableRollback {
+		return fmt.Errorf("rollback switch not turned on")
+	}
+
 	w, err := witness.NewWitness(c, false)
 	if err != nil {
 		return fmt.Errorf("failed to create witness instance, %v", err)

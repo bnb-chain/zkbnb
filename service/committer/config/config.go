@@ -24,9 +24,10 @@ type BlockConfig struct {
 type Config struct {
 	core.ChainConfig
 
-	BlockConfig BlockConfig
-	LogConf     logx.LogConf
-	IpfsUrl     string
+	BlockConfig    BlockConfig
+	LogConf        logx.LogConf
+	IpfsUrl        string
+	EnableRollback bool
 }
 
 func InitSystemConfiguration(config *Config, configFile string) error {
@@ -52,6 +53,7 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 	}
 	c.Postgres = commonConfig.Postgres
 	c.CacheRedis = commonConfig.CacheRedis
+	c.EnableRollback = commonConfig.EnableRollback
 
 	systemConfigString, err := apollo.LoadApolloConfigFromEnvironment(CommitterAppId, Namespace, SystemConfigKey)
 	if err != nil {
@@ -69,7 +71,6 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 	c.TreeDB = systemConfig.TreeDB
 	c.LogConf = systemConfig.LogConf
 	c.IpfsUrl = systemConfig.IpfsUrl
-
 	return nil
 }
 

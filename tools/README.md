@@ -13,6 +13,9 @@ go run ./cmd/zkbnb/main.go estimategas --config ./tools/estimategas/etc/config.y
 
 go run ./cmd/zkbnb/main.go rollback --config ./tools/rollback/etc/config.yaml --height 5
 
+sh run_whole_rolllback.sh 80
+
+
 go run ./cmd/zkbnb/main.go rollbackwitnesssmt --height 5 --config ./tools/rollbackwitnesssmt/etc/config.yaml
 
 redis-cli -h 127.0.0.1 -p 6666 flushdb

@@ -58,9 +58,10 @@ type Apollo struct {
 }
 
 type CommonConfig struct {
-	Postgres     Postgres
-	CacheRedis   cache.CacheConf
-	EnvVariables EnvVariables
+	Postgres       Postgres
+	CacheRedis     cache.CacheConf
+	EnvVariables   EnvVariables
+	EnableRollback bool
 }
 
 var apolloClientMap = make(map[string]agollo.Client)

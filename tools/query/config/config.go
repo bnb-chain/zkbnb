@@ -21,5 +21,6 @@ type Config struct {
 		RoutinePoolSize    int `json:",optional"`
 		AssetTreeCacheSize int
 	}
-	LogConf logx.LogConf
+	EnableRollback bool
+	LogConf        logx.LogConf
 }
