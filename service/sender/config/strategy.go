@@ -52,6 +52,8 @@ func InitSenderConfiguration(c Config) {
 		logx.Severef("Fail to Initiate Sender Configuration from the apollo server!")
 		newSenderConfig.CommitControlSwitch = false
 		newSenderConfig.VerifyControlSwitch = false
+		newSenderConfig.MaxCommitBlockCount = 5
+		newSenderConfig.MaxVerifyBlockCount = 5
 	} else {
 		err := json.Unmarshal([]byte(newSenderConfigString), newSenderConfig)
 		if err != nil {
