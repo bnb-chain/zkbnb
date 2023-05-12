@@ -38,6 +38,11 @@ func RevertCommittedBlocks(configFile string, height int64, byBlock bool) (err e
 	proc.AddShutdownListener(func() {
 		logx.Close()
 	})
+
+	if !c.EnableRollback {
+		return fmt.Errorf("rollback switch not turned on")
+	}
+
 	if height == 0 {
 		return fmt.Errorf("height can not be 0")
 	}

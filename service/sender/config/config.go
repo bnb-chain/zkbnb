@@ -42,11 +42,12 @@ type KMSConfig struct {
 }
 
 type Config struct {
-	Postgres    apollo.Postgres
-	ChainConfig ChainConfig
-	AuthConfig  AuthConfig
-	KMSConfig   KMSConfig
-	LogConf     logx.LogConf
+	Postgres       apollo.Postgres
+	ChainConfig    ChainConfig
+	AuthConfig     AuthConfig
+	KMSConfig      KMSConfig
+	LogConf        logx.LogConf
+	EnableRollback bool
 }
 
 func InitSystemConfiguration(config *Config, configFile string) error {
@@ -71,6 +72,7 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 		return err
 	}
 	c.Postgres = commonConfig.Postgres
+	c.EnableRollback = commonConfig.EnableRollback
 
 	systemConfigString, err := apollo.LoadApolloConfigFromEnvironment(SenderAppId, Namespace, SystemConfigKey)
 	if err != nil {

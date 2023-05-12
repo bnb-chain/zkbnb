@@ -24,6 +24,11 @@ func RecoveryTreeDB(
 		logx.Close()
 	})
 
+	if !configInfo.EnableRollback {
+		logx.Errorf("rollback switch not turned on")
+		return
+	}
+
 	latestVerifiedBlockNr, err := ctx.BlockModel.GetLatestVerifiedHeight()
 	if err != nil {
 		logx.Errorf("get latest verified fromHeight failed: %v", err)

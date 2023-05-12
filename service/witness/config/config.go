@@ -27,9 +27,10 @@ type TreeDB struct {
 }
 
 type Config struct {
-	Postgres apollo.Postgres
-	TreeDB   TreeDB
-	LogConf  logx.LogConf
+	Postgres       apollo.Postgres
+	TreeDB         TreeDB
+	LogConf        logx.LogConf
+	EnableRollback bool
 }
 
 func InitSystemConfiguration(config *Config, configFile string) error {
@@ -54,6 +55,7 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 		return err
 	}
 	c.Postgres = commonConfig.Postgres
+	c.EnableRollback = commonConfig.EnableRollback
 
 	systemConfigString, err := apollo.LoadApolloConfigFromEnvironment(WitnessAppId, Namespace, SystemConfigKey)
 	if err != nil {

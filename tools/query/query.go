@@ -116,6 +116,7 @@ func BuildConfig(configFile string, serviceName string) config.Config {
 		configInfo.Postgres = c.Postgres
 		configInfo.CacheRedis = c.CacheRedis
 		configInfo.LogConf = c.LogConf
+		configInfo.EnableRollback = c.EnableRollback
 
 	} else if serviceName == "witness" {
 		c := witnessConfig.Config{}
@@ -126,6 +127,8 @@ func BuildConfig(configFile string, serviceName string) config.Config {
 		configInfo.TreeDB = c.TreeDB
 		configInfo.Postgres = c.Postgres
 		configInfo.LogConf = c.LogConf
+		configInfo.EnableRollback = c.EnableRollback
+
 	} else {
 		logx.Error("there is no serviceName,%s", serviceName)
 	}
