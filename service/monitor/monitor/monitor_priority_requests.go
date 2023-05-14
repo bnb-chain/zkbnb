@@ -169,7 +169,17 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		}
 		poolTx.TxInfo = string(txInfoBytes)
 		poolTx.L1RequestId = request.RequestId
-		pendingNewPoolTxs = append(pendingNewPoolTxs, poolTx)
+
+		_, err := m.TxPoolModel.GetTxByTxHash(poolTx.TxHash)
+		if err != nil {
+			if err == types.DbErrNotFound {
+				pendingNewPoolTxs = append(pendingNewPoolTxs, poolTx)
+			} else {
+				return fmt.Errorf("fail to get pool tx by TxHash=%s,L1TxHash=%s,L1RequestId=%d,err=%v", poolTx.TxHash, request.L1TxHash, request.RequestId, err)
+			}
+		} else {
+			logx.Infof("This tx hash already exists in the pool tx table,TxHash=%s,L1TxHash=%s,L1RequestId=%d", poolTx.TxHash, request.L1TxHash, request.RequestId)
+		}
 	}
 
 	// update db
