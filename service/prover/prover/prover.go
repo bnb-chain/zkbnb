@@ -113,7 +113,12 @@ func NewProver(c config.Config) (*Prover, error) {
 		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
 		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
 	}))
-	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
+	redisConn, err := redis.NewRedis(redis.RedisConf{Host: c.CacheRedis[0].Host, Pass: c.CacheRedis[0].Pass, Type: c.CacheRedis[0].Type})
+	if err != nil {
+		logx.Errorf("fail to new redis instance, error: %s", err.Error())
+		panic("fail to new redis instance, error" + err.Error())
+	}
+
 	prover := &Prover{
 		running:           true,
 		Config:            c,

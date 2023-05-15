@@ -95,9 +95,13 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	rawDB.SetMaxOpenConns(c.Postgres.MaxConn)
 	rawDB.SetMaxIdleConns(c.Postgres.MaxIdle)
 
-	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
+	redisCache := dbcache.NewRedisCache(c.CacheRedis, 15*time.Minute)
 
-	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
+	redisConn, err := redis.NewRedis(redis.RedisConf{Host: c.CacheRedis[0].Host, Pass: c.CacheRedis[0].Pass, Type: c.CacheRedis[0].Type})
+	if err != nil {
+		logx.Errorf("fail to new redis instance, error: %s", err.Error())
+		panic("fail to new redis instance, error" + err.Error())
+	}
 
 	txPoolModel := tx.NewTxPoolModel(db)
 	accountModel := account.NewAccountModel(db)
@@ -150,13 +154,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		SendTxTotalMetrics: sendTxTotalMetrics,
 		SendTxMetrics:      sendTxMetrics,
 		ChannelTxMetric:    channelTxMetric,
-	}
-}
-
-func WithRedis(redisType string, redisPass string) redis.Option {
-	return func(p *redis.Redis) {
-		p.Type = redisType
-		p.Pass = redisPass
 	}
 }
 

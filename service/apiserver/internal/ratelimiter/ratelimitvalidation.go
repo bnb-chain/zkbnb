@@ -21,9 +21,7 @@ func (c *RateLimitConfig) ValidateRateLimitConfig() error {
 }
 
 func (c *RateLimitConfig) validateRedisConfig() error {
-	redisConfig := c.RedisConfig
-	redisAddress := redisConfig.Address
-	if len(redisAddress) == 0 {
+	if len(c.CacheRedis) == 0 || len(c.CacheRedis[0].Host) == 0 {
 		return errors.New("redis address configuration should not be blank or empty")
 	}
 	return nil

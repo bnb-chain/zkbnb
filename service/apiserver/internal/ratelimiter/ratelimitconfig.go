@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/bnb-chain/zkbnb/common/apollo"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/cache"
 )
 
 const (
@@ -18,10 +19,6 @@ const (
 )
 
 var rateLimitUpdater = &RateLimitUpdater{}
-
-type RedisConfig struct {
-	Address string
-}
 
 type PeriodRateLimitItem struct {
 	GlobalRateSecond int
@@ -50,7 +47,7 @@ type RateLimitConfigItem struct {
 
 type RateLimitConfig struct {
 	RateLimitSwitch  bool
-	RedisConfig      RedisConfig
+	CacheRedis       cache.CacheConf
 	DefaultRateLimit RateLimitConfigItem
 	PathRateLimitMap map[string]RateLimitConfigItem
 }

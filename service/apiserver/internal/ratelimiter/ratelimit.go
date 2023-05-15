@@ -7,6 +7,7 @@ import (
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 	"github.com/shirou/gopsutil/host"
 	"github.com/zeromicro/go-zero/core/logx"
+	zeroCache "github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/rest/httpx"
 	"net/http"
@@ -95,7 +96,7 @@ func InitRateLimitControl(svcCtx *svc.ServiceContext) {
 func RefreshRateLimitControl(newRateLimitConfig *RateLimitConfig) {
 	rateLimitConfig = newRateLimitConfig
 	if rateLimitConfig.RateLimitSwitch {
-		redisInstance = InitRateLimitRedisInstance(rateLimitConfig.RedisConfig.Address)
+		redisInstance = InitRateLimitRedisInstance(rateLimitConfig.CacheRedis)
 
 		periodRateLimiter = InitRateLimitControlByPeriod(localhostID, rateLimitConfig, redisInstance)
 		tokenRateLimiter = InitRateLimitControlByToken(localhostID, rateLimitConfig, redisInstance)
@@ -115,8 +116,12 @@ func InitLocalhostConfiguration() string {
 	return localHostID
 }
 
-func InitRateLimitRedisInstance(redisAddress string) *redis.Redis {
-	redisInstance := redis.New(redisAddress)
+func InitRateLimitRedisInstance(cacheRedis zeroCache.CacheConf) *redis.Redis {
+	redisInstance, err := redis.NewRedis(redis.RedisConf{Host: cacheRedis[0].Host, Pass: cacheRedis[0].Pass, Type: cacheRedis[0].Type})
+	if err != nil {
+		logx.Severe("Initiate RateLimitRedis Failure!")
+		panic("Fail to initiate RateLimitRedis!")
+	}
 	logx.Info("Construct RateLimit Redis Instance Successfully!")
 	return redisInstance
 }

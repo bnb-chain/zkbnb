@@ -154,7 +154,7 @@ func NewMonitor(c config.Config) (monitor *Monitor, err error) {
 		logx.Severef("init account cache failed:%v", err)
 		return nil, err
 	}
-	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
+	redisCache := dbcache.NewRedisCache(c.CacheRedis, 15*time.Minute)
 	monitor = &Monitor{
 		Config:               c,
 		db:                   db,

@@ -98,7 +98,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	if config.RedisExpiration != 0 {
 		expiration = time.Duration(config.RedisExpiration) * time.Second
 	}
-	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, expiration)
+	redisCache := dbcache.NewRedisCache(config.CacheRedis, expiration)
 	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
 	if err != nil {
 		return nil, err
