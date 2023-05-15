@@ -338,6 +338,10 @@ func (m *defaultTxPoolModel) GetMaxNonceByAccountIndex(accountIndex int64) (nonc
 }
 
 func (m *defaultTxPoolModel) CreateTxsInTransact(tx *gorm.DB, txs []*PoolTx) error {
+	if len(txs) == 0 {
+		return nil
+	}
+
 	dbTx := tx.Table(m.table).CreateInBatches(txs, len(txs))
 	if dbTx.Error != nil {
 		return dbTx.Error
