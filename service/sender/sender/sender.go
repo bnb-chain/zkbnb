@@ -768,7 +768,7 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx) (*
 	}
 
 	for {
-		compressedBlocks, err := s.compressedBlockModel.GetCompressedBlocksBetween(start, start+int64(maxCommitBlockCount))
+		compressedBlocks, err := s.compressedBlockModel.GetCompressedBlocksBetween(start, start+int64(maxCommitBlockCount-1))
 		if err != nil && err != types.DbErrNotFound {
 			return nil, false, fmt.Errorf("failed to get compress block err: %v", err)
 		}
@@ -1011,7 +1011,7 @@ func (s *Sender) PrepareVerifyAndExecuteBlockData(lastHandledTx *l1rolluptx.L1Ro
 	}
 
 	for {
-		blocks, err := s.blockModel.GetCommittedBlocksBetween(start, start+int64(maxVerifyBlockCount))
+		blocks, err := s.blockModel.GetCommittedBlocksBetween(start, start+int64(maxVerifyBlockCount-1))
 		if err != nil && err != types.DbErrNotFound {
 			return nil, false, fmt.Errorf("unable to get blocks to prove, err: %v", err)
 		}
