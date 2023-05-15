@@ -170,7 +170,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		poolTx.TxInfo = string(txInfoBytes)
 		poolTx.L1RequestId = request.RequestId
 
-		_, err := m.TxPoolModel.GetTxByTxHash(poolTx.TxHash)
+		_, err := m.TxPoolModel.GetTxUnscopedByTxHash(poolTx.TxHash)
 		if err != nil {
 			if err == types.DbErrNotFound {
 				pendingNewPoolTxs = append(pendingNewPoolTxs, poolTx)
