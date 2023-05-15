@@ -69,7 +69,7 @@ func NewCommitter(config *config.Config) (*Committer, error) {
 		return nil, err
 	}
 
-	bc, err := core.NewBlockChain(&config.ChainConfig, "committer")
+	bc, err := core.NewBlockChain(&config.ChainConfig, config.BlockConfig.MaxPackedInterval, "committer")
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
 	}
@@ -141,16 +141,18 @@ func (c *Committer) Run() error {
 		return c.finalSaveBlockDataFunc(item.(*block.BlockStates))
 	})
 
-	//load accounts from db to memcache
-	err := c.bc.LoadAllAccounts(c.pool)
-	if err != nil {
-		return err
-	}
+	if !c.config.BlockConfig.DisableLoadAllAccounts {
+		//load accounts from db to memcache
+		err := c.bc.LoadAllAccounts(c.pool)
+		if err != nil {
+			return err
+		}
 
-	//load nfts from db to memcache
-	err = c.bc.LoadAllNfts(c.pool)
-	if err != nil {
-		return err
+		//load nfts from db to memcache
+		err = c.bc.LoadAllNfts(c.pool)
+		if err != nil {
+			return err
+		}
 	}
 
 	c.executeTxWorker.Start()
@@ -163,7 +165,7 @@ func (c *Committer) Run() error {
 	c.finalSaveBlockDataWorker.Start()
 
 	//pull pool txs from db to queue
-	err = c.pullPoolTxsToQueue()
+	err := c.pullPoolTxsToQueue()
 	if err != nil {
 		return err
 	}

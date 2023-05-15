@@ -71,7 +71,7 @@ type BlockChain struct {
 	processor        Processor
 }
 
-func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
+func NewBlockChain(config *ChainConfig, maxPackedInterval int, moduleName string) (*BlockChain, error) {
 	masterDataSource := config.Postgres.MasterDataSource
 	slaveDataSource := config.Postgres.SlaveDataSource
 	db, err := gorm.Open(postgres.Open(config.Postgres.MasterDataSource), &gorm.Config{
@@ -94,7 +94,8 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		ChainDB:     sdb.NewChainDB(db),
 		chainConfig: config,
 	}
-	expiration := dbcache.RedisExpiration
+
+	expiration := 5 * time.Duration(maxPackedInterval) * time.Second
 	if config.RedisExpiration != 0 {
 		expiration = time.Duration(config.RedisExpiration) * time.Second
 	}
