@@ -54,6 +54,7 @@ func InitSenderConfiguration(c Config) {
 		newSenderConfig.VerifyControlSwitch = false
 		newSenderConfig.MaxCommitBlockCount = 5
 		newSenderConfig.MaxVerifyBlockCount = 5
+		senderConfig = newSenderConfig
 	} else {
 		err := json.Unmarshal([]byte(newSenderConfigString), newSenderConfig)
 		if err != nil {
