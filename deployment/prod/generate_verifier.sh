@@ -25,4 +25,3 @@ curl -L $TEMPLATE -O $BASE_PATH/ZkBNBVerifier.sol
 python3 verifier_parse.py ${VERIFIER_CONTRACTS} ${OPTIONAL_BLOCK_SIZES} ZkBNBVerifier.sol
 rm -rf $BASE_PATH/ZkBNBVerifier.sol
 cp ZkBNBVerifier.sol $BASE_PATH/ZkBNBVerifier.sol
-
