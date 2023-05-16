@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/monitor"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -38,6 +39,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		if err != types.DbErrNotFound {
 			return err
 		}
+		time.Sleep(5 * time.Second)
 		return nil
 	}
 	var (

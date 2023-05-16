@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/monitor"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -49,6 +50,7 @@ func (m *Monitor) MonitorGenericBlocks(cli *rpc.ProviderClient) (err error) {
 	}
 	if endHeight < startHeight {
 		logx.Infof("no blocks to sync, startHeight: %d, endHeight: %d", startHeight, endHeight)
+		time.Sleep(5 * time.Second)
 		return nil
 	}
 

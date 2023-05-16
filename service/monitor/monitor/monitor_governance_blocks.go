@@ -24,6 +24,7 @@ import (
 	"github.com/bnb-chain/zkbnb/common/monitor"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -96,6 +97,7 @@ func (m *Monitor) MonitorGovernanceBlocks(cli *rpc.ProviderClient) (err error) {
 	}
 	if endHeight < startHeight {
 		logx.Infof("no blocks to sync, startHeight: %d, endHeight: %d", startHeight, endHeight)
+		time.Sleep(5 * time.Second)
 		return nil
 	}
 

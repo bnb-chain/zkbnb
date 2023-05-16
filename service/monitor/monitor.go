@@ -32,9 +32,12 @@ func Run(configFile string) error {
 
 	// monitor generic blocks
 	if _, err := cronJob.AddFunc("@every 10s", func() {
-		err := m.MonitorGenericBlocks(m.GetProviderClient())
-		if err != nil {
-			logx.Severef("monitor blocks error, %v", err)
+		for true {
+			err := m.MonitorGenericBlocks(m.GetProviderClient())
+			if err != nil {
+				logx.Severef("monitor blocks error, %v", err)
+				break
+			}
 		}
 	}); err != nil {
 		logx.Severef("failed to start the monitor generic block task, %v", err)
@@ -43,9 +46,12 @@ func Run(configFile string) error {
 
 	// monitor priority requests
 	if _, err := cronJob.AddFunc("@every 10s", func() {
-		err := m.MonitorPriorityRequests()
-		if err != nil {
-			logx.Severef("monitor priority requests error, %v", err)
+		for true {
+			err := m.MonitorPriorityRequests()
+			if err != nil {
+				logx.Severef("monitor priority requests error, %v", err)
+				break
+			}
 		}
 	}); err != nil {
 		logx.Severef("failed to start monitor priority request task, %v", err)
@@ -54,11 +60,13 @@ func Run(configFile string) error {
 
 	// monitor governance blocks
 	if _, err := cronJob.AddFunc("@every 10s", func() {
-		err := m.MonitorGovernanceBlocks(m.GetProviderClient())
-		if err != nil {
-			logx.Severef("monitor governance blocks error, %v", err)
+		for true {
+			err := m.MonitorGovernanceBlocks(m.GetProviderClient())
+			if err != nil {
+				logx.Severef("monitor governance blocks error, %v", err)
+				break
+			}
 		}
-
 	}); err != nil {
 		logx.Severef("failed to start monitor governance block task, %s", err.Error())
 		panic("failed to start monitor governance block task, err:" + err.Error())
