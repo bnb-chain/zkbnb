@@ -16,7 +16,8 @@ const (
 )
 
 type BlockConfig struct {
-	R1CSBatchSize int
+	OptionalBlockSizes []int
+	R1CSBatchSize      int
 }
 
 type Config struct {
