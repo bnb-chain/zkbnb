@@ -28,6 +28,7 @@ type Config struct {
 }
 
 func InitSystemConfiguration(config *Config, configFile string, proverId uint) error {
+	logx.Infof("Init proverId value:%d", proverId)
 	if err := InitSystemConfigFromEnvironment(config, proverId); err != nil {
 		logx.Errorf("Init system configuration from environment raise error: %v", err)
 	} else {
