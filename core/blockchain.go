@@ -897,8 +897,6 @@ func (bc *BlockChain) LoadAllAccounts(pool *ants.Pool) error {
 	start := time.Now()
 	logx.Infof("load all accounts start")
 	totalTask := 0
-	errChan := make(chan error, 1)
-	defer close(errChan)
 
 	batchReloadSize := 1000
 	maxAccountIndex, err := bc.AccountModel.GetMaxAccountIndex()
@@ -908,6 +906,10 @@ func (bc *BlockChain) LoadAllAccounts(pool *ants.Pool) error {
 	if maxAccountIndex == -1 {
 		return nil
 	}
+
+	errChan := make(chan error, maxAccountIndex/int64(batchReloadSize))
+	defer close(errChan)
+
 	for i := 0; int64(i) <= maxAccountIndex; i += batchReloadSize {
 		toAccountIndex := int64(i+batchReloadSize) - 1
 		if toAccountIndex > maxAccountIndex {
@@ -956,8 +958,6 @@ func (bc *BlockChain) LoadAllNfts(pool *ants.Pool) error {
 	start := time.Now()
 	logx.Infof("load all nfts start")
 	totalTask := 0
-	errChan := make(chan error, 1)
-	defer close(errChan)
 
 	batchReloadSize := 1000
 	maxNftIndex, err := bc.L2NftModel.GetMaxNftIndex()
@@ -967,6 +967,10 @@ func (bc *BlockChain) LoadAllNfts(pool *ants.Pool) error {
 	if maxNftIndex == -1 {
 		return nil
 	}
+
+	errChan := make(chan error, maxNftIndex/int64(batchReloadSize))
+	defer close(errChan)
+
 	for i := 0; int64(i) <= maxNftIndex; i += batchReloadSize {
 		toNftIndex := int64(i+batchReloadSize) - 1
 		if toNftIndex > maxNftIndex {

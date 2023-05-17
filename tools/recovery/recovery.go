@@ -5,6 +5,7 @@ import (
 	"github.com/bnb-chain/zkbnb/tools/query"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
+	"time"
 
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/tools/query/svc"
@@ -55,6 +56,7 @@ func RecoveryTreeDB(
 	}
 
 	// dbinitializer accountTree and accountStateTrees
+	initAccountTreeStart := time.Now()
 	_, _, err = tree.InitAccountTree(
 		ctx.AccountModel,
 		ctx.AccountHistoryModel,
@@ -68,9 +70,10 @@ func RecoveryTreeDB(
 		logx.WithContext(ctxLog).Error("InitMerkleTree error:", err)
 		return
 	}
-	logx.WithContext(ctxLog).Infof("recovery account smt successfully")
+	logx.WithContext(ctxLog).Infof("recovery account smt successfully,cost time %v", time.Since(initAccountTreeStart))
 
 	// dbinitializer nftTree
+	initNftTreeStart := time.Now()
 	_, err = tree.InitNftTree(
 		ctx.NftModel,
 		ctx.NftHistoryModel,
@@ -80,6 +83,5 @@ func RecoveryTreeDB(
 		logx.WithContext(ctxLog).Errorf("InitNftTree error: %s", err.Error())
 		return
 	}
-	logx.WithContext(ctxLog).Infof("recovery nft smt successfully")
-
+	logx.WithContext(ctxLog).Infof("recovery nft smt successfully,cost time %v", time.Since(initNftTreeStart))
 }

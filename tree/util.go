@@ -237,7 +237,7 @@ func ComputeAccountLeafHash(
 	e5 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(assetRoot))
 	ele := GMimcElements([]*fr.Element{e0, e1, e2, e3, e4, e5})
 	hash := ele.Bytes()
-	logx.WithContext(ctx).Infof("compute account leaf hash,l1Address=%s,pk=%s,nonce=%d,collectionNonce=%d,assetRoot=%s,hash=%s",
+	logx.WithContext(ctx).Debugf("compute account leaf hash,l1Address=%s,pk=%s,nonce=%d,collectionNonce=%d,assetRoot=%s,hash=%s",
 		l1Address, pk, nonce, collectionNonce, common.Bytes2Hex(assetRoot), common.Bytes2Hex(hash[:]))
 	return hash[:], nil
 }
@@ -260,7 +260,7 @@ func ComputeAccountAssetLeafHash(
 	e1 := txtypes.FromBigIntToFr(offerCanceledOrFinalizedBigInt)
 	ele := GMimcElements([]*fr.Element{e0, e1})
 	hash := ele.Bytes()
-	logx.WithContext(ctx).Infof("compute account asset leaf hash,balance=%s,offerCanceledOrFinalized=%s,hash=%s",
+	logx.WithContext(ctx).Debugf("compute account asset leaf hash,balance=%s,offerCanceledOrFinalized=%s,hash=%s",
 		balance, offerCanceledOrFinalized, common.Bytes2Hex(hash[:]))
 	return hash[:], nil
 }
@@ -299,7 +299,7 @@ func ComputeNftAssetLeafHash(
 		ele := GMimcElements([]*fr.Element{e0, e1, e2, e4, e5})
 		hash = ele.Bytes()
 	}
-	logx.WithContext(ctx).Infof("compute nft asset leaf hash,creatorAccountIndex=%d,ownerAccountIndex=%d,nftContentHash=%s,royaltyRate=%d,collectionId=%d,hash=%s",
+	logx.WithContext(ctx).Debugf("compute nft asset leaf hash,creatorAccountIndex=%d,ownerAccountIndex=%d,nftContentHash=%s,royaltyRate=%d,collectionId=%d,hash=%s",
 		creatorAccountIndex, ownerAccountIndex, nftContentHash, royaltyRate, collectionId, common.Bytes2Hex(hash[:]))
 
 	return hash[:], nil

@@ -193,7 +193,11 @@ func NewContext(
 	if routineSize <= 0 {
 		routineSize = defaultTreeRoutinePoolSize
 	}
-	pool, err := ants.NewPool(routineSize)
+	//pool, err := ants.NewPool(routineSize)
+	pool, err := ants.NewPool(routineSize, ants.WithPanicHandler(func(p interface{}) {
+		//sets up panic handler.
+		panic("worker exits from a panic")
+	}))
 	if err != nil {
 		return nil, err
 	}

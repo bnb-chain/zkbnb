@@ -73,7 +73,6 @@ func InitAccountTree(
 			return nil, nil, err
 		}
 	}
-
 	logx.WithContext(ctxLog).Infof("get maxAccountIndex end")
 	opts := ctx.Options(0)
 	nilAccountAssetNodeHashes := NilAccountAssetNodeHashes(AssetTreeHeight, NilAccountAssetNodeHash, ctx.Hasher())
@@ -106,7 +105,7 @@ func InitAccountTree(
 		start := time.Now()
 		logx.WithContext(ctxLog).Infof("reloadAccountTree start")
 		totalTask := 0
-		resultChan := make(chan *treeUpdateResp, 1)
+		resultChan := make(chan *treeUpdateResp, maxAccountIndex/int64(ctx.BatchReloadSize()))
 		defer close(resultChan)
 		pool, err := ants.NewPool(100, ants.WithPanicHandler(func(p interface{}) {
 			panic("worker exits from a panic")
@@ -147,17 +146,25 @@ func InitAccountTree(
 			}
 			pendingAccountItem = append(pendingAccountItem, result.pendingAccountItem...)
 		}
+
+		accountTreeStart := time.Now()
+		logx.WithContext(ctxLog).Infof("start update account smt pendingAccountItemCount=%d", len(pendingAccountItem))
+
 		newVersion := bsmt.Version(blockHeight)
 		err = accountTree.MultiSetWithVersion(pendingAccountItem, newVersion)
 		if err != nil {
 			logx.WithContext(ctxLog).Errorf("unable to set account to tree: %s", err.Error())
 			return nil, nil, err
 		}
+		logx.WithContext(ctxLog).Infof("start accountTree CommitWithNewVersion")
+
 		_, err = accountTree.CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
 			logx.WithContext(ctxLog).Errorf("unable to commit account tree: %s,newVersion:%d,tree.LatestVersion:%d", err.Error(), uint64(newVersion), uint64(accountTree.LatestVersion()))
 			return nil, nil, err
 		}
+		logx.WithContext(ctxLog).Infof("end update account smt. cost time %v", time.Since(accountTreeStart))
+
 		logx.WithContext(ctxLog).Infof("reloadAccountTree end. cost time %v", time.Since(start))
 		return accountTree, accountAssetTrees, nil
 	}
