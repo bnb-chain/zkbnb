@@ -156,7 +156,7 @@ func InitAccountTree(
 			logx.WithContext(ctxLog).Errorf("unable to set account to tree: %s", err.Error())
 			return nil, nil, err
 		}
-		logx.WithContext(ctxLog).Infof("start CommitWithNewVersion")
+		logx.WithContext(ctxLog).Infof("start accountTree CommitWithNewVersion")
 
 		_, err = accountTree.CommitWithNewVersion(nil, &newVersion)
 		if err != nil {

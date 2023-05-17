@@ -112,16 +112,24 @@ func InitNftTree(
 			}
 			pendingAccountItem = append(pendingAccountItem, result.pendingAccountItem...)
 		}
+
+		nftTreeStart := time.Now()
+		logx.WithContext(ctxLog).Infof("start update nft smt pendingAccountItemCount=%d", len(pendingAccountItem))
+
 		err = nftTree.MultiSetWithVersion(pendingAccountItem, bsmt.Version(blockHeight))
 		if err != nil {
 			logx.WithContext(ctxLog).Errorf("unable to write nft asset to tree: %s", err.Error())
 			return nil, err
 		}
+
+		logx.WithContext(ctxLog).Infof("start nftTree CommitWithNewVersion")
 		_, err = nftTree.CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
 			logx.WithContext(ctxLog).Errorf("unable to commit nft tree: %s", err.Error())
 			return nil, err
 		}
+		logx.WithContext(ctxLog).Infof("end update nft smt. cost time %v", time.Since(nftTreeStart))
+
 		logx.Infof("reloadNftTree end. cost time %v", time.Since(start))
 		return nftTree, nil
 	}
