@@ -620,7 +620,7 @@ type treeUpdateResp struct {
 // UpdateAssetTree compute account asset hash, commit asset smt,compute account leaf hash, compute nft leaf hash
 func (s *StateDB) UpdateAssetTree(stateDataCopy *StateDataCopy) error {
 	taskNum := 0
-	resultChan := make(chan *treeUpdateResp, 1)
+	resultChan := make(chan *treeUpdateResp, len(stateDataCopy.StateCache.dirtyAccountsAndAssetsMap)+len(stateDataCopy.StateCache.dirtyNftMap))
 	defer close(resultChan)
 
 	for accountIndex, assetsMap := range stateDataCopy.StateCache.dirtyAccountsAndAssetsMap {
@@ -693,7 +693,7 @@ func (s *StateDB) UpdateAssetTree(stateDataCopy *StateDataCopy) error {
 // SetAccountAndNftTree multi set account tree with version,multi set nft tree with version
 func (s *StateDB) SetAccountAndNftTree(stateDataCopy *StateDataCopy) error {
 	start := time.Now()
-	resultChan := make(chan *treeUpdateResp, 1)
+	resultChan := make(chan *treeUpdateResp, 2)
 	defer close(resultChan)
 
 	err := gopool.Submit(func() {

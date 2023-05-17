@@ -764,7 +764,7 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) error {
 	ctx := log.NewCtxWithKV(log.BlockHeightContext, blockStates.Block.BlockHeight)
 	logx.WithContext(ctx).Infof("saveBlockDataFunc start, blockHeight:%d", blockStates.Block.BlockHeight)
 	totalTask := 0
-	errChan := make(chan error, 1)
+	errChan := make(chan error, 10)
 	defer close(errChan)
 	var err error
 

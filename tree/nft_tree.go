@@ -72,7 +72,7 @@ func InitNftTree(
 		start := time.Now()
 		logx.WithContext(ctxLog).Infof("reloadNftTree start")
 		totalTask := 0
-		resultChan := make(chan *treeUpdateResp, 1)
+		resultChan := make(chan *treeUpdateResp, maxNftIndex/int64(ctx.BatchReloadSize()))
 		defer close(resultChan)
 		pool, err := ants.NewPool(100, ants.WithPanicHandler(func(p interface{}) {
 			panic("worker exits from a panic")
