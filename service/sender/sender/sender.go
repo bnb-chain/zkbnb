@@ -429,9 +429,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	retry := false
 	for {
 		if retry {
-			commitAddress := s.GetCommitAddress()
-			logx.Info("commit address from CommitKeyId,value is :%s", commitAddress.Hex())
-			newNonce, err := cli.GetPendingNonce(commitAddress.Hex())
+			newNonce, err := cli.GetPendingNonce(s.GetCommitAddress().Hex())
 			if err != nil {
 				return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
 			}
@@ -666,9 +664,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	retry := false
 	for {
 		if retry {
-			verifyAddress := s.GetVerifyAddress()
-			logx.Info("verify address from VerifyKeyId,value is :%s", verifyAddress.Hex())
-			newNonce, err := cli.GetPendingNonce(verifyAddress.Hex())
+			newNonce, err := cli.GetPendingNonce(s.GetVerifyAddress().Hex())
 			if err != nil {
 				return fmt.Errorf("failed to get nonce for verify block, errL %v", err)
 			}
@@ -1470,11 +1466,14 @@ func (s *Sender) getZkBnbClient(cli *rpc.ProviderClient) *zkbnb.ZkBNBClient {
 		logx.Severef("fatal error, GenerateConstructorForCommit raises error:%v", err)
 		panic("fatal error, GenerateConstructorForCommit raises error:" + err.Error())
 	}
+	logx.Info("commit address from CommitKeyId,value is :%s", commitConstructor.GetL1Address().Hex())
 	verifyConstructor, err := s.GenerateConstructorForVerifyAndExecute()
 	if err != nil {
 		logx.Severef("fatal error, GenerateConstructorForVerifyAndExecute raises error:%v", err)
 		panic("fatal error, GenerateConstructorForVerifyAndExecute raises error:" + err.Error())
 	}
+	logx.Info("verify address from VerifyKeyId,value is :%s", verifyConstructor.GetL1Address().Hex())
+
 	zkBnbClient, err := zkbnb.NewZkBNBClient(cli, s.ZkBNBContractAddress)
 	if err != nil {
 		logx.Severef("fatal error, ZkBNBClient initiate raises error:%v", err)
