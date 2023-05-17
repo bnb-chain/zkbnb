@@ -120,17 +120,14 @@ func NewProver(c config.Config) (*Prover, error) {
 	}
 
 	prover := &Prover{
-		running:           true,
-		Config:            c,
-		RedisConn:         redisConn,
-		DB:                db,
-		SysConfigModel:    sysconfig.NewSysConfigModel(db),
-		BlockWitnessModel: blockwitness.NewBlockWitnessModel(db),
-		ProofModel:        proof.NewProofModel(db),
-	}
-
-	if err := prover.loadOptionalBlockSizes(); err != nil {
-		panic("invalid OptionalBlockSizes:" + err.Error())
+		running:            true,
+		Config:             c,
+		RedisConn:          redisConn,
+		DB:                 db,
+		SysConfigModel:     sysconfig.NewSysConfigModel(db),
+		BlockWitnessModel:  blockwitness.NewBlockWitnessModel(db),
+		ProofModel:         proof.NewProofModel(db),
+		OptionalBlockSizes: c.BlockConfig.OptionalBlockSizes,
 	}
 
 	prover.ProvingKeys = make([][]groth16.ProvingKey, len(prover.OptionalBlockSizes))
@@ -326,29 +323,6 @@ func (p *Prover) getWitness() (*blockwitness.BlockWitness, error) {
 		return nil, err
 	}
 	return blockWitness, nil
-}
-
-func (p *Prover) loadOptionalBlockSizes() error {
-	if optionalBlockSizeConfig, err := p.SysConfigModel.GetSysConfigByName(types.OptionalBlockSizes); err != nil {
-		logx.Errorf("failed to load optionalBlockSizes configuration, err:%v", err)
-		return err
-	} else {
-		optionalBlockSizeValue := optionalBlockSizeConfig.Value
-		optionalBlockSizes := make([]int, 2)
-		if err := json.Unmarshal([]byte(optionalBlockSizeValue), &optionalBlockSizes); err != nil {
-			return err
-		}
-
-		if len(optionalBlockSizes) == 0 {
-			return fmt.Errorf("failed to load optionalBlockSizes configuration, optionalBlockSizes is empty")
-		}
-
-		p.OptionalBlockSizes = optionalBlockSizes
-		if !IsBlockSizesSorted(p.OptionalBlockSizes) {
-			return fmt.Errorf("failed to load optionalBlockSizes configuration, invalid OptionalBlockSizes")
-		}
-	}
-	return nil
 }
 
 func (p *Prover) Shutdown() {

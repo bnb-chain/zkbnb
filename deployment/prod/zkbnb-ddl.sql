@@ -11,8 +11,8 @@ create table if not exists sys_config
     comment    text
 );
 
-alter table sys_config
-    owner to postgres;
+-- alter table sys_config
+--     owner to postgres;
 
 create index if not exists idx_sys_config_name
     on sys_config (name);
@@ -38,8 +38,8 @@ create table if not exists account
     status           bigint
 );
 
-alter table account
-    owner to postgres;
+-- alter table account
+--     owner to postgres;
 
 create index if not exists idx_account_l2_block_height
     on account (l2_block_height);
@@ -71,8 +71,8 @@ create table if not exists account_history
     status           bigint
 );
 
-alter table account_history
-    owner to postgres;
+-- alter table account_history
+--     owner to postgres;
 
 create index if not exists idx_account_history_l2_block_height
     on account_history (l2_block_height);
@@ -102,8 +102,8 @@ create table if not exists asset
     is_gas_asset bigint
 );
 
-alter table asset
-    owner to postgres;
+-- alter table asset
+--     owner to postgres;
 
 create unique index if not exists idx_asset_asset_id
     on asset (asset_id);
@@ -154,8 +154,8 @@ create table if not exists pool_tx
     l1_request_id      bigint
 );
 
-alter table pool_tx
-    owner to postgres;
+-- alter table pool_tx
+--     owner to postgres;
 
 create index if not exists idx_pool_tx_tx_status
     on pool_tx (tx_status);
@@ -207,8 +207,8 @@ create table if not exists block
     nft_indexes                          text
 );
 
-alter table block
-    owner to postgres;
+-- alter table block
+--     owner to postgres;
 
 create index if not exists idx_block_block_status
     on block (block_status);
@@ -256,8 +256,8 @@ create table if not exists tx
     verify_at          timestamp with time zone
 );
 
-alter table tx
-    owner to postgres;
+-- alter table tx
+--     owner to postgres;
 
 create index if not exists idx_tx_block_height
     on tx (block_height);
@@ -309,8 +309,8 @@ create table if not exists tx_detail
     block_height     bigint
 );
 
-alter table tx_detail
-    owner to postgres;
+-- alter table tx_detail
+--     owner to postgres;
 
 create index if not exists idx_tx_detail_block_height
     on tx_detail (block_height);
@@ -340,8 +340,8 @@ create table if not exists compressed_block
     real_block_size     integer
 );
 
-alter table compressed_block
-    owner to postgres;
+-- alter table compressed_block
+--     owner to postgres;
 
 create index if not exists idx_compressed_block_block_height
     on compressed_block (block_height);
@@ -362,8 +362,8 @@ create table if not exists block_witness
     status       bigint
 );
 
-alter table block_witness
-    owner to postgres;
+-- alter table block_witness
+--     owner to postgres;
 
 create index if not exists idx_block_witness_status
     on block_witness (status);
@@ -386,8 +386,8 @@ create table if not exists proof
     status       bigint
 );
 
-alter table proof
-    owner to postgres;
+-- alter table proof
+--     owner to postgres;
 
 create index if not exists idx_proof_status
     on proof (status);
@@ -410,8 +410,8 @@ create table if not exists l1_synced_block
     type            bigint
 );
 
-alter table l1_synced_block
-    owner to postgres;
+-- alter table l1_synced_block
+--     owner to postgres;
 
 create index if not exists idx_l1_synced_block_type
     on l1_synced_block (type);
@@ -440,8 +440,8 @@ create table if not exists priority_request
     l2_tx_hash       text
 );
 
-alter table priority_request
-    owner to postgres;
+-- alter table priority_request
+--     owner to postgres;
 
 create index if not exists idx_priority_request_l1_block_height
     on priority_request (l1_block_height);
@@ -474,8 +474,8 @@ create table if not exists l1_rollup_tx
     l1_nonce        bigint
 );
 
-alter table l1_rollup_tx
-    owner to postgres;
+-- alter table l1_rollup_tx
+--     owner to postgres;
 
 create index if not exists idx_tx_status
     on l1_rollup_tx (tx_status, tx_type);
@@ -509,8 +509,8 @@ create table if not exists l2_nft
     l2_block_height       bigint
 );
 
-alter table l2_nft
-    owner to postgres;
+-- alter table l2_nft
+--     owner to postgres;
 
 create index if not exists idx_nft_index
     on l2_nft (l2_block_height);
@@ -542,8 +542,8 @@ create table if not exists l2_nft_history
     l2_block_height       bigint
 );
 
-alter table l2_nft_history
-    owner to postgres;
+-- alter table l2_nft_history
+--     owner to postgres;
 
 create index if not exists idx_l2_nft_history_deleted_at
     on l2_nft_history (deleted_at);
@@ -564,8 +564,8 @@ create table if not exists rollback
     nft_indexes       text
 );
 
-alter table rollback
-    owner to postgres;
+-- alter table rollback
+--     owner to postgres;
 
 create index if not exists idx_rollback_from_pool_tx_id
     on rollback (from_pool_tx_id);
@@ -595,8 +595,8 @@ create table if not exists l2_nft_metadata_history
     status     bigint
 );
 
-alter table l2_nft_metadata_history
-    owner to postgres;
+-- alter table l2_nft_metadata_history
+--     owner to postgres;
 
 create index if not exists idx_l2_nft_metadata_history_status
     on l2_nft_metadata_history (status);
