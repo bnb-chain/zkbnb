@@ -429,7 +429,9 @@ func (s *Sender) CommitBlocks() (err error) {
 	retry := false
 	for {
 		if retry {
-			newNonce, err := cli.GetPendingNonce(s.GetCommitAddress().Hex())
+			commitAddress := s.GetCommitAddress()
+			logx.Info("commit address from CommitKeyId,value is :%s", commitAddress.Hex())
+			newNonce, err := cli.GetPendingNonce(commitAddress.Hex())
 			if err != nil {
 				return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
 			}
@@ -664,7 +666,9 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	retry := false
 	for {
 		if retry {
-			newNonce, err := cli.GetPendingNonce(s.GetVerifyAddress().Hex())
+			verifyAddress := s.GetVerifyAddress()
+			logx.Info("verify address from VerifyKeyId,value is :%s", verifyAddress.Hex())
+			newNonce, err := cli.GetPendingNonce(verifyAddress.Hex())
 			if err != nil {
 				return fmt.Errorf("failed to get nonce for verify block, errL %v", err)
 			}
