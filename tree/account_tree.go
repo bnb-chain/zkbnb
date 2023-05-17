@@ -73,7 +73,6 @@ func InitAccountTree(
 			return nil, nil, err
 		}
 	}
-
 	logx.WithContext(ctxLog).Infof("get maxAccountIndex end")
 	opts := ctx.Options(0)
 	nilAccountAssetNodeHashes := NilAccountAssetNodeHashes(AssetTreeHeight, NilAccountAssetNodeHash, ctx.Hasher())
@@ -147,17 +146,25 @@ func InitAccountTree(
 			}
 			pendingAccountItem = append(pendingAccountItem, result.pendingAccountItem...)
 		}
+
+		accountTreeStart := time.Now()
+		logx.WithContext(ctxLog).Infof("start update account smt pendingAccountItemCount=%d", len(pendingAccountItem))
+
 		newVersion := bsmt.Version(blockHeight)
 		err = accountTree.MultiSetWithVersion(pendingAccountItem, newVersion)
 		if err != nil {
 			logx.WithContext(ctxLog).Errorf("unable to set account to tree: %s", err.Error())
 			return nil, nil, err
 		}
+		logx.WithContext(ctxLog).Infof("start CommitWithNewVersion")
+
 		_, err = accountTree.CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
 			logx.WithContext(ctxLog).Errorf("unable to commit account tree: %s,newVersion:%d,tree.LatestVersion:%d", err.Error(), uint64(newVersion), uint64(accountTree.LatestVersion()))
 			return nil, nil, err
 		}
+		logx.WithContext(ctxLog).Infof("end update account smt. cost time %v", time.Since(accountTreeStart))
+
 		logx.WithContext(ctxLog).Infof("reloadAccountTree end. cost time %v", time.Since(start))
 		return accountTree, accountAssetTrees, nil
 	}

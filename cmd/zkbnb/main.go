@@ -370,11 +370,23 @@ func main() {
 							flags.ConfigFlag,
 							flags.ServiceNameFlag,
 							flags.BatchSizeFlag,
+							flags.MetricsEnabledFlag,
+							flags.MetricsHTTPFlag,
+							flags.MetricsPortFlag,
+							flags.PProfEnabledFlag,
+							flags.PProfAddrFlag,
+							flags.PProfPortFlag,
 						},
 						Action: func(cCtx *cli.Context) error {
+							startMetricsServer(cCtx)
 							if !cCtx.IsSet(flags.ServiceNameFlag.Name) {
 								return cli.ShowSubcommandHelp(cCtx)
 							}
+							defer func() {
+								if recoverErr := recover(); recoverErr != nil {
+									logx.Errorf("failed to recover %v", recoverErr)
+								}
+							}()
 							recovery.RecoveryTreeDB(
 								cCtx.String(flags.ConfigFlag.Name),
 								cCtx.String(flags.ServiceNameFlag.Name),
