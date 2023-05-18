@@ -88,7 +88,7 @@ type StateDB struct {
 }
 
 func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
-	redisCache dbcache.Cache, cacheConfig *CacheConfig, assetCacheSize int,
+	redisCache dbcache.Cache, cacheConfig *CacheConfig,
 	stateRoot string, accountIndexList []int64, curHeight int64) (*StateDB, error) {
 	err := tree.SetupTreeDB(treeCtx)
 	if err != nil {
@@ -101,8 +101,6 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		accountIndexList,
 		curHeight,
 		treeCtx,
-		assetCacheSize,
-		true,
 	)
 
 	if err != nil {
@@ -114,7 +112,6 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		chainDb.L2NftHistoryModel,
 		curHeight,
 		treeCtx,
-		true,
 	)
 	if err != nil {
 		logx.Error("dbinitializer nft tree failed:", err)

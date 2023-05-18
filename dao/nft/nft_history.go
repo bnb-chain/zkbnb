@@ -115,10 +115,10 @@ func (m *defaultL2NftHistoryModel) GetLatestNftsByBlockHeight(height int64, from
 
 	dbTx := m.DB.Table(m.table+" as a").Select("*").
 		Where("NOT EXISTS (?) AND l2_block_height <= ? and nft_index >= ? and nft_index <= ?", subQuery, height, fromNftIndex, toNftIndex).
-		Order("nft_index")
+		Order("nft_index").Find(&accountNftAssets)
 
-	if dbTx.Find(&accountNftAssets).Error != nil {
-		return 0, nil, types.DbErrSqlOperation
+	if dbTx.Error != nil {
+		return 0, nil, dbTx.Error
 	}
 	return dbTx.RowsAffected, accountNftAssets, nil
 }

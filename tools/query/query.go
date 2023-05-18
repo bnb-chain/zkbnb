@@ -21,7 +21,6 @@ func QueryTreeDB(
 	configFile string,
 	blockHeight int64,
 	serviceName string,
-	batchSize int,
 	fromHistory bool, AccountIndexesStr string,
 
 ) {
@@ -42,14 +41,15 @@ func QueryTreeDB(
 			return
 		}
 	}
-	treeCtx, err := tree.NewContext(serviceName, configInfo.TreeDB.Driver, false, true, configInfo.TreeDB.RoutinePoolSize, &configInfo.TreeDB.LevelDBOption, &configInfo.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext(serviceName, configInfo.TreeDB.Driver, false, true, configInfo.TreeDB.RoutinePoolSize, &configInfo.TreeDB.LevelDBOption, &configInfo.TreeDB.RedisDBOption, configInfo.TreeDB.AssetTreeCacheSize,
+		fromHistory, configInfo.DbRoutineSize)
 	if err != nil {
 		logx.Errorf("Init tree database failed: %s", err)
 		return
 	}
 
 	treeCtx.SetOptions(bsmt.InitializeVersion(0))
-	treeCtx.SetBatchReloadSize(batchSize)
+	treeCtx.SetBatchReloadSize(configInfo.DbBatchSize)
 	err = tree.SetupTreeDB(treeCtx)
 	if err != nil {
 		logx.Errorf("Init tree database failed: %s", err)
@@ -63,8 +63,6 @@ func QueryTreeDB(
 		make([]int64, 0),
 		blockHeight,
 		treeCtx,
-		configInfo.TreeDB.AssetTreeCacheSize,
-		fromHistory,
 	)
 	if err != nil {
 		logx.Error("InitMerkleTree error:", err)
@@ -95,7 +93,7 @@ func QueryTreeDB(
 		ctx.NftModel,
 		ctx.NftHistoryModel,
 		blockHeight,
-		treeCtx, fromHistory)
+		treeCtx)
 	if err != nil {
 		logx.WithContext(ctxLog).Errorf("InitNftTree error: %s", err.Error())
 		return
@@ -117,7 +115,8 @@ func BuildConfig(configFile string, serviceName string) config.Config {
 		configInfo.CacheRedis = c.CacheRedis
 		configInfo.LogConf = c.LogConf
 		configInfo.EnableRollback = c.EnableRollback
-
+		configInfo.DbRoutineSize = c.DbRoutineSize
+		configInfo.DbBatchSize = c.DbBatchSize
 	} else if serviceName == "witness" {
 		c := witnessConfig.Config{}
 		if err := witnessConfig.InitSystemConfiguration(&c, configFile); err != nil {
@@ -128,7 +127,8 @@ func BuildConfig(configFile string, serviceName string) config.Config {
 		configInfo.Postgres = c.Postgres
 		configInfo.LogConf = c.LogConf
 		configInfo.EnableRollback = c.EnableRollback
-
+		configInfo.DbRoutineSize = c.DbRoutineSize
+		configInfo.DbBatchSize = c.DbBatchSize
 	} else {
 		logx.Error("there is no serviceName,%s", serviceName)
 	}

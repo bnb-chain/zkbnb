@@ -15,7 +15,6 @@ import (
 func RecoveryTreeDB(
 	configFile string,
 	serviceName string,
-	batchSize int,
 ) {
 	configInfo := query.BuildConfig(configFile, serviceName)
 	ctx := svc.NewServiceContext(configInfo)
@@ -41,14 +40,15 @@ func RecoveryTreeDB(
 	logx.WithContext(ctxLog).Infof("the latest verified height is %d,recovery to blockHeight=%d", latestVerifiedBlockNr)
 
 	// dbinitializer tree database
-	treeCtx, err := tree.NewContext(serviceName, configInfo.TreeDB.Driver, true, false, configInfo.TreeDB.RoutinePoolSize, &configInfo.TreeDB.LevelDBOption, &configInfo.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext(serviceName, configInfo.TreeDB.Driver, true, false, configInfo.TreeDB.RoutinePoolSize, &configInfo.TreeDB.LevelDBOption, &configInfo.TreeDB.RedisDBOption, configInfo.TreeDB.AssetTreeCacheSize,
+		true, configInfo.DbRoutineSize)
 	if err != nil {
 		logx.WithContext(ctxLog).Errorf("Init tree database failed: %s", err)
 		return
 	}
 
 	treeCtx.SetOptions(bsmt.InitializeVersion(0))
-	treeCtx.SetBatchReloadSize(batchSize)
+	treeCtx.SetBatchReloadSize(configInfo.DbBatchSize)
 	err = tree.SetupTreeDB(treeCtx)
 	if err != nil {
 		logx.WithContext(ctxLog).Errorf("Init tree database failed: %s", err)
@@ -63,8 +63,6 @@ func RecoveryTreeDB(
 		make([]int64, 0),
 		latestVerifiedBlockNr,
 		treeCtx,
-		configInfo.TreeDB.AssetTreeCacheSize,
-		true,
 	)
 	if err != nil {
 		logx.WithContext(ctxLog).Error("InitMerkleTree error:", err)
@@ -78,10 +76,13 @@ func RecoveryTreeDB(
 		ctx.NftModel,
 		ctx.NftHistoryModel,
 		latestVerifiedBlockNr,
-		treeCtx, true)
+		treeCtx)
 	if err != nil {
 		logx.WithContext(ctxLog).Errorf("InitNftTree error: %s", err.Error())
 		return
 	}
 	logx.WithContext(ctxLog).Infof("recovery nft smt successfully,cost time %v", time.Since(initNftTreeStart))
+
+	logx.WithContext(ctxLog).Infof("recovery successfully,cost time %v", time.Since(initAccountTreeStart))
+
 }

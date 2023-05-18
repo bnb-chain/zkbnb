@@ -148,12 +148,13 @@ func (w *Witness) initState(shouldCheckStateRoot bool) error {
 	}
 
 	// dbinitializer tree database
-	treeCtx, err := tree.NewContext("witness", w.config.TreeDB.Driver, false, false, w.config.TreeDB.RoutinePoolSize, &w.config.TreeDB.LevelDBOption, &w.config.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext("witness", w.config.TreeDB.Driver, false, false, w.config.TreeDB.RoutinePoolSize, &w.config.TreeDB.LevelDBOption, &w.config.TreeDB.RedisDBOption, w.config.TreeDB.AssetTreeCacheSize, true, w.config.DbRoutineSize)
 	if err != nil {
 		return err
 	}
 
 	treeCtx.SetOptions(bsmt.BatchSizeLimit(3 * 1024 * 1024))
+	treeCtx.SetBatchReloadSize(w.config.DbBatchSize)
 	err = tree.SetupTreeDB(treeCtx)
 	if err != nil {
 		return fmt.Errorf("init tree database failed %v", err)
@@ -178,8 +179,6 @@ func (w *Witness) initState(shouldCheckStateRoot bool) error {
 		accountIndexes,
 		witnessHeight,
 		treeCtx,
-		w.config.TreeDB.AssetTreeCacheSize,
-		true,
 	)
 	// the blockHeight depends on the proof start position
 	if err != nil {
@@ -191,8 +190,7 @@ func (w *Witness) initState(shouldCheckStateRoot bool) error {
 		accountIndexMap[accountIndex] = true
 	}
 
-	w.nftTree, err = tree.InitNftTree(w.nftModel, w.nftHistoryModel, witnessHeight,
-		treeCtx, true)
+	w.nftTree, err = tree.InitNftTree(w.nftModel, w.nftHistoryModel, witnessHeight, treeCtx)
 	if err != nil {
 		return fmt.Errorf("initNftTree error: %v", err)
 	}

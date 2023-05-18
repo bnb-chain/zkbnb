@@ -470,7 +470,7 @@ func (c *GenerateProof) generateProof(blockHeight int64, accountIndex int64, nft
 }
 
 func (c *GenerateProof) initSmtTree(blockHeight int64) (accountTree bsmt.SparseMerkleTree, accountAssetTrees *tree.AssetTreeCache, nftTree bsmt.SparseMerkleTree, err error) {
-	treeCtx, err := tree.NewContext("desertexit", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext("desertexit", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption, c.config.TreeDB.AssetTreeCacheSize, false, 200)
 	if err != nil {
 		logx.Errorf("init tree database failed: %s", err)
 		return nil, nil, nil, err
@@ -491,8 +491,6 @@ func (c *GenerateProof) initSmtTree(blockHeight int64) (accountTree bsmt.SparseM
 		make([]int64, 0),
 		blockHeight,
 		treeCtx,
-		c.config.TreeDB.AssetTreeCacheSize,
-		false,
 	)
 	if err != nil {
 		logx.Error("init merkle tree error:", err)
@@ -506,7 +504,7 @@ func (c *GenerateProof) initSmtTree(blockHeight int64) (accountTree bsmt.SparseM
 		c.bc.L2NftModel,
 		c.bc.L2NftHistoryModel,
 		blockHeight,
-		treeCtx, false)
+		treeCtx)
 	if err != nil {
 		logx.Errorf("init nft tree error: %s", err.Error())
 		return nil, nil, nil, err

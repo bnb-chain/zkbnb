@@ -25,11 +25,11 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/panjf2000/ants/v2"
+	"github.com/zeromicro/go-zero/core/logx"
 	"hash"
 	"strconv"
+	"sync"
 	"time"
-
-	"github.com/zeromicro/go-zero/core/logx"
 
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb-smt/database/memory"
@@ -53,14 +53,12 @@ func InitAccountTree(
 	accountIndexList []int64,
 	blockHeight int64,
 	ctx *Context,
-	assetCacheSize int,
-	fromHistory bool,
 ) (
 	accountTree bsmt.SparseMerkleTree, accountAssetTrees *AssetTreeCache, err error,
 ) {
 	var maxAccountIndex int64
 	ctxLog := log.NewCtxWithKV(log.BlockHeightContext, blockHeight)
-	if fromHistory {
+	if ctx.fromHistory {
 		maxAccountIndex, err = accountHistoryModel.GetMaxAccountIndex(blockHeight)
 		if err != nil && err != types.DbErrNotFound {
 			logx.WithContext(ctxLog).Errorf("unable to get maxAccountIndex")
@@ -78,7 +76,7 @@ func InitAccountTree(
 	nilAccountAssetNodeHashes := NilAccountAssetNodeHashes(AssetTreeHeight, NilAccountAssetNodeHash, ctx.Hasher())
 
 	// init account state trees
-	accountAssetTrees = NewLazyTreeCache(assetCacheSize, maxAccountIndex, blockHeight, func(index, block int64) bsmt.SparseMerkleTree {
+	accountAssetTrees = NewLazyTreeCache(ctx.assetCacheSize, maxAccountIndex, blockHeight, func(index, block int64) bsmt.SparseMerkleTree {
 		tree, err := bsmt.NewSparseMerkleTree(ctx.Hasher(),
 			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, nilAccountAssetNodeHashes,
 			ctx.Options(0)...)
@@ -98,75 +96,7 @@ func InitAccountTree(
 	logx.WithContext(ctxLog).Infof("newBASSparseMerkleTree end")
 
 	if ctx.IsLoad() {
-		if blockHeight == 0 || maxAccountIndex == -1 {
-			return accountTree, accountAssetTrees, nil
-		}
-
-		start := time.Now()
-		logx.WithContext(ctxLog).Infof("reloadAccountTree start")
-		totalTask := 0
-		resultChan := make(chan *treeUpdateResp, maxAccountIndex/int64(ctx.BatchReloadSize()))
-		defer close(resultChan)
-		pool, err := ants.NewPool(100, ants.WithPanicHandler(func(p interface{}) {
-			panic("worker exits from a panic")
-		}))
-		for i := 0; int64(i) <= maxAccountIndex; i += ctx.BatchReloadSize() {
-			toAccountIndex := int64(i+ctx.BatchReloadSize()) - 1
-			if toAccountIndex > maxAccountIndex {
-				toAccountIndex = maxAccountIndex
-			}
-			totalTask++
-			err := func(fromAccountIndex int64, toAccountIndex int64) error {
-				return pool.Submit(func() {
-					pendingAccountItem, err := reloadAccountTreeFromRDB(
-						accountModel, accountHistoryModel, blockHeight,
-						fromAccountIndex, toAccountIndex, accountAssetTrees, fromHistory, ctxLog)
-					if err != nil {
-						logx.Severef("reloadAccountTreeFromRDB failed:%s", err.Error())
-						resultChan <- &treeUpdateResp{
-							err: err,
-						}
-						return
-					}
-					resultChan <- &treeUpdateResp{
-						pendingAccountItem: pendingAccountItem,
-						err:                err,
-					}
-				})
-			}(int64(i), toAccountIndex)
-			if err != nil {
-				return nil, nil, fmt.Errorf("reloadAccountTreeFromRDB failed: %s", err.Error())
-			}
-		}
-		pendingAccountItem := make([]bsmt.Item, 0)
-		for i := 0; i < totalTask; i++ {
-			result := <-resultChan
-			if result.err != nil {
-				return nil, nil, fmt.Errorf("reloadAccountTree failed: %s", err.Error())
-			}
-			pendingAccountItem = append(pendingAccountItem, result.pendingAccountItem...)
-		}
-
-		accountTreeStart := time.Now()
-		logx.WithContext(ctxLog).Infof("start update account smt pendingAccountItemCount=%d", len(pendingAccountItem))
-
-		newVersion := bsmt.Version(blockHeight)
-		err = accountTree.MultiSetWithVersion(pendingAccountItem, newVersion)
-		if err != nil {
-			logx.WithContext(ctxLog).Errorf("unable to set account to tree: %s", err.Error())
-			return nil, nil, err
-		}
-		logx.WithContext(ctxLog).Infof("start accountTree CommitWithNewVersion")
-
-		_, err = accountTree.CommitWithNewVersion(nil, &newVersion)
-		if err != nil {
-			logx.WithContext(ctxLog).Errorf("unable to commit account tree: %s,newVersion:%d,tree.LatestVersion:%d", err.Error(), uint64(newVersion), uint64(accountTree.LatestVersion()))
-			return nil, nil, err
-		}
-		logx.WithContext(ctxLog).Infof("end update account smt. cost time %v", time.Since(accountTreeStart))
-
-		logx.WithContext(ctxLog).Infof("reloadAccountTree end. cost time %v", time.Since(start))
-		return accountTree, accountAssetTrees, nil
+		return createAccountTree(blockHeight, maxAccountIndex, ctx.fromHistory, accountModel, accountHistoryModel, ctx, accountTree, accountAssetTrees, ctxLog)
 	}
 
 	if ctx.IsOnlyQuery() {
@@ -189,47 +119,138 @@ func InitAccountTree(
 	return accountTree, accountAssetTrees, nil
 }
 
-func reloadAccountTreeFromRDB(
-	accountModel account.AccountModel,
-	accountHistoryModel account.AccountHistoryModel,
-	blockHeight int64,
-	fromAccountIndex, toAccountIndex int64,
-	accountAssetTrees *AssetTreeCache,
-	fromHistory bool,
-	ctx context.Context,
-) ([]bsmt.Item, error) {
-	pendingAccountItem := make([]bsmt.Item, 0)
+func createAccountTree(blockHeight int64, maxAccountIndex int64, fromHistory bool, accountModel account.AccountModel,
+	accountHistoryModel account.AccountHistoryModel, ctx *Context, accountTree bsmt.SparseMerkleTree, accountAssetTrees *AssetTreeCache, ctxLog context.Context) (
+	bsmt.SparseMerkleTree, *AssetTreeCache, error,
+) {
+	if blockHeight == 0 || maxAccountIndex == -1 {
+		return accountTree, accountAssetTrees, nil
+	}
+
+	start := time.Now()
+	logx.WithContext(ctxLog).Infof("reloadAccountTree start")
+
+	accountQueue := make(chan *account.Account, 100000)
+	defer close(accountQueue)
+
+	loadAccountComplete := make(chan bool, 1)
+	defer close(loadAccountComplete)
+
+	commitAssetSmtComplete := make(chan bool, 1)
+	defer close(commitAssetSmtComplete)
+
+	assetStateRootQueue := make(chan *treeUpdateResp, 100000)
+	defer close(assetStateRootQueue)
+
+	go func() {
+		start := time.Now()
+		err := loadAccounts(maxAccountIndex, ctx, fromHistory, blockHeight, accountModel, accountHistoryModel, accountQueue)
+		if err != nil {
+			logx.Severe(err)
+			panic("loadAccounts error:" + err.Error())
+		}
+		loadAccountComplete <- true
+		logx.WithContext(ctxLog).Infof("loadAccounts end. cost time %v", time.Since(start))
+	}()
+
+	go func() {
+		start := time.Now()
+		err := commitAssetSmt(blockHeight, ctx, accountQueue, assetStateRootQueue, accountAssetTrees, loadAccountComplete, ctxLog)
+		if err != nil {
+			logx.Severe(err)
+			panic("commitAssetSmt error:" + err.Error())
+		}
+		commitAssetSmtComplete <- true
+		logx.WithContext(ctxLog).Infof("commitAssetSmt end. cost time %v", time.Since(start))
+	}()
+
+	pendingAccountItem, err := buildPendingAccountItem(assetStateRootQueue, commitAssetSmtComplete, ctxLog)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	logx.WithContext(ctxLog).Infof("wait loadAccounts and commitAssetSmt...")
+
+	accountTreeStart := time.Now()
+	logx.WithContext(ctxLog).Infof("start update account smt, account count=%d", len(pendingAccountItem))
+
+	newVersion := bsmt.Version(blockHeight)
+	err = accountTree.MultiSetWithVersion(pendingAccountItem, newVersion)
+	if err != nil {
+		logx.WithContext(ctxLog).Errorf("unable to set account to tree: %s", err.Error())
+		return nil, nil, err
+	}
+	logx.WithContext(ctxLog).Infof("start accountTree CommitWithNewVersion")
+
+	_, err = accountTree.CommitWithNewVersion(nil, &newVersion)
+	if err != nil {
+		logx.WithContext(ctxLog).Errorf("unable to commit account tree: %s,newVersion:%d,tree.LatestVersion:%d", err.Error(), uint64(newVersion), uint64(accountTree.LatestVersion()))
+		return nil, nil, err
+	}
+	logx.WithContext(ctxLog).Infof("end update account smt. cost time %v", time.Since(accountTreeStart))
+
+	logx.WithContext(ctxLog).Infof("reloadAccountTree end. cost time %v", time.Since(start))
+	return accountTree, accountAssetTrees, nil
+}
+
+func loadAccounts(maxAccountIndex int64, ctx *Context, fromHistory bool, blockHeight int64, accountModel account.AccountModel,
+	accountHistoryModel account.AccountHistoryModel, accountQueue chan *account.Account) error {
+
+	resultChan := make(chan error, common2.MaxInt64(maxAccountIndex/int64(ctx.BatchReloadSize()), 1))
+	defer close(resultChan)
+
+	pool, err := ants.NewPool(ctx.dbRoutineSize, ants.WithPanicHandler(func(p interface{}) {
+		panic("worker exits from a panic")
+	}))
+
+	totalTask := 0
+	for i := 0; int64(i) <= maxAccountIndex; i += ctx.BatchReloadSize() {
+		toAccountIndex := int64(i+ctx.BatchReloadSize()) - 1
+		if toAccountIndex > maxAccountIndex {
+			toAccountIndex = maxAccountIndex
+		}
+		totalTask++
+		err := func(fromAccountIndex int64, toAccountIndex int64) error {
+			return pool.Submit(func() {
+				doLoadAccounts(fromAccountIndex, toAccountIndex, fromHistory, blockHeight, accountModel, accountHistoryModel, accountQueue, resultChan)
+			})
+		}(int64(i), toAccountIndex)
+
+		if err != nil {
+			return fmt.Errorf("reloadAccountTreeFromRDB failed: %s", err.Error())
+		}
+	}
+	for i := 0; i < totalTask; i++ {
+		result := <-resultChan
+		if result != nil {
+			return fmt.Errorf("reloadAccountTree failed: %s", err.Error())
+		}
+	}
+	return nil
+}
+
+func doLoadAccounts(fromAccountIndex int64, toAccountIndex int64, fromHistory bool, blockHeight int64, accountModel account.AccountModel,
+	accountHistoryModel account.AccountHistoryModel, accountQueue chan *account.Account, resultChan chan error) {
 	var accountInfoList []*account.Account
 	var err error
 	if fromHistory {
 		_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight,
 			fromAccountIndex, toAccountIndex)
 		if err != nil {
-			logx.WithContext(ctx).Errorf("unable to get all accountHistories")
-			return nil, err
+			resultChan <- fmt.Errorf("unable to get all accountHistories,fromAccountIndex=%d,toAccountIndex=%d,err=%s", fromAccountIndex, toAccountIndex, err.Error())
+			return
 		}
 		if len(accountHistories) == 0 {
-			return pendingAccountItem, nil
+			resultChan <- nil
+			return
 		}
-		accountIndexList := make([]int64, 0, len(accountHistories))
-		for _, accountHistory := range accountHistories {
-			accountIndexList = append(accountIndexList, accountHistory.AccountIndex)
-		}
-		accountInfoList, err = accountModel.GetAccountByIndexes(accountIndexList)
-		if err != nil {
-			logx.WithContext(ctx).Errorf("unable to get account by account index list: %s,accountIndexList:%d", err.Error(), accountIndexList)
-			return nil, err
-		}
+
 		accountInfoDbMap := make(map[int64]*account.Account, 0)
 		for _, accountInfo := range accountInfoList {
 			accountInfoDbMap[accountInfo.AccountIndex] = accountInfo
 		}
 		for _, accountHistory := range accountHistories {
-			accountInfo := accountInfoDbMap[accountHistory.AccountIndex]
-			if accountInfo == nil {
-				logx.WithContext(ctx).Errorf("unable to get account by account index: %s,AccountIndex:%d", err.Error(), accountHistory.AccountIndex)
-				return nil, err
-			}
+			accountInfo := &account.Account{}
 			accountInfo.Nonce = accountHistory.Nonce
 			accountInfo.CollectionNonce = accountHistory.CollectionNonce
 			accountInfo.Status = accountHistory.Status
@@ -238,59 +259,145 @@ func reloadAccountTreeFromRDB(
 			accountInfo.L2BlockHeight = accountHistory.L2BlockHeight
 			accountInfo.PublicKey = accountHistory.PublicKey
 			accountInfo.L1Address = accountHistory.L1Address
+			accountInfo.AccountIndex = accountHistory.AccountIndex
+			accountInfoList = append(accountInfoList, accountInfo)
 		}
 	} else {
 		accountInfoList, err = accountModel.GetByAccountIndexRange(fromAccountIndex, toAccountIndex)
 		if err != nil {
-			logx.WithContext(ctx).Errorf("unable to get all accountHistories")
-			return nil, err
-		}
-		if len(accountInfoList) == 0 {
-			return pendingAccountItem, nil
+			resultChan <- fmt.Errorf("unable to get all GetByAccountIndexRange,fromAccountIndex=%d,toAccountIndex=%d,err=%s", fromAccountIndex, toAccountIndex, err.Error())
+			return
 		}
 	}
+	logx.Infof("add oAccountInfo to accountQueue,count=%d", len(accountQueue))
 	for _, oAccountInfo := range accountInfoList {
-		ctx := log.UpdateCtxWithKV(ctx, log.AccountIndexCtx, oAccountInfo.AccountIndex)
-		accountInfo, err := chain.ToFormatAccountInfo(oAccountInfo)
-		if err != nil {
-			logx.WithContext(ctx).Errorf("unable to convert to format account info: %s", err.Error())
-			return nil, err
-		}
-		// create account assets node
-		pendingUpdateAssetItem := make([]bsmt.Item, 0, len(accountInfo.AssetInfo))
-		for assetId, assetInfo := range accountInfo.AssetInfo {
-			ctx := log.UpdateCtxWithKV(ctx, log.AssetIdCtx, assetId)
-			hashVal, err := AssetToNode(assetInfo.Balance.String(), assetInfo.OfferCanceledOrFinalized.String(), ctx)
+		accountQueue <- oAccountInfo
+	}
+	resultChan <- nil
+	return
+}
+
+func commitAssetSmt(blockHeight int64, ctx *Context, accountQueue chan *account.Account, assetStateRootQueue chan *treeUpdateResp, accountAssetTrees *AssetTreeCache, loadAccountComplete chan bool, ctxLog context.Context) error {
+	pool, err := ants.NewPool(ctx.dbRoutineSize*20, ants.WithPanicHandler(func(p interface{}) {
+		panic("worker exits from a panic")
+	}))
+	if err != nil {
+		return fmt.Errorf("init ants.NewPool failed: %s", err.Error())
+	}
+	wg := sync.WaitGroup{}
+	run := true
+
+	for run {
+		select {
+		case oAccountInfo := <-accountQueue:
+			wg.Add(1)
+			err := func(oAccountInfo *account.Account, accountAssetTrees *AssetTreeCache, ctxLog context.Context) error {
+				return pool.Submit(func() {
+					defer wg.Done()
+					doCommitAssetSmt(blockHeight, oAccountInfo, accountAssetTrees, assetStateRootQueue, ctxLog)
+				})
+			}(oAccountInfo, accountAssetTrees, ctxLog)
 			if err != nil {
-				logx.WithContext(ctx).Errorf("unable to convert asset to node: %s", err.Error())
-				return nil, err
+				return fmt.Errorf("doCommitAssetSmt failed: %s", err.Error())
 			}
-			pendingUpdateAssetItem = append(pendingUpdateAssetItem, bsmt.Item{Key: uint64(assetId), Val: hashVal})
+		default:
+			if len(loadAccountComplete) == 1 && len(accountQueue) == 0 {
+				logx.WithContext(ctxLog).Infof("no data in accountQueue")
+				run = false
+			}
 		}
-		newVersion := bsmt.Version(blockHeight)
-		err = accountAssetTrees.Get(accountInfo.AccountIndex).MultiSetWithVersion(pendingUpdateAssetItem, newVersion)
+	}
+
+	logx.WithContext(ctxLog).Infof("wait doCommitAssetSmt...")
+	wg.Wait()
+	return nil
+}
+
+func doCommitAssetSmt(blockHeight int64, oAccountInfo *account.Account, accountAssetTrees *AssetTreeCache, assetStateRootQueue chan *treeUpdateResp, ctxLog context.Context) {
+	ctx := log.UpdateCtxWithKV(ctxLog, log.AccountIndexCtx, oAccountInfo.AccountIndex)
+	accountInfo, err := chain.ToFormatAccountInfo(oAccountInfo)
+	if err != nil {
+		assetStateRootQueue <- &treeUpdateResp{
+			err: fmt.Errorf("unable to convert to format account info: %s", err.Error()),
+		}
+		return
+	}
+	// create account assets node
+	pendingUpdateAssetItem := make([]bsmt.Item, 0, len(accountInfo.AssetInfo))
+	for assetId, assetInfo := range accountInfo.AssetInfo {
+		ctx := log.UpdateCtxWithKV(ctx, log.AssetIdCtx, assetId)
+		hashVal, err := AssetToNode(assetInfo.Balance.String(), assetInfo.OfferCanceledOrFinalized.String(), ctx)
 		if err != nil {
-			logx.WithContext(ctx).Errorf("unable to set asset to tree: %s", err.Error())
-			return nil, err
+			assetStateRootQueue <- &treeUpdateResp{
+				err: fmt.Errorf("unable to convert asset to node: %s", err.Error()),
+			}
+			return
 		}
-		_, err = accountAssetTrees.Get(accountInfo.AccountIndex).CommitWithNewVersion(nil, &newVersion)
-		if err != nil {
-			logx.WithContext(ctx).Errorf("unable to CommitWithNewVersion asset to tree: %s,newVersion:%d,tree.LatestVersion:%d", err.Error(), uint64(newVersion), uint64(accountAssetTrees.Get(accountInfo.AccountIndex).LatestVersion()))
-			return nil, err
+		pendingUpdateAssetItem = append(pendingUpdateAssetItem, bsmt.Item{Key: uint64(assetId), Val: hashVal})
+	}
+	newVersion := bsmt.Version(blockHeight)
+
+	setWithVersionStart := time.Now()
+	err = accountAssetTrees.Get(accountInfo.AccountIndex).MultiSetWithVersion(pendingUpdateAssetItem, newVersion)
+	logx.WithContext(ctxLog).Debugf("doCommitAssetSmt1 MultiSetWithVersion end. cost time %v", time.Since(setWithVersionStart))
+
+	if err != nil {
+		assetStateRootQueue <- &treeUpdateResp{
+			err: fmt.Errorf("unable to set asset to tree: %s", err.Error()),
 		}
-		accountHashVal, err := AccountToNode(
-			accountInfo.L1Address,
-			accountInfo.PublicKey,
-			accountInfo.Nonce,
-			accountInfo.CollectionNonce,
-			accountAssetTrees.Get(accountInfo.AccountIndex).Root(),
-			ctx,
-		)
-		if err != nil {
-			logx.WithContext(ctx).Errorf("unable to convert account to node: %s", err.Error())
-			return nil, err
+		return
+	}
+	logx.WithContext(ctxLog).Debugf("doCommitAssetSmt MultiSetWithVersion end. cost time %v", time.Since(setWithVersionStart))
+
+	commitWithVersionStart := time.Now()
+	_, err = accountAssetTrees.Get(accountInfo.AccountIndex).CommitWithNewVersion(nil, &newVersion)
+	logx.WithContext(ctxLog).Debugf("doCommitAssetSmt1 CommitWithNewVersion end. cost time %v", time.Since(commitWithVersionStart))
+
+	if err != nil {
+		assetStateRootQueue <- &treeUpdateResp{
+			err: fmt.Errorf("unable to CommitWithNewVersion asset to tree: %s,newVersion:%d,tree.LatestVersion:%d", err.Error(), uint64(newVersion), uint64(accountAssetTrees.Get(accountInfo.AccountIndex).LatestVersion())),
 		}
-		pendingAccountItem = append(pendingAccountItem, bsmt.Item{Key: uint64(accountInfo.AccountIndex), Val: accountHashVal})
+		return
+	}
+	logx.WithContext(ctxLog).Debugf("doCommitAssetSmt CommitWithNewVersion end. cost time %v", time.Since(commitWithVersionStart))
+
+	accountHashVal, err := AccountToNode(
+		accountInfo.L1Address,
+		accountInfo.PublicKey,
+		accountInfo.Nonce,
+		accountInfo.CollectionNonce,
+		accountAssetTrees.Get(accountInfo.AccountIndex).Root(),
+		ctx,
+	)
+	if err != nil {
+		assetStateRootQueue <- &treeUpdateResp{
+			err: fmt.Errorf("unable to convert account to node: %s", err.Error()),
+		}
+		return
+	}
+	assetStateRootQueue <- &treeUpdateResp{
+		pendingAccountItem: []bsmt.Item{{Key: uint64(accountInfo.AccountIndex), Val: accountHashVal}},
+		err:                nil,
+	}
+}
+
+func buildPendingAccountItem(assetStateRootQueue chan *treeUpdateResp, commitAssetSmtComplete chan bool, ctxLog context.Context) ([]bsmt.Item, error) {
+	pendingAccountItem := make([]bsmt.Item, 0)
+	run := true
+	for run {
+		select {
+		case assetStateRoot := <-assetStateRootQueue:
+			if assetStateRoot.err != nil {
+				return nil, assetStateRoot.err
+			}
+			pendingAccountItem = append(pendingAccountItem, assetStateRoot.pendingAccountItem...)
+		default:
+			time.Sleep(1 * time.Second)
+			if len(commitAssetSmtComplete) == 1 && len(assetStateRootQueue) == 0 {
+				logx.WithContext(ctxLog).Infof("no data in assetStateRootQueue")
+				run = false
+			}
+		}
 	}
 	return pendingAccountItem, nil
 }

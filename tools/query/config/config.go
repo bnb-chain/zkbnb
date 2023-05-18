@@ -22,5 +22,7 @@ type Config struct {
 		AssetTreeCacheSize int
 	}
 	EnableRollback bool
+	DbRoutineSize  int `json:",optional"`
+	DbBatchSize    int
 	LogConf        logx.LogConf
 }

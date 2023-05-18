@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/apollo"
 	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
@@ -55,8 +56,10 @@ type ChainConfig struct {
 	//second
 	RedisExpiration int `json:",optional"`
 	//nolint:staticcheck
-	CacheConfig statedb.CacheConfig `json:",optional"`
-	TreeDB      TreeDB
+	CacheConfig   statedb.CacheConfig `json:",optional"`
+	TreeDB        TreeDB
+	DbRoutineSize int `json:",optional"`
+	DbBatchSize   int
 }
 
 type BlockChain struct {
@@ -100,12 +103,12 @@ func NewBlockChain(config *ChainConfig, maxPackedInterval int, moduleName string
 		expiration = time.Duration(config.RedisExpiration) * time.Second
 	}
 	redisCache := dbcache.NewRedisCache(config.CacheRedis, expiration)
-	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption, config.TreeDB.AssetTreeCacheSize, true, config.DbRoutineSize)
 	if err != nil {
 		return nil, err
 	}
 	treeCtx.SetOptions(bsmt.BatchSizeLimit(3 * 1024 * 1024))
-
+	treeCtx.SetBatchReloadSize(config.DbBatchSize)
 	var statuses = []int{block.StatusPending, block.StatusCommitted, block.StatusVerifiedAndExecuted}
 	curHeight, err := bc.BlockModel.GetLatestHeight(statuses)
 	if err != nil {
@@ -123,7 +126,7 @@ func NewBlockChain(config *ChainConfig, maxPackedInterval int, moduleName string
 		return nil, fmt.Errorf("pre rollBack func failed: %v,curHeight=%d", err.Error(), curHeight)
 	}
 
-	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, config.TreeDB.AssetTreeCacheSize, bc.currentBlock.StateRoot, accountIndexList, curHeight)
+	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, bc.currentBlock.StateRoot, accountIndexList, curHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -907,7 +910,7 @@ func (bc *BlockChain) LoadAllAccounts(pool *ants.Pool) error {
 		return nil
 	}
 
-	errChan := make(chan error, maxAccountIndex/int64(batchReloadSize))
+	errChan := make(chan error, common2.MaxInt64(maxAccountIndex/int64(batchReloadSize), 1))
 	defer close(errChan)
 
 	for i := 0; int64(i) <= maxAccountIndex; i += batchReloadSize {
@@ -968,7 +971,7 @@ func (bc *BlockChain) LoadAllNfts(pool *ants.Pool) error {
 		return nil
 	}
 
-	errChan := make(chan error, maxNftIndex/int64(batchReloadSize))
+	errChan := make(chan error, common2.MaxInt64(maxNftIndex/int64(batchReloadSize), 1))
 	defer close(errChan)
 
 	for i := 0; int64(i) <= maxNftIndex; i += batchReloadSize {

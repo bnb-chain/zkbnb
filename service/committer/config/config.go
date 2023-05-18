@@ -72,6 +72,8 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 	c.TreeDB = systemConfig.TreeDB
 	c.LogConf = systemConfig.LogConf
 	c.IpfsUrl = systemConfig.IpfsUrl
+	c.DbBatchSize = systemConfig.DbBatchSize
+	c.DbRoutineSize = systemConfig.DbRoutineSize
 	return nil
 }
 

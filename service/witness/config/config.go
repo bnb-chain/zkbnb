@@ -31,6 +31,8 @@ type Config struct {
 	TreeDB         TreeDB
 	LogConf        logx.LogConf
 	EnableRollback bool
+	DbRoutineSize  int `json:",optional"`
+	DbBatchSize    int
 }
 
 func InitSystemConfiguration(config *Config, configFile string) error {
@@ -70,7 +72,8 @@ func InitSystemConfigFromEnvironment(c *Config) error {
 
 	c.TreeDB = systemConfig.TreeDB
 	c.LogConf = systemConfig.LogConf
-
+	c.DbBatchSize = systemConfig.DbBatchSize
+	c.DbRoutineSize = systemConfig.DbRoutineSize
 	return nil
 }
 

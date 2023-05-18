@@ -81,15 +81,15 @@ func TestConstructWitness(t *testing.T) {
 }
 
 func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
-	ctx, err := tree.NewContext("witness", tree.MemoryDB, false, false, 128, nil, nil)
+	ctx, err := tree.NewContext("witness", tree.MemoryDB, false, false, 128, nil, nil, assetTreeCacheSize, true, 200)
 	if err != nil {
 		return nil, err
 	}
-	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, make([]int64, 0), blockHeight, ctx, assetTreeCacheSize, true)
+	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, make([]int64, 0), blockHeight, ctx)
 	if err != nil {
 		return nil, err
 	}
-	nftTree, err := tree.InitNftTree(nftModel, nftHistoryModel, blockHeight, ctx, true)
+	nftTree, err := tree.InitNftTree(nftModel, nftHistoryModel, blockHeight, ctx)
 	if err != nil {
 		return nil, err
 	}
