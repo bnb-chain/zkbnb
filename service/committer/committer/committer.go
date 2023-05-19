@@ -1155,6 +1155,7 @@ func (c *Committer) getLatestExecutedRequestId() (int64, error) {
 }
 
 func (c *Committer) preLoadAccountAndNft(txs []*tx.Tx) {
+	var start time.Time
 	accountIndexMap := make(map[int64]bool, 0)
 	nftIndexMap := make(map[int64]bool, 0)
 	addressMap := make(map[string]bool, 0)
@@ -1162,6 +1163,7 @@ func (c *Committer) preLoadAccountAndNft(txs []*tx.Tx) {
 		c.bc.PreApplyTransaction(poolTx, accountIndexMap, nftIndexMap, addressMap)
 	}
 	c.bc.Statedb.PreLoadAccountAndNft(accountIndexMap, nftIndexMap, addressMap)
+	metrics.PreLoadAccountAndNftMetrics.Set(float64(time.Since(start).Milliseconds()))
 }
 
 func (c *Committer) PendingTxNum() {

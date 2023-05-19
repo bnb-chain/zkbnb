@@ -301,6 +301,12 @@ var (
 		Help:      "execute txs get executed tx operation time",
 	})
 
+	PreLoadAccountAndNftMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "pre_load_account_and_nft_time",
+		Help:      "pre load account and nft time",
+	})
+
 	AccountFromDbGauge = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
 		Name:      "account_from_db_time",
@@ -601,6 +607,10 @@ func InitBlockChainMetrics() error {
 
 	if err := prometheus.Register(ExecuteTxGetExecutedTxMetrics); err != nil {
 		return fmt.Errorf("prometheus.Register executeTxGetExecutedTxMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(PreLoadAccountAndNftMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register PreLoadAccountAndNftMetrics error: %v", err)
 	}
 
 	if err := prometheus.Register(UpdateAssetTreeMetrics); err != nil {
