@@ -234,21 +234,13 @@ func doLoadAccounts(fromAccountIndex int64, toAccountIndex int64, fromHistory bo
 	var accountInfoList []*account.Account
 	var err error
 	if fromHistory {
-		_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight,
+		_, accountHistories, err := getAccountHistoriesByAccountIndexRange(accountHistoryModel, blockHeight,
 			fromAccountIndex, toAccountIndex)
-		if err != nil {
+		if err != nil && err != types.DbErrNotFound {
 			resultChan <- fmt.Errorf("unable to get all accountHistories,fromAccountIndex=%d,toAccountIndex=%d,err=%s", fromAccountIndex, toAccountIndex, err.Error())
 			return
 		}
-		if len(accountHistories) == 0 {
-			resultChan <- nil
-			return
-		}
 
-		accountInfoDbMap := make(map[int64]*account.Account, 0)
-		for _, accountInfo := range accountInfoList {
-			accountInfoDbMap[accountInfo.AccountIndex] = accountInfo
-		}
 		for _, accountHistory := range accountHistories {
 			accountInfo := &account.Account{}
 			accountInfo.Nonce = accountHistory.Nonce
@@ -263,8 +255,8 @@ func doLoadAccounts(fromAccountIndex int64, toAccountIndex int64, fromHistory bo
 			accountInfoList = append(accountInfoList, accountInfo)
 		}
 	} else {
-		accountInfoList, err = accountModel.GetByAccountIndexRange(fromAccountIndex, toAccountIndex)
-		if err != nil {
+		accountInfoList, err = getAccountsByAccountIndexRange(accountModel, fromAccountIndex, toAccountIndex)
+		if err != nil && err != types.DbErrNotFound {
 			resultChan <- fmt.Errorf("unable to get all GetByAccountIndexRange,fromAccountIndex=%d,toAccountIndex=%d,err=%s", fromAccountIndex, toAccountIndex, err.Error())
 			return
 		}
@@ -339,8 +331,6 @@ func doCommitAssetSmt(blockHeight int64, oAccountInfo *account.Account, accountA
 
 	setWithVersionStart := time.Now()
 	err = accountAssetTrees.Get(accountInfo.AccountIndex).MultiSetWithVersion(pendingUpdateAssetItem, newVersion)
-	logx.WithContext(ctxLog).Debugf("doCommitAssetSmt1 MultiSetWithVersion end. cost time %v", time.Since(setWithVersionStart))
-
 	if err != nil {
 		assetStateRootQueue <- &treeUpdateResp{
 			err: fmt.Errorf("unable to set asset to tree: %s", err.Error()),
@@ -351,8 +341,6 @@ func doCommitAssetSmt(blockHeight int64, oAccountInfo *account.Account, accountA
 
 	commitWithVersionStart := time.Now()
 	_, err = accountAssetTrees.Get(accountInfo.AccountIndex).CommitWithNewVersion(nil, &newVersion)
-	logx.WithContext(ctxLog).Debugf("doCommitAssetSmt1 CommitWithNewVersion end. cost time %v", time.Since(commitWithVersionStart))
-
 	if err != nil {
 		assetStateRootQueue <- &treeUpdateResp{
 			err: fmt.Errorf("unable to CommitWithNewVersion asset to tree: %s,newVersion:%d,tree.LatestVersion:%d", err.Error(), uint64(newVersion), uint64(accountAssetTrees.Get(accountInfo.AccountIndex).LatestVersion())),
@@ -558,4 +546,39 @@ func rootNotBeEqual(rootStoredInCache string, rootStoredInDb string) bool {
 
 func versionBeGreaterThanHeight(version bsmt.Version, height bsmt.Version) bool {
 	return version > height
+}
+
+func getAccountsByAccountIndexRange(accountModel account.AccountModel, fromAccountIndex int64, toAccountIndex int64) ([]*account.Account, error) {
+	var err error
+	var accountInfoList []*account.Account
+	retryCount := 10
+	for retryCount > 0 {
+		accountInfoList, err = accountModel.GetByAccountIndexRange(fromAccountIndex, toAccountIndex)
+		if err != nil && err != types.DbErrNotFound {
+			logx.Severef("fail to get accounts by account index range,fromAccountIndex=%d,toAccountIndex=%d,err=%s", fromAccountIndex, toAccountIndex, err.Error())
+			time.Sleep(10 * time.Second)
+			retryCount--
+			continue
+		}
+		break
+	}
+	return accountInfoList, err
+}
+
+func getAccountHistoriesByAccountIndexRange(accountHistoryModel account.AccountHistoryModel, blockHeight int64, fromAccountIndex int64, toAccountIndex int64) (int64, []*account.AccountHistory, error) {
+	var err error
+	var accountHistories []*account.AccountHistory
+	var rowsAffected int64
+	retryCount := 10
+	for retryCount > 0 {
+		rowsAffected, accountHistories, err = accountHistoryModel.GetValidAccounts(blockHeight, fromAccountIndex, toAccountIndex)
+		if err != nil && err != types.DbErrNotFound {
+			logx.Severef("fail to get accountHistories by account index range,fromAccountIndex=%d,toAccountIndex=%d,err=%s", fromAccountIndex, toAccountIndex, err.Error())
+			time.Sleep(10 * time.Second)
+			retryCount--
+			continue
+		}
+		break
+	}
+	return rowsAffected, accountHistories, err
 }

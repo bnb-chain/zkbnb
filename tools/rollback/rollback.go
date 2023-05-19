@@ -10,6 +10,7 @@ import (
 	"github.com/bnb-chain/zkbnb/tools/rollbackwitnesssmt"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
+	"time"
 )
 
 //If the smt tree data is incorrect, automatic rollback cannot be used
@@ -30,6 +31,8 @@ func RollbackAll(configFile string, height int64) error {
 	if !c.EnableRollback {
 		return fmt.Errorf("rollback switch not turned on")
 	}
+
+	start := time.Now()
 
 	logx.Infof("revert CommittedBlocks,start height=%d", height)
 	err := revertblock.RevertCommittedBlocks(configFile, height, true)
@@ -73,7 +76,6 @@ func RollbackAll(configFile string, height int64) error {
 	if err != nil {
 		return err
 	}
-	logx.Infof("rollback success,start height=%d", height)
-
+	logx.Infof("rollback success,start height=%d,cost time %v", height, time.Since(start))
 	return nil
 }

@@ -162,14 +162,11 @@ func loadNftTreeFromRDB(
 	loadDbStart := time.Now()
 	if fromHistory {
 		nftAssets = make([]*nft.L2Nft, 0)
-		_, nftHistories, err := nftHistoryModel.GetLatestNftsByBlockHeight(blockHeight,
+		_, nftHistories, err := getNftHistoriesByNftIndexRange(nftHistoryModel, blockHeight,
 			fromNftIndex, toNftIndex)
-		if err != nil {
+		if err != nil && err != types.DbErrNotFound {
 			logx.WithContext(ctx).Errorf("unable to get latest nft assets: %s", err.Error())
 			return nil, err
-		}
-		if len(nftHistories) == 0 {
-			return pendingAccountItem, nil
 		}
 		for _, nftHistory := range nftHistories {
 			nftAsset := &nft.L2Nft{
@@ -185,8 +182,8 @@ func loadNftTreeFromRDB(
 			nftAssets = append(nftAssets, nftAsset)
 		}
 	} else {
-		nftAssets, err = l2NftModel.GetByNftIndexRange(fromNftIndex, toNftIndex)
-		if err != nil {
+		nftAssets, err = getNftsByNftIndexRange(l2NftModel, fromNftIndex, toNftIndex)
+		if err != nil && err != types.DbErrNotFound {
 			logx.Errorf("unable to get latest nft assets: %s", err.Error())
 			return nil, err
 		}
@@ -244,4 +241,38 @@ func RollBackNftTree(treeHeight int64, nftTree bsmt.SparseMerkleTree) error {
 		}
 	}
 	return nil
+}
+
+func getNftsByNftIndexRange(l2NftModel nft.L2NftModel, fromNftIndex int64, toNftIndex int64) ([]*nft.L2Nft, error) {
+	var err error
+	var nftList []*nft.L2Nft
+	retryCount := 10
+	for retryCount > 0 {
+		nftList, err = l2NftModel.GetByNftIndexRange(fromNftIndex, toNftIndex)
+		if err != nil && err != types.DbErrNotFound {
+			logx.Severef("fail to get nfts by nft index range,fromNftIndex=%d,toNftIndex=%d,err=%s", fromNftIndex, toNftIndex, err.Error())
+			time.Sleep(10 * time.Second)
+			retryCount--
+			continue
+		}
+		break
+	}
+	return nftList, err
+}
+func getNftHistoriesByNftIndexRange(nftHistoryModel nft.L2NftHistoryModel, blockHeight int64, fromNftIndex int64, toNftIndex int64) (int64, []*nft.L2NftHistory, error) {
+	var err error
+	var nftHistories []*nft.L2NftHistory
+	var rowsAffected int64
+	retryCount := 10
+	for retryCount > 0 {
+		rowsAffected, nftHistories, err = nftHistoryModel.GetLatestNftsByBlockHeight(blockHeight, fromNftIndex, toNftIndex)
+		if err != nil && err != types.DbErrNotFound {
+			logx.Severef("fail to get nftHistories by nft index range,fromNftIndex=%d,toNftIndex=%d,err=%s", fromNftIndex, toNftIndex, err.Error())
+			time.Sleep(10 * time.Second)
+			retryCount--
+			continue
+		}
+		break
+	}
+	return rowsAffected, nftHistories, err
 }

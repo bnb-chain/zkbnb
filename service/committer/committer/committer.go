@@ -76,7 +76,7 @@ func NewCommitter(config *config.Config) (*Committer, error) {
 
 	saveBlockDataPoolSize := config.BlockConfig.SaveBlockDataPoolSize
 	if saveBlockDataPoolSize == 0 {
-		saveBlockDataPoolSize = 100
+		saveBlockDataPoolSize = 200
 	}
 	if config.BlockConfig.MaxPackedInterval == 0 {
 		config.BlockConfig.MaxPackedInterval = MaxPackedInterval
