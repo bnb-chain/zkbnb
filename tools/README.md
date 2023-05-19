@@ -35,3 +35,7 @@ redis-cli -h 127.0.0.1 -p 6666 flushdb
 ./zkbnb rollback --height 493
 
 AWS_PROFILE=bnbcloud-dev;AWS_SDK_LOAD_CONFIG=true;APOLLO_CLUSTER=chaos;ENV=chaos
+
+./zkbnb revertblock  --height 4588 --byBlock false
+
+byBlock

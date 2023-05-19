@@ -789,7 +789,8 @@ func (s *Sender) PrepareCommitBlockData(lastHandledTx *l1rolluptx.L1RollupTx, cl
 		// than the maxCommitAvgUnitGas, abandon commit operation for temporary
 		totalEstimatedFee, err := zkBnbClient.EstimateCommitGasWithNonce(lastStoredBlockInfo, commitBlockList, gasPrice, 0, nonce)
 		if err != nil {
-			return nil, false, fmt.Errorf("failed to get estimated gas fee for committing,last stored block L2BlockHeight=%d err: %v", lastStoredBlockInfo.BlockNumber, err)
+			lastStoredBlockInfoJson, _ := json.Marshal(lastStoredBlockInfo)
+			return nil, false, fmt.Errorf("failed to get estimated gas fee for committing,last stored block L2BlockHeight=%d,lastStoredBlockInfo=%s,err: %v", lastStoredBlockInfo.BlockNumber, string(lastStoredBlockInfoJson), err)
 		}
 
 		totalTxCount = s.CalculateTotalTxCountForCompressBlock(compressedBlocks)

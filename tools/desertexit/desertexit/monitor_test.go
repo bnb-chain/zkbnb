@@ -3,9 +3,11 @@ package desertexit
 import (
 	"context"
 	"encoding/json"
+	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	"github.com/bnb-chain/zkbnb/common/abicoder"
 	monitor2 "github.com/bnb-chain/zkbnb/common/monitor"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
@@ -15,11 +17,13 @@ import (
 //const networkRpc = "https://bsc-testnet.nodereal.io/v1/a1cee760ac744f449416a711f20d99dd"
 const networkRpc = "https://data-seed-prebsc-1-s3.binance.org:8545"
 
-const commitHash = "0x68c377009c46578ae1377d0da601813615a4e21b6d1cf52f0d39fd2d1c9b9433"
+const commitHash = "0x3605c0166faa94f1ea330f2e61d9da8a449e6dfe70fce58ca9cc814fd98ae7cc"
 
 const verifyHash = "0x8b90ebe41dd69ea95135b7f7b5984326a2c419f436635e7ff5aaacf0f17cc8c7"
 
 const revertHash = "0x8b90ebe41dd69ea95135b7f7b5984326a2c419f436635e7ff5aaacf0f17cc8c7"
+
+const zkbnbContract = "0x3386427a79B873F8b2a393A8532F333F74FC2C26"
 
 func TestDesertExit_getCommitBlocksCallData(t *testing.T) {
 	client, err := rpc.NewClient(networkRpc)
@@ -48,6 +52,9 @@ func TestDesertExit_getCommitBlocksCallData(t *testing.T) {
 	if err := newABIDecoder.UnpackIntoInterface(&callData, "commitBlocks", transaction.Data()[4:]); err != nil {
 		logx.Severe(err)
 		return
+	}
+	for _, commitBlockInfo := range callData.NewBlocksData {
+		logx.Infof("commitBlockInfo NewStateRoot=%s,BlockNumber=%d", common.Bytes2Hex(commitBlockInfo.NewStateRoot[:]), commitBlockInfo.BlockNumber)
 	}
 	jsonBytes, err := json.Marshal(callData)
 	logx.Infof("callData=%s", string(jsonBytes))
@@ -145,6 +152,25 @@ func TestDesertExit_getRevertBlocksCallData(t *testing.T) {
 	}
 	jsonBytes, err := json.Marshal(callData)
 	logx.Infof("callData=%s", string(jsonBytes))
+}
+
+func TestTotalBlocksCommitted(t *testing.T) {
+	client, err := rpc.NewClient(networkRpc)
+	if err != nil {
+		logx.Severef("failed to create rpc client, %v", err)
+		return
+	}
+	zkbnbInstance, err := zkbnb.LoadZkBNBInstance(client, zkbnbContract)
+	if err != nil {
+		logx.Severef("failed toLoadZkBNBInstance, %v", err)
+		return
+	}
+	totalBlocksCommitted, err := zkbnbInstance.TotalBlocksCommitted(&bind.CallOpts{})
+	if err != nil {
+		logx.Severef("failed TotalBlocksCommitted, %v", err)
+		return
+	}
+	logx.Infof("TotalBlocksCommitted=%d", totalBlocksCommitted)
 }
 
 type RevertBlocksCallData struct {

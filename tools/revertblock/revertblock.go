@@ -5,6 +5,7 @@ import (
 	"fmt"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
+	types2 "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	common2 "github.com/bnb-chain/zkbnb/common"
@@ -122,7 +123,7 @@ func RevertCommittedBlocks(configFile string, height int64, byBlock bool) (err e
 			return err
 		}
 	} else {
-		storedBlockInfoList, err = buildStoredBlockInfoByRollup(height, cli, ctx.L1RollupTxModel)
+		storedBlockInfoList, err = buildStoredBlockInfoByRollup(height, endHeight, cli, ctx.L1RollupTxModel)
 		if err != nil {
 			return err
 		}
@@ -178,19 +179,19 @@ func buildStoredBlockInfoByBlock(height int64, endHeight int64, blockModel block
 	return storedBlockInfoList, nil
 }
 
-func buildStoredBlockInfoByRollup(height int64, cli *rpc.ProviderClient, l1RollupTxModel l1rolluptx.L1RollupTxModel) ([]zkbnb.StorageStoredBlockInfo, error) {
+func buildStoredBlockInfoByRollup(height int64, endHeight int64, cli *rpc.ProviderClient, l1RollupTxModel l1rolluptx.L1RollupTxModel) ([]zkbnb.StorageStoredBlockInfo, error) {
 	storedBlockInfoList := make([]zkbnb.StorageStoredBlockInfo, 0)
 	handledTxs, err := l1RollupTxModel.GetHandledCommitTxList(height)
 	if err != nil && err != types.DbErrNotFound {
 		return nil, fmt.Errorf("getHandledCommitTxList error %v", err)
 	}
 	for _, handledTx := range handledTxs {
-		storedBlockInfo, err := getStoredBlockInfoFromL1(cli, handledTx.L1TxHash)
+		storedBlockInfo, err := getStoredBlockInfoFromL1(endHeight, cli, handledTx.L1TxHash)
 		if err != nil {
 			return nil, fmt.Errorf("failed to getStoredBlockInfoFromL1, err: %v", err)
 		}
 
-		storedBlockInfoList = append(storedBlockInfoList, storedBlockInfo)
+		storedBlockInfoList = append(storedBlockInfoList, storedBlockInfo...)
 	}
 	return storedBlockInfoList, nil
 }
@@ -222,10 +223,10 @@ func checkRevertBlock(cli *rpc.ProviderClient, c config.Config, txHash string) e
 	}
 }
 
-func getStoredBlockInfoFromL1(cli *rpc.ProviderClient, hash string) (storedBlockInfo zkbnb.StorageStoredBlockInfo, err error) {
+func getStoredBlockInfoFromL1(endHeight int64, cli *rpc.ProviderClient, hash string) (storedBlockInfoList []zkbnb.StorageStoredBlockInfo, err error) {
 	transaction, _, err := cli.TransactionByHash(context.Background(), common.HexToHash(hash))
 	if err != nil {
-		return storedBlockInfo, err
+		return storedBlockInfoList, err
 	}
 
 	storageStoredBlockInfo := desertexit.StorageStoredBlockInfo{}
@@ -233,16 +234,65 @@ func getStoredBlockInfoFromL1(cli *rpc.ProviderClient, hash string) (storedBlock
 	callData := desertexit.CommitBlocksCallData{LastCommittedBlockData: &storageStoredBlockInfo, NewBlocksData: newBlocksData}
 	newABIDecoder := abicoder.NewABIDecoder(monitor2.ZkBNBContractAbi)
 	if err := newABIDecoder.UnpackIntoInterface(&callData, "commitBlocks", transaction.Data()[4:]); err != nil {
-		return storedBlockInfo, err
+		return storedBlockInfoList, err
 	}
-	storedBlockInfo = zkbnb.StorageStoredBlockInfo{
-		BlockSize:                    storageStoredBlockInfo.BlockSize,
-		BlockNumber:                  storageStoredBlockInfo.BlockNumber,
-		PriorityOperations:           storageStoredBlockInfo.PriorityOperations,
-		PendingOnchainOperationsHash: storageStoredBlockInfo.PendingOnchainOperationsHash,
-		Timestamp:                    storageStoredBlockInfo.Timestamp,
-		StateRoot:                    storageStoredBlockInfo.StateRoot,
-		Commitment:                   storageStoredBlockInfo.Commitment,
+	stateRootMap := make(map[uint32]string, 0)
+	for _, commitBlockInfo := range callData.NewBlocksData {
+		stateRootMap[commitBlockInfo.BlockNumber] = common.Bytes2Hex(commitBlockInfo.NewStateRoot[:])
 	}
-	return storedBlockInfo, nil
+	stateRootMap[callData.LastCommittedBlockData.BlockNumber] = common.Bytes2Hex(callData.LastCommittedBlockData.StateRoot[:])
+
+	for _, commitBlockInfo := range callData.NewBlocksData {
+		if int64(commitBlockInfo.BlockNumber) > endHeight {
+			continue
+		}
+		commitment := chain.CreateBlockCommitment(int64(commitBlockInfo.BlockNumber), commitBlockInfo.Timestamp.Int64(),
+			common.FromHex(stateRootMap[commitBlockInfo.BlockNumber-1]), common.FromHex(common.Bytes2Hex(commitBlockInfo.NewStateRoot[:])),
+			commitBlockInfo.PublicData, int64(len(getPubDataOffset(commitBlockInfo.OnchainOperations))))
+		var (
+			commitmentByte               [32]byte
+			pendingOnChainOperationsHash [32]byte
+		)
+		copy(commitmentByte[:], common.FromHex(commitment)[:])
+		onChainOperationsHash, priorityOperations := getPendingOnChainOperationsHash(commitBlockInfo.PublicData)
+		copy(pendingOnChainOperationsHash[:], onChainOperationsHash[:])
+
+		storedBlockInfo := zkbnb.StorageStoredBlockInfo{
+			BlockSize:                    commitBlockInfo.BlockSize,
+			BlockNumber:                  commitBlockInfo.BlockNumber,
+			PriorityOperations:           uint64(priorityOperations),
+			PendingOnchainOperationsHash: pendingOnChainOperationsHash,
+			Timestamp:                    commitBlockInfo.Timestamp,
+			StateRoot:                    commitBlockInfo.NewStateRoot,
+			Commitment:                   commitmentByte,
+		}
+		storedBlockInfoList = append(storedBlockInfoList, storedBlockInfo)
+	}
+	return storedBlockInfoList, nil
+}
+
+func getPubDataOffset(onChainOperations []desertexit.ZkBNBOnchainOperationData) []uint32 {
+	publicDataOffsetList := make([]uint32, 0)
+	for _, onChainOperation := range onChainOperations {
+		publicDataOffsetList = append(publicDataOffsetList, onChainOperation.PublicDataOffset)
+	}
+	return publicDataOffsetList
+}
+
+func getPendingOnChainOperationsHash(pubData []byte) ([]byte, int) {
+	pubDataNew := make([]byte, 0)
+	priorityOperations := 0
+	pendingOnChainOperationsHash := common.FromHex(types.EmptyStringKeccak)
+	sizePerTx := types2.PubDataBitsSizePerTx / 8
+	for i := 0; i < len(pubData)/sizePerTx; i++ {
+		subPubData := pubData[i*sizePerTx : (i+1)*sizePerTx]
+		offset := 0
+		offset, txType := common2.ReadUint8(subPubData, offset)
+		if types.IsPriorityOperationTx(int64(txType)) {
+			priorityOperations++
+			pendingOnChainOperationsHash = common2.ConcatKeccakHash(pendingOnChainOperationsHash, pubDataNew)
+		}
+		pubDataNew = append(pubDataNew, subPubData...)
+	}
+	return pendingOnChainOperationsHash, priorityOperations
 }
