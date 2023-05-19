@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
+	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/abicoder"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	monitor2 "github.com/bnb-chain/zkbnb/common/monitor"
@@ -55,6 +56,16 @@ func RevertCommittedBlocks(configFile string, height int64, byBlock bool) (err e
 	if lastHandledTx != nil {
 		endHeight = lastHandledTx.L2BlockHeight
 	}
+	logx.Infof("the last committed height is %d at L1RollupTx table", endHeight)
+
+	latestCommittedHeight, err := ctx.BlockModel.GetLatestCommittedHeight()
+	if err != nil {
+		return fmt.Errorf("failed to get block info, err: %v", err)
+	}
+	logx.Infof("the last committed height is %d at block table", latestCommittedHeight)
+
+	endHeight = common2.MaxInt64(latestCommittedHeight, endHeight)
+	logx.Infof("select height=%d for endHeight", endHeight)
 
 	l1RPCEndpoint, err := ctx.SysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
