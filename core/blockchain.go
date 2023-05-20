@@ -436,9 +436,20 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 			for k := range deleteAccountIndexMap {
 				deleteAccountIndexList = append(deleteAccountIndexList, k)
 			}
-			err := bc.AccountModel.DeleteByIndexesInTransact(dbTx, deleteAccountIndexList)
-			if err != nil {
-				return fmt.Errorf("roll back account,delete account failed: %s", err.Error())
+			from := 0
+			to := 0
+			batch := 1000
+			count := len(deleteAccountIndexList)
+			for from < count {
+				to = from + batch
+				if to > count {
+					to = count
+				}
+				err := bc.AccountModel.DeleteByIndexesInTransact(dbTx, deleteAccountIndexList[from:to])
+				if err != nil {
+					return fmt.Errorf("roll back account,delete account failed: %s", err.Error())
+				}
+				from = to
 			}
 		}
 
@@ -469,9 +480,20 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 			for k := range deleteNftIndexMap {
 				deleteNftIndexList = append(deleteNftIndexList, k)
 			}
-			err := bc.L2NftModel.DeleteByIndexesInTransact(dbTx, deleteNftIndexList)
-			if err != nil {
-				return fmt.Errorf("roll back nft,delete nft failed: %s", err.Error())
+			from := 0
+			to := 0
+			batch := 1000
+			count := len(deleteNftIndexList)
+			for from < count {
+				to = from + batch
+				if to > count {
+					to = count
+				}
+				err := bc.L2NftModel.DeleteByIndexesInTransact(dbTx, deleteNftIndexList)
+				if err != nil {
+					return fmt.Errorf("roll back nft,delete nft failed: %s", err.Error())
+				}
+				from = to
 			}
 		}
 
