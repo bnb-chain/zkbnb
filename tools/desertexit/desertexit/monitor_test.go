@@ -21,7 +21,7 @@ const commitHash = "0x3605c0166faa94f1ea330f2e61d9da8a449e6dfe70fce58ca9cc814fd9
 
 const verifyHash = "0x8b90ebe41dd69ea95135b7f7b5984326a2c419f436635e7ff5aaacf0f17cc8c7"
 
-const revertHash = "0x8b90ebe41dd69ea95135b7f7b5984326a2c419f436635e7ff5aaacf0f17cc8c7"
+const revertHash = "0xf33fe53863f3b0f3c9ac9bdf228bd156745ab0c95784ff71cc6bd803051563a8"
 
 const zkbnbContract = "0x3386427a79B873F8b2a393A8532F333F74FC2C26"
 

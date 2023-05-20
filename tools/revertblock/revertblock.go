@@ -18,6 +18,7 @@ import (
 	"github.com/bnb-chain/zkbnb/tools/desertexit/desertexit"
 	"github.com/bnb-chain/zkbnb/tools/revertblock/internal/svc"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
@@ -49,24 +50,6 @@ func RevertCommittedBlocks(configFile string, height int64, byBlock bool) (err e
 		return fmt.Errorf("height can not be 0")
 	}
 	startHeight := height
-	lastHandledTx, err := ctx.L1RollupTxModel.GetLatestHandledTx(l1rolluptx.TxTypeCommit)
-	if err != nil && err != types.DbErrNotFound {
-		return fmt.Errorf("lastHandledTx is nil %v", err)
-	}
-	endHeight := int64(0)
-	if lastHandledTx != nil {
-		endHeight = lastHandledTx.L2BlockHeight
-	}
-	logx.Infof("the last committed height is %d at L1RollupTx table", endHeight)
-
-	latestCommittedHeight, err := ctx.BlockModel.GetLatestCommittedHeight()
-	if err != nil {
-		return fmt.Errorf("failed to get block info, err: %v", err)
-	}
-	logx.Infof("the last committed height is %d at block table", latestCommittedHeight)
-
-	endHeight = common2.MaxInt64(latestCommittedHeight, endHeight)
-	logx.Infof("select height=%d for endHeight", endHeight)
 
 	l1RPCEndpoint, err := ctx.SysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
@@ -82,6 +65,13 @@ func RevertCommittedBlocks(configFile string, height int64, byBlock bool) (err e
 	if err != nil {
 		return fmt.Errorf("failed to create client instance, %v", err)
 	}
+
+	totalBlocksCommitted, err := getTotalBlocksCommitted(cli, rollupAddress.Value)
+	if err != nil {
+		return err
+	}
+	logx.Infof("the last committed height is %d", totalBlocksCommitted)
+
 	chainId, err := cli.ChainID(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to get chainId, %v", err)
@@ -118,12 +108,12 @@ func RevertCommittedBlocks(configFile string, height int64, byBlock bool) (err e
 
 	storedBlockInfoList := make([]zkbnb.StorageStoredBlockInfo, 0)
 	if byBlock == true {
-		storedBlockInfoList, err = buildStoredBlockInfoByBlock(height, endHeight, ctx.BlockModel)
+		storedBlockInfoList, err = buildStoredBlockInfoByBlock(height, totalBlocksCommitted, ctx.BlockModel)
 		if err != nil {
 			return err
 		}
 	} else {
-		storedBlockInfoList, err = buildStoredBlockInfoByRollup(height, endHeight, cli, ctx.L1RollupTxModel)
+		storedBlockInfoList, err = buildStoredBlockInfoByRollup(height, totalBlocksCommitted, cli, ctx.L1RollupTxModel)
 		if err != nil {
 			return err
 		}
@@ -149,12 +139,12 @@ func RevertCommittedBlocks(configFile string, height int64, byBlock bool) (err e
 	if err != nil {
 		return fmt.Errorf("failed to send revertBlocks tx, errL %v:%s", err, txHash)
 	}
-	logx.Infof("send revert block success,tx hash=%s,startHeight=%d ~ endHeight=%d", txHash, startHeight, endHeight)
+	logx.Infof("send revert block success,tx hash=%s,startHeight=%d ~ endHeight=%d", txHash, startHeight, totalBlocksCommitted)
 	err = checkRevertBlock(cli, c, txHash)
 	if err != nil {
 		return err
 	}
-	logx.Infof("revert block success,tx hash=%s,startHeight=%d ~ endHeight=%d", txHash, startHeight, endHeight)
+	logx.Infof("revert block success,tx hash=%s,startHeight=%d ~ endHeight=%d", txHash, startHeight, totalBlocksCommitted)
 	return nil
 }
 
@@ -246,6 +236,10 @@ func getStoredBlockInfoFromL1(endHeight int64, cli *rpc.ProviderClient, hash str
 		if int64(commitBlockInfo.BlockNumber) > endHeight {
 			continue
 		}
+
+		//if !(commitBlockInfo.BlockNumber <= 4576 && commitBlockInfo.BlockNumber >= 4576) {
+		//	continue
+		//}
 		commitment := chain.CreateBlockCommitment(int64(commitBlockInfo.BlockNumber), commitBlockInfo.Timestamp.Int64(),
 			common.FromHex(stateRootMap[commitBlockInfo.BlockNumber-1]), common.FromHex(common.Bytes2Hex(commitBlockInfo.NewStateRoot[:])),
 			commitBlockInfo.PublicData, int64(len(getPubDataOffset(commitBlockInfo.OnchainOperations))))
@@ -256,6 +250,8 @@ func getStoredBlockInfoFromL1(endHeight int64, cli *rpc.ProviderClient, hash str
 		copy(commitmentByte[:], common.FromHex(commitment)[:])
 		onChainOperationsHash, priorityOperations := getPendingOnChainOperationsHash(commitBlockInfo.PublicData)
 		copy(pendingOnChainOperationsHash[:], onChainOperationsHash[:])
+
+		logx.Infof("getStoredBlockInfoFromL1,BlockNumber=%d, commitment=%s,priorityOperations=%d,pendingOnChainOperationsHash=%s", commitBlockInfo.BlockNumber, commitment, priorityOperations, common.Bytes2Hex(pendingOnChainOperationsHash[:]))
 
 		storedBlockInfo := zkbnb.StorageStoredBlockInfo{
 			BlockSize:                    commitBlockInfo.BlockSize,
@@ -280,7 +276,6 @@ func getPubDataOffset(onChainOperations []desertexit.ZkBNBOnchainOperationData) 
 }
 
 func getPendingOnChainOperationsHash(pubData []byte) ([]byte, int) {
-	pubDataNew := make([]byte, 0)
 	priorityOperations := 0
 	pendingOnChainOperationsHash := common.FromHex(types.EmptyStringKeccak)
 	sizePerTx := types2.PubDataBitsSizePerTx / 8
@@ -290,9 +285,28 @@ func getPendingOnChainOperationsHash(pubData []byte) ([]byte, int) {
 		offset, txType := common2.ReadUint8(subPubData, offset)
 		if types.IsPriorityOperationTx(int64(txType)) {
 			priorityOperations++
-			pendingOnChainOperationsHash = common2.ConcatKeccakHash(pendingOnChainOperationsHash, pubDataNew)
 		}
-		pubDataNew = append(pubDataNew, subPubData...)
+		if int64(txType) == types.TxTypeFullExitNft ||
+			int64(txType) == types.TxTypeFullExit ||
+			int64(txType) == types.TxTypeWithdrawNft ||
+			int64(txType) == types.TxTypeWithdraw {
+			pendingOnChainOperationsHash = common2.ConcatKeccakHash(pendingOnChainOperationsHash, subPubData)
+		}
 	}
 	return pendingOnChainOperationsHash, priorityOperations
+}
+
+func getTotalBlocksCommitted(cli *rpc.ProviderClient, zkBnbContract string) (int64, error) {
+	zkBnbInstance, err := zkbnb.LoadZkBNBInstance(cli, zkBnbContract)
+	if err != nil {
+		logx.Severef("failed toLoadZkBNBInstance, %v", err)
+		return 0, err
+	}
+	totalBlocksCommitted, err := zkBnbInstance.TotalBlocksCommitted(&bind.CallOpts{})
+	if err != nil {
+		logx.Severef("failed TotalBlocksCommitted, %v", err)
+		return 0, err
+	}
+	logx.Infof("TotalBlocksCommitted=%d", totalBlocksCommitted)
+	return int64(totalBlocksCommitted), nil
 }
