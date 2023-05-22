@@ -2,7 +2,10 @@ package core
 
 import (
 	"fmt"
+	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/metrics"
+	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -15,10 +18,12 @@ import (
 )
 
 type Processor interface {
+	PreProcess(tx *tx.Tx, accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool)
 	Process(tx *tx.Tx) error
 }
 
 type ProcessorForDesert interface {
+	PreProcess(txInfo txtypes.TxInfo, accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool)
 	Process(txInfo txtypes.TxInfo) error
 }
 
@@ -32,21 +37,19 @@ func NewCommitProcessor(bc *BlockChain) Processor {
 	}
 }
 
-func (p *CommitProcessor) Process(tx *tx.Tx) error {
+func (p *CommitProcessor) PreProcess(tx *tx.Tx, accountMap map[int64]bool, nftMap map[int64]bool, addressMap map[string]bool) {
+	executor, err := executor.NewTxExecutor(p.bc, tx)
+	if err == nil {
+		executor.PreLoadAccountAndNft(accountMap, nftMap, addressMap)
+	}
+}
+
+func (p *CommitProcessor) Process(tx *tx.Tx) (err error) {
 	var start time.Time
 	p.bc.setCurrentBlockTimeStamp()
 	defer func() {
-		if err := recover(); err != nil {
-			if types.IsL2Tx(tx.TxType) {
-				expectNonce, err := p.bc.Statedb.GetCommittedNonce(tx.AccountIndex)
-				if err != nil {
-					p.bc.Statedb.ClearPendingNonceFromRedisCache(tx.AccountIndex)
-				} else {
-					p.bc.Statedb.SetPendingNonceToRedisCache(tx.AccountIndex, expectNonce-1)
-				}
-			}
-			logx.Severef("failed to recover commit processor, %v", err)
-			panic("failed to recover commit processor")
+		if recoverErr := recover(); recoverErr != nil {
+			err = fmt.Errorf("failed to recover commit processor, %v", recoverErr)
 		}
 	}()
 	defer p.bc.resetCurrentBlockTimeStamp()
@@ -86,6 +89,8 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	if err != nil {
 		return fmt.Errorf("failed to apply transaction, %v", err)
 	}
+	tx.IsNonceChanged = true
+
 	start = time.Now()
 	err = executor.GeneratePubData()
 	metrics.ExecuteTxGeneratePubDataMetrics.Set(float64(time.Since(start).Milliseconds()))
@@ -104,7 +109,13 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	}
 	tx.CreatedAt = time.Now()
 	p.bc.Statedb.Txs = append(p.bc.Statedb.Txs, tx)
-
+	metrics.TxTypeCommitRunCounter.WithLabelValues(strconv.Itoa(executor.GetTxInfo().GetTxType())).Inc()
+	fee, isValid := new(big.Int).SetString(tx.GasFee, 10)
+	if isValid {
+		metrics.TxTypeCommitRevenueCounter.WithLabelValues(strconv.Itoa(executor.GetTxInfo().GetTxType())).Add(common2.GetFeeFromWei(fee))
+		metrics.GasAccountRevenueCounter.Add(common2.GetFeeFromWei(fee))
+		metrics.TotalRevenueCounter.Add(common2.GetFeeFromWei(fee))
+	}
 	return nil
 }
 
@@ -128,6 +139,9 @@ func NewDesertProcessor(bc *BlockChain) ProcessorForDesert {
 	}
 }
 
+func (p *APIProcessor) PreProcess(tx *tx.Tx, accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+}
+
 func (p *APIProcessor) Process(tx *tx.Tx) error {
 	executor, err := executor.NewTxExecutor(p.bc, tx)
 	if err != nil {
@@ -149,6 +163,13 @@ func (p *APIProcessor) Process(tx *tx.Tx) error {
 		return mappingExecutedErrors(err)
 	}
 	return nil
+}
+
+func (p *DesertProcessor) PreProcess(txInfo txtypes.TxInfo, accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	executor, err := executor.NewTxExecutorForDesert(p.bc, txInfo)
+	if err == nil {
+		executor.PreLoadAccountAndNft(accountIndexMap, nftIndexMap, addressMap)
+	}
 }
 
 func (p *DesertProcessor) Process(txInfo txtypes.TxInfo) error {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	types2 "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/prove"
@@ -16,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/panjf2000/ants/v2"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -25,6 +27,8 @@ import (
 	"github.com/bnb-chain/zkbnb/core"
 	"github.com/bnb-chain/zkbnb/types"
 )
+
+const DefaultProofFolder = "./tools/desertexit/proofdata/"
 
 type GenerateProof struct {
 	running bool
@@ -44,7 +48,7 @@ func NewGenerateProof(config *config.Config) (*GenerateProof, error) {
 	}))
 
 	if config.ProofFolder == "" {
-		config.ProofFolder = "./tools/desertexit/proofdata/"
+		config.ProofFolder = DefaultProofFolder
 	}
 	desertExit := &GenerateProof{
 		running: true,
@@ -56,12 +60,12 @@ func NewGenerateProof(config *config.Config) (*GenerateProof, error) {
 }
 
 func (c *GenerateProof) Run() error {
-	err := c.loadAllAccounts()
+	err := c.bc.LoadAllAccounts(c.pool)
 	if err != nil {
 		return err
 	}
 
-	err = c.loadAllNfts()
+	err = c.bc.LoadAllNfts(c.pool)
 	if err != nil {
 		return err
 	}
@@ -105,7 +109,7 @@ func (c *GenerateProof) Run() error {
 		for _, pendingBlock := range pendingBlocks {
 			if int(pendingBlock.BlockHeight)-int(executedTxMaxHeight) != 1 {
 				time.Sleep(50 * time.Millisecond)
-				logx.Infof("not equal block height=%s", pendingBlock.BlockHeight)
+				logx.Infof("not equal block height=%d", pendingBlock.BlockHeight)
 				break
 			}
 
@@ -147,6 +151,12 @@ func (c *GenerateProof) executeBlockFunc(desertExitBlock *desertexit.DesertExitB
 	}
 
 	txInfos, err := chain.ParsePubDataForDesert(desertExitBlock.PubData)
+	if err != nil {
+		return err
+	}
+
+	c.preLoadAccountAndNft(txInfos)
+
 	for _, txInfo := range txInfos {
 		err := core.NewDesertProcessor(c.bc).Process(txInfo)
 		if err != nil {
@@ -188,7 +198,7 @@ func (c *GenerateProof) executeBlockFunc(desertExitBlock *desertexit.DesertExitB
 		if !exist {
 			accountInfo, err := c.bc.Statedb.GetFormatAccount(accountIndex)
 			if err != nil {
-				return fmt.Errorf("get account info failed,accountIndex=%s,err=%s ", accountIndex, err.Error())
+				return fmt.Errorf("get account info failed,accountIndex=%d,err=%s ", accountIndex, err.Error())
 			}
 			c.bc.Statedb.SetPendingAccount(accountIndex, accountInfo)
 		}
@@ -212,6 +222,16 @@ func (c *GenerateProof) executeBlockFunc(desertExitBlock *desertexit.DesertExitB
 	}
 
 	return nil
+}
+
+func (c *GenerateProof) preLoadAccountAndNft(txInfos []txtypes.TxInfo) {
+	var accountIndexMap map[int64]bool
+	var nftIndexMap map[int64]bool
+	var addressMap map[string]bool
+	for _, txInfo := range txInfos {
+		core.NewDesertProcessor(c.bc).PreProcess(txInfo, accountIndexMap, nftIndexMap, addressMap)
+	}
+	c.bc.Statedb.PreLoadAccountAndNft(accountIndexMap, nftIndexMap, addressMap)
 }
 
 func (c *GenerateProof) saveToDb(desertExitBlock *desertexit.DesertExitBlock) error {
@@ -262,125 +282,6 @@ func (c *GenerateProof) saveToDb(desertExitBlock *desertexit.DesertExitBlock) er
 
 	c.bc.Statedb.SyncPendingAccountToMemoryCache(c.bc.Statedb.PendingAccountMap)
 	c.bc.Statedb.SyncPendingNftToMemoryCache(c.bc.Statedb.PendingNftMap)
-	return nil
-}
-
-func (c *GenerateProof) loadAllAccounts() error {
-	start := time.Now()
-	logx.Infof("load all accounts start")
-	totalTask := 0
-	errChan := make(chan error, 1)
-	defer close(errChan)
-
-	batchReloadSize := 1000
-	maxAccountIndex, err := c.bc.AccountModel.GetMaxAccountIndex()
-	if err != nil && err != types.DbErrNotFound {
-		return fmt.Errorf("load all accounts failed:%s", err.Error())
-	}
-
-	if maxAccountIndex == -1 {
-		return nil
-	}
-
-	for i := 0; int64(i) <= maxAccountIndex; i += batchReloadSize {
-		toAccountIndex := int64(i+batchReloadSize) - 1
-		if toAccountIndex > maxAccountIndex {
-			toAccountIndex = maxAccountIndex
-		}
-
-		totalTask++
-		err := func(fromAccountIndex int64, toAccountIndex int64) error {
-			return c.pool.Submit(func() {
-				start := time.Now()
-				accounts, err := c.bc.AccountModel.GetByAccountIndexRange(fromAccountIndex, toAccountIndex)
-				if err != nil && err != types.DbErrNotFound {
-					logx.Severef("load all accounts failed:%s", err.Error())
-					errChan <- err
-					return
-				}
-				if accounts != nil {
-					for _, accountInfo := range accounts {
-						formatAccount, err := chain.ToFormatAccountInfo(accountInfo)
-						if err != nil {
-							logx.Severef("load all accounts failed:%s", err.Error())
-							errChan <- err
-							return
-						}
-						c.bc.Statedb.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
-						c.bc.Statedb.L1AddressCache.Add(formatAccount.L1Address, formatAccount.AccountIndex)
-					}
-				}
-				logx.Infof("GetByNftIndexRange cost time %s", float64(time.Since(start).Milliseconds()))
-				errChan <- nil
-			})
-		}(int64(i), toAccountIndex)
-		if err != nil {
-			return fmt.Errorf("load all accounts failed:%s", err.Error())
-		}
-	}
-
-	for i := 0; i < totalTask; i++ {
-		err := <-errChan
-		if err != nil {
-			return fmt.Errorf("load all accounts failed:%s", err.Error())
-		}
-	}
-	logx.Infof("load all accounts end. cost time %s", float64(time.Since(start).Milliseconds()))
-	return nil
-}
-
-func (c *GenerateProof) loadAllNfts() error {
-	start := time.Now()
-	logx.Infof("load all nfts start")
-	totalTask := 0
-	errChan := make(chan error, 1)
-	defer close(errChan)
-
-	batchReloadSize := 1000
-	maxNftIndex, err := c.bc.L2NftModel.GetMaxNftIndex()
-	if err != nil && err != types.DbErrNotFound {
-		return fmt.Errorf("load all nfts failed:%s", err.Error())
-	}
-	if maxNftIndex == -1 {
-		return nil
-	}
-	for i := 0; int64(i) <= maxNftIndex; i += batchReloadSize {
-		toNftIndex := int64(i+batchReloadSize) - 1
-		if toNftIndex > maxNftIndex {
-			toNftIndex = maxNftIndex
-		}
-
-		totalTask++
-		err := func(fromNftIndex int64, toNftIndex int64) error {
-			return c.pool.Submit(func() {
-				start := time.Now()
-				nfts, err := c.bc.L2NftModel.GetByNftIndexRange(fromNftIndex, toNftIndex)
-				if err != nil && err != types.DbErrNotFound {
-					logx.Severef("load all nfts failed:%s", err.Error())
-					errChan <- err
-					return
-				}
-				if nfts != nil {
-					for _, nftInfo := range nfts {
-						c.bc.Statedb.NftCache.Add(nftInfo.NftIndex, nftInfo)
-					}
-				}
-				logx.Infof("GetByNftIndexRange cost time %s", float64(time.Since(start).Milliseconds()))
-				errChan <- nil
-			})
-		}(int64(i), toNftIndex)
-		if err != nil {
-			return fmt.Errorf("load all nfts failed:%s", err.Error())
-		}
-	}
-
-	for i := 0; i < totalTask; i++ {
-		err := <-errChan
-		if err != nil {
-			return fmt.Errorf("load all nfts failed:%s", err.Error())
-		}
-	}
-	logx.Infof("load all nfts end. cost time %s", float64(time.Since(start).Milliseconds()))
 	return nil
 }
 
@@ -496,6 +397,7 @@ func (c *GenerateProof) generateProof(blockHeight int64, accountIndex int64, nft
 		if err != nil {
 			return err
 		}
+		Mkdir(c.config.ProofFolder)
 		err = ioutil.WriteFile(c.config.ProofFolder+"performDesertAsset.json", data, 0777)
 		if err != nil {
 			return err
@@ -538,7 +440,7 @@ func (c *GenerateProof) generateProof(blockHeight int64, accountIndex int64, nft
 			exitNftData.NftIndex = uint64(nftIndex)
 			exitNftData.CollectionId = nftInfo.CollectionId
 			exitNftData.CreatorAccountIndex = nftInfo.CreatorAccountIndex
-			exitNftData.CreatorTreasuryRate = nftInfo.RoyaltyRate
+			exitNftData.RoyaltyRate = nftInfo.RoyaltyRate
 			exitNftData.NftContentType = uint8(nftInfo.NftContentType)
 			exitNftData.OwnerAccountIndex = nftInfo.OwnerAccountIndex
 
@@ -558,6 +460,7 @@ func (c *GenerateProof) generateProof(blockHeight int64, accountIndex int64, nft
 		performDesertNftData.AccountMerkleProof = accountMerkleProof
 
 		data, err := json.Marshal(performDesertNftData)
+		Mkdir(c.config.ProofFolder)
 		err = ioutil.WriteFile(c.config.ProofFolder+"performDesertNft.json", data, 0777)
 		if err != nil {
 			return err
@@ -567,7 +470,7 @@ func (c *GenerateProof) generateProof(blockHeight int64, accountIndex int64, nft
 }
 
 func (c *GenerateProof) initSmtTree(blockHeight int64) (accountTree bsmt.SparseMerkleTree, accountAssetTrees *tree.AssetTreeCache, nftTree bsmt.SparseMerkleTree, err error) {
-	treeCtx, err := tree.NewContext("desertexit", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext("desertexit", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption, c.config.TreeDB.AssetTreeCacheSize, false, 200)
 	if err != nil {
 		logx.Errorf("init tree database failed: %s", err)
 		return nil, nil, nil, err
@@ -588,8 +491,6 @@ func (c *GenerateProof) initSmtTree(blockHeight int64) (accountTree bsmt.SparseM
 		make([]int64, 0),
 		blockHeight,
 		treeCtx,
-		c.config.TreeDB.AssetTreeCacheSize,
-		false,
 	)
 	if err != nil {
 		logx.Error("init merkle tree error:", err)
@@ -603,7 +504,7 @@ func (c *GenerateProof) initSmtTree(blockHeight int64) (accountTree bsmt.SparseM
 		c.bc.L2NftModel,
 		c.bc.L2NftHistoryModel,
 		blockHeight,
-		treeCtx, false)
+		treeCtx)
 	if err != nil {
 		logx.Errorf("init nft tree error: %s", err.Error())
 		return nil, nil, nil, err
@@ -644,6 +545,13 @@ func (c *GenerateProof) getStoredBlockInfo() (*StoredBlockInfo, error) {
 		Commitment:                   common.Bytes2Hex(lastStoredBlockInfo.Commitment[:]),
 	}
 	return storedBlockInfo, nil
+}
+
+func Mkdir(dir string) {
+	err := os.MkdirAll(dir, 0777)
+	if err != nil {
+		logx.Errorf("make dir error,%s", err)
+	}
 }
 
 func (c *GenerateProof) Shutdown() {

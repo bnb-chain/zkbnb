@@ -9,7 +9,8 @@ info(
 /* ========================= root =========================*/
 
 type ResultCode {
-	Code int32 `json:"code"`
+	Code    int32  `json:"code"`
+	Message string `json:"message"`
 }
 
 type (
@@ -72,12 +73,25 @@ type (
 		Total    uint32           `json:"total"`
 		Accounts []*SimpleAccount `json:"accounts"`
 	}
+
+	Permission {
+		ResultCode
+		Permit bool `json:"permit"`
+	}
 )
 
 type (
 	ReqGetAccount {
 		By    string `form:"by,options=index|l1_address"`
 		Value string `form:"value"`
+	}
+)
+
+type (
+	ReqGetPermission {
+		By     string `form:"by,options=index|l1_address"`
+		Value  string `form:"value"`
+		TxType uint32 `form:"tx_type"`
 	}
 )
 
@@ -93,6 +107,10 @@ service server-api {
 	@doc "Get account by account's l1_address, index"
 	@handler GetAccount
 	get /api/v1/account (ReqGetAccount) returns (Account)
+	
+	@doc "Get permission by account's l1_address, index and tx_type"
+	@handler GetPermission
+	get /api/v1/permission (ReqGetPermission) returns (Permission)
 }
 
 /* ========================= Asset =========================*/
@@ -182,6 +200,8 @@ type (
 		By           string `form:"by,optional"`
 		Value        string `form:"value,optional"`
 		AccountIndex int64  `form:"account_index,optional"`
+		TxType       uint32 `form:"tx_type"`
+		TxInfo       string `form:"tx_info"`
 	}
 )
 
@@ -320,31 +340,33 @@ service server-api {
 
 type (
 	Tx {
-		Hash           string `json:"hash"`
-		Type           int64  `json:"type,range=[1:64]"`
-		Amount         string `json:"amount"`
-		Info           string `json:"info"`
-		Status         int64  `json:"status"`
-		Index          int64  `json:"index"`
-		GasFeeAssetId  int64  `json:"gas_fee_asset_id"`
-		GasFee         string `json:"gas_fee"`
-		NftIndex       int64  `json:"nft_index"`
-		CollectionId   int64  `json:"collection_id"`
-		AssetId        int64  `json:"asset_id"`
-		AssetName      string `json:"asset_name"`
-		NativeAddress  string `json:"native_address"`
-		ExtraInfo      string `json:"extra_info"`
-		Memo           string `json:"memo"`
-		AccountIndex   int64  `json:"account_index"`
-		L1Address      string `json:"l1_address"`
-		Nonce          int64  `json:"nonce"`
-		ExpiredAt      int64  `json:"expire_at"`
-		BlockHeight    int64  `json:"block_height"`
-		CreatedAt      int64  `json:"created_at"`
-		VerifyAt       int64  `json:"verify_at"`
-		StateRoot      string `json:"state_root"`
-		ToAccountIndex int64  `json:"to_account_index"`
-		ToL1Address    string `json:"to_l1_address"`
+		Hash             string `json:"hash"`
+		Type             int64  `json:"type,range=[1:64]"`
+		Amount           string `json:"amount"`
+		Info             string `json:"info"`
+		Status           int64  `json:"status"`
+		Index            int64  `json:"index"`
+		GasFeeAssetId    int64  `json:"gas_fee_asset_id"`
+		GasFee           string `json:"gas_fee"`
+		NftIndex         int64  `json:"nft_index"`
+		CollectionId     int64  `json:"collection_id"`
+		AssetId          int64  `json:"asset_id"`
+		AssetName        string `json:"asset_name"`
+		NativeAddress    string `json:"native_address"`
+		ExtraInfo        string `json:"extra_info"`
+		Memo             string `json:"memo"`
+		AccountIndex     int64  `json:"account_index"`
+		L1Address        string `json:"l1_address"`
+		Nonce            int64  `json:"nonce"`
+		ExpiredAt        int64  `json:"expire_at"`
+		BlockHeight      int64  `json:"block_height"`
+		CreatedAt        int64  `json:"created_at"`
+		VerifyAt         int64  `json:"verify_at"`
+		StateRoot        string `json:"state_root"`
+		FromAccountIndex int64  `json:"from_account_index"`
+		FromL1Address    string `json:"from_l1_address"`
+		ToAccountIndex   int64  `json:"to_account_index"`
+		ToL1Address      string `json:"to_l1_address"`
 	}
 
 	Txs {
@@ -486,6 +508,9 @@ type (
 		RoyaltyRate         int64  `json:"royalty_rate"`
 		CollectionId        int64  `json:"collection_id"`
 		IpfsId              string `json:"ipfs_id"`
+		IpnsId              string `json:"ipns_id"`
+		Metadata            string `json:"metadata"`
+		MutableAttributes   string `json:"mutable_attributes"`
 	}
 
 	NftEntity {
@@ -501,8 +526,11 @@ type (
 
 	NftIndex {
 		ResultCode
-		Index  int64  `json:"index"`
-		IpfsId string `json:"ipfs_id"`
+		Index             int64  `json:"index"`
+		IpfsId            string `json:"ipfs_id"`
+		IpnsId            string `json:"ipns_id"`
+		Metadata          string `json:"metadata"`
+		MutableAttributes string `json:"mutable_attributes"`
 	}
 
 	History {

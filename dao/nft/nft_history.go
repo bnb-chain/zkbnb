@@ -115,10 +115,10 @@ func (m *defaultL2NftHistoryModel) GetLatestNftsByBlockHeight(height int64, from
 
 	dbTx := m.DB.Table(m.table+" as a").Select("*").
 		Where("NOT EXISTS (?) AND l2_block_height <= ? and nft_index >= ? and nft_index <= ?", subQuery, height, fromNftIndex, toNftIndex).
-		Order("nft_index")
+		Order("nft_index").Find(&accountNftAssets)
 
-	if dbTx.Find(&accountNftAssets).Error != nil {
-		return 0, nil, types.DbErrSqlOperation
+	if dbTx.Error != nil {
+		return 0, nil, dbTx.Error
 	}
 	return dbTx.RowsAffected, accountNftAssets, nil
 }
@@ -129,7 +129,7 @@ func (m *defaultL2NftHistoryModel) CreateNftHistoriesInTransact(tx *gorm.DB, his
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(histories)) {
-		logx.Errorf("CreateNftHistoriesInTransact failed,rows affected not equal histories length,dbTx.RowsAffected:%s,len(histories):%s", int(dbTx.RowsAffected), len(histories))
+		logx.Errorf("CreateNftHistoriesInTransact failed,rows affected not equal histories length,dbTx.RowsAffected:%d,len(histories):%d", int(dbTx.RowsAffected), len(histories))
 		return types.DbErrFailToCreateNftHistory
 	}
 	return nil

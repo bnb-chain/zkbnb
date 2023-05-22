@@ -45,6 +45,11 @@ func (e *DepositExecutor) SetTxInfo(info *txtypes.DepositTxInfo) {
 	e.TxInfo = info
 }
 
+func (e *DepositExecutor) PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	txInfo := e.TxInfo
+	addressMap[txInfo.L1Address] = true
+}
+
 func (e *DepositExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo
@@ -209,6 +214,7 @@ func (e *DepositExecutor) Finalize() error {
 		txInfo := e.TxInfo
 		if !e.isDesertExit {
 			bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
+			logx.Infof("create account,pool id =%d,new AccountIndex=%d,BlockHeight=%d", e.tx.ID, txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
 		}
 		accountInfo := e.GetCreatingAccount()
 		bc.StateDB().SetPendingAccountL1AddressMap(accountInfo.L1Address, accountInfo.AccountIndex)

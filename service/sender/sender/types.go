@@ -18,6 +18,7 @@ package sender
 
 import (
 	"encoding/json"
+	"github.com/bnb-chain/zkbnb/common/log"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"math/big"
 	"sort"
@@ -39,6 +40,7 @@ import (
 const (
 	EventNameBlockCommit       = "BlockCommit"
 	EventNameBlockVerification = "BlockVerification"
+	SentBlockToL1ErrorPrefix   = "SentBlockToL1ErrorPrefix" // key for cache: SentBlockToL1ErrorPrefix
 )
 
 var (
@@ -53,7 +55,7 @@ var (
 	zkbnbLogBlocksRevertSigHash      = crypto.Keccak256Hash(zkbnbLogBlocksRevertSig)
 )
 
-func defaultBlockHeader() zkbnb.StorageStoredBlockInfo {
+func DefaultBlockHeader() zkbnb.StorageStoredBlockInfo {
 	var (
 		pendingOnChainOperationsHash [32]byte
 		stateRoot                    [32]byte
@@ -79,13 +81,14 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.Compres
 		var pubDataOffsets []uint32
 		copy(newStateRoot[:], common.FromHex(oBlock.StateRoot)[:])
 		err = json.Unmarshal([]byte(oBlock.PublicDataOffsets), &pubDataOffsets)
+		ctx := log.NewCtxWithKV(log.BlockHeightContext, oBlock.BlockHeight)
 		if err != nil {
-			logx.Errorf("[ConvertBlocksForCommitToCommitBlockInfos] unable to unmarshal: %s", err.Error())
+			logx.WithContext(ctx).Errorf("[ConvertBlocksForCommitToCommitBlockInfos] unable to unmarshal: %s", err.Error())
 			return nil, err
 		}
 		txList, err := txModel.GetOnChainTxsByHeight(oBlock.BlockHeight)
 		if err != nil {
-			logx.Errorf("get on chain txs by height failed: %s,blockHeight=%d", err.Error(), oBlock.BlockHeight)
+			logx.WithContext(ctx).Errorf("get on chain txs by height failed: %s", err.Error())
 			return nil, err
 		}
 		if txList != nil {
@@ -102,7 +105,8 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.Compres
 				if txList[index].TxType == types.TxTypeChangePubKey {
 					txInfo, err := types.ParseChangePubKeyTxInfo(txList[index].TxInfo)
 					if err != nil {
-						logx.Errorf("parse change pub key tx info tx failed: %s", err.Error())
+						ctx := log.UpdateCtxWithKV(ctx, log.AccountIndexCtx, txInfo.AccountIndex)
+						logx.WithContext(ctx).Errorf("parse change pub key tx info tx failed: %s", err.Error())
 						return nil, err
 					}
 					thWitness := common.FromHex(txInfo.L1Sig)
@@ -127,11 +131,12 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.Compres
 
 func ConvertBlocksToVerifyAndExecuteBlockInfos(oBlocks []*block.Block) (verifyAndExecuteBlocks []zkbnb.ZkBNBVerifyAndExecuteBlockInfo, err error) {
 	for _, oBlock := range oBlocks {
+		ctx := log.NewCtxWithKV(log.BlockHeightContext, oBlock.BlockHeight)
 		var pendingOnChainOpsPubData [][]byte
 		if oBlock.PendingOnChainOperationsPubData != "" {
 			err = json.Unmarshal([]byte(oBlock.PendingOnChainOperationsPubData), &pendingOnChainOpsPubData)
 			if err != nil {
-				logx.Errorf("[ConvertBlocksToVerifyAndExecuteBlockInfos] unable to unmarshal pending pub data: %s", err.Error())
+				logx.WithContext(ctx).Errorf("[ConvertBlocksToVerifyAndExecuteBlockInfos] unable to unmarshal pending pub data: %s", err.Error())
 				return nil, err
 			}
 		}

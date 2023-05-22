@@ -243,6 +243,13 @@ var (
 		Name:      "pool_tx_l2_error_count",
 		Help:      "pool_tx_l2_error_count metrics.",
 	})
+	PoolTxErrorCountMetics = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "pool_tx_error_count",
+			Help:      "pool_tx_error_count.",
+		},
+		[]string{"type"})
 )
 
 // metrics
@@ -292,6 +299,12 @@ var (
 		Namespace: "zkbnb",
 		Name:      "exec_tx_get_executed_tx_time",
 		Help:      "execute txs get executed tx operation time",
+	})
+
+	PreLoadAccountAndNftMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "pre_load_account_and_nft_time",
+		Help:      "pre load account and nft time",
 	})
 
 	AccountFromDbGauge = prometheus.NewGauge(prometheus.GaugeOpts{
@@ -347,6 +360,44 @@ var (
 			Help:      "get_nft_tree_time.",
 		},
 		[]string{"type"})
+
+	TxTypeCommitRunCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "tx_type_commit_run",
+			Help:      "tx_type_commit_run.",
+		},
+		[]string{"type"})
+	TxTypeCommitRevenueCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "tx_type_commit_revenue",
+			Help:      "tx_type_commit_revenue.",
+		},
+		[]string{"type"})
+	GasAccountRevenueCounter = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "gas_account_revenue",
+			Help:      "gas_account_revenue.",
+		})
+	ProtocolFeeRevenueCounter = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "protocol_fee_revenue",
+			Help:      "protocol_fee_revenue.",
+		})
+	TotalRevenueCounter = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "total_fee_revenue",
+			Help:      "total_fee_revenue.",
+		})
+	RollbackTxGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "rollback_Tx",
+		Help:      "rollback_Tx",
+	})
 )
 
 func InitCommitterMetrics() error {
@@ -476,6 +527,28 @@ func InitCommitterMetrics() error {
 	if err := prometheus.Register(PoolTxL2ErrorCountMetics); err != nil {
 		return fmt.Errorf("prometheus.Register poolTxL2ErrorCountMetics error: %v", err)
 	}
+	if err := prometheus.Register(PoolTxErrorCountMetics); err != nil {
+		return fmt.Errorf("prometheus.Register PoolTxErrorCountMetics error: %v", err)
+	}
+	if err := prometheus.Register(TxTypeCommitRunCounter); err != nil {
+		return fmt.Errorf("prometheus.Register TxTypeCommitRunCounter error: %v", err)
+	}
+	if err := prometheus.Register(TxTypeCommitRevenueCounter); err != nil {
+		return fmt.Errorf("prometheus.Register TxTypeCommitRevenueCounter error: %v", err)
+	}
+	if err := prometheus.Register(GasAccountRevenueCounter); err != nil {
+		return fmt.Errorf("prometheus.Register GasAccountRevenueCounter error: %v", err)
+	}
+	if err := prometheus.Register(ProtocolFeeRevenueCounter); err != nil {
+		return fmt.Errorf("prometheus.Register ProtocolFeeRevenueCounter error: %v", err)
+	}
+	if err := prometheus.Register(TotalRevenueCounter); err != nil {
+		return fmt.Errorf("prometheus.Register TotalRevenueCounter error: %v", err)
+	}
+	if err := prometheus.Register(RollbackTxGauge); err != nil {
+		return fmt.Errorf("prometheus.Register RollbackTxGauge error: %v", err)
+	}
+
 	return nil
 }
 
@@ -534,6 +607,10 @@ func InitBlockChainMetrics() error {
 
 	if err := prometheus.Register(ExecuteTxGetExecutedTxMetrics); err != nil {
 		return fmt.Errorf("prometheus.Register executeTxGetExecutedTxMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(PreLoadAccountAndNftMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register PreLoadAccountAndNftMetrics error: %v", err)
 	}
 
 	if err := prometheus.Register(UpdateAssetTreeMetrics); err != nil {

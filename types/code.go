@@ -60,6 +60,7 @@ var (
 	AppErrFullExitNftPubDataInvalidSize = NewBusinessError(20006, "[ParseFullExitNftPubData] invalid size")
 
 	AppErrInvalidExpireTime   = NewBusinessError(21000, "invalid expired time")
+	AppErrInvalidGasFeeId     = NewBusinessError(21001, "gas fee asset id should be 0(BNB)")
 	AppErrInvalidGasFeeAmount = NewBusinessError(21001, "invalid gas fee amount")
 	AppErrBalanceNotEnough    = NewBusinessError(21002, "balance is not enough")
 	AppErrInvalidTreasuryRate = NewBusinessError(21003, "invalid treasury rate")
@@ -108,6 +109,9 @@ var (
 	AppErrAccountNotNftOwner        = NewBusinessError(21411, "account is not owner of the nft")
 	AppErrUnsupportedTxType         = NewBusinessError(21412, "unsupported tx type")
 	AppErrPrepareNftFailed          = NewBusinessError(21413, "prepare nft failed")
+	AppErrChannelNameTooHigh        = NewBusinessError(21414, "ChannelName should not be larger than ")
+	AppErrPoolTxRunning             = NewBusinessError(21415, "pool tx is running")
+	AppErrPoolTxFailed              = NewBusinessError(21416, "pool tx is Failed")
 
 	// Offer
 	AppErrInvalidOfferType           = NewBusinessError(21500, "invalid offer type")
@@ -127,6 +131,7 @@ var (
 	AppErrInvalidBuyOfferState       = NewBusinessError(21512, "invalid buy offer state, already canceled or finalized")
 	AppErrInvalidAssetOfOffer        = NewBusinessError(21513, "invalid asset of offer")
 	AppErrInvalidPlatformRate        = NewBusinessError(21514, "invalid platform rate")
+	AppErrCommitNotEnough            = NewBusinessError(21515, "account balance is not enough")
 
 	// Nft
 	AppErrNftAlreadyExist          = NewBusinessError(21600, "invalid nft index, already exist")
@@ -169,6 +174,7 @@ var (
 
 	// PermissionControl
 	AppErrPermissionForbidden = NewBusinessError(23100, "Something went wrong, please try a different account or counterparty account!")
+	AppErrPermissionControl   = NewBusinessError(23101, "Due to operation strategy, only whitelisted users are able to register zkBNB from now!")
 
 	// General System Error
 	AppErrInvalidGasAsset     = NewBusinessError(25003, "invalid gas asset")

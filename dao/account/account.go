@@ -41,6 +41,7 @@ type (
 		GetAccountByIndexes(accountIndexes []int64) (accounts []*Account, err error)
 		GetConfirmedAccountByIndex(accountIndex int64) (account *Account, err error)
 		GetAccountByL1Address(l1Address string) (account *Account, err error)
+		GetAccountByL1Addresses(l1Addresses []string) (accounts []*Account, err error)
 		GetAccounts(limit int, offset int64) (accounts []*Account, err error)
 		GetAccountsTotalCount() (count int64, err error)
 		UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
@@ -64,8 +65,8 @@ type (
 	*/
 	Account struct {
 		gorm.Model
-		AccountIndex    int64  `gorm:"uniqueIndex"`
-		PublicKey       string `gorm:"index"`
+		AccountIndex    int64 `gorm:"uniqueIndex"`
+		PublicKey       string
 		L1Address       string `gorm:"uniqueIndex"`
 		Nonce           int64
 		CollectionNonce int64
@@ -125,6 +126,16 @@ func (m *defaultAccountModel) GetAccountByL1Address(l1Address string) (account *
 		return nil, types.DbErrNotFound
 	}
 	return account, nil
+}
+
+func (m *defaultAccountModel) GetAccountByL1Addresses(l1Addresses []string) (accounts []*Account, err error) {
+	dbTx := m.DB.Table(m.table).Where("l1_address in ?", l1Addresses).Find(&accounts)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return accounts, nil
 }
 
 func (m *defaultAccountModel) GetAccounts(limit int, offset int64) (accounts []*Account, err error) {
@@ -230,7 +241,7 @@ func (m *defaultAccountModel) BatchInsertOrUpdateInTransact(tx *gorm.DB, account
 		return dbTx.Error
 	}
 	if int(dbTx.RowsAffected) != len(accounts) {
-		logx.Errorf("BatchInsertOrUpdateInTransact failed,rows affected not equal accounts length,dbTx.RowsAffected:%s,len(accounts):%s", int(dbTx.RowsAffected), len(accounts))
+		logx.Errorf("BatchInsertOrUpdateInTransact failed,rows affected not equal accounts length,dbTx.RowsAffected:%d,len(accounts):%d", int(dbTx.RowsAffected), len(accounts))
 		return types.DbErrFailToUpdateAccount
 	}
 	return nil
@@ -242,7 +253,7 @@ func (m *defaultAccountModel) BatchInsertInTransact(tx *gorm.DB, accounts []*Acc
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(accounts)) {
-		logx.Errorf("BatchInsertInTransact failed,rows affected not equal accounts length,dbTx.RowsAffected:%s,len(txs):%s", int(dbTx.RowsAffected), len(accounts))
+		logx.Errorf("BatchInsertInTransact failed,rows affected not equal accounts length,dbTx.RowsAffected:%d,len(txs):%d", int(dbTx.RowsAffected), len(accounts))
 		return types.DbErrFailToCreateAccount
 	}
 	return nil

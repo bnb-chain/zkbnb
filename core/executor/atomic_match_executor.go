@@ -3,6 +3,7 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 
@@ -44,6 +45,19 @@ func NewAtomicMatchExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxE
 		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo.(*txtypes.AtomicMatchTxInfo),
 	}, nil
+}
+
+func (e *AtomicMatchExecutor) PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	txInfo := e.TxInfo
+	accountIndexMap[txInfo.AccountIndex] = true
+	accountIndexMap[txInfo.BuyOffer.AccountIndex] = true
+	accountIndexMap[txInfo.SellOffer.AccountIndex] = true
+	accountIndexMap[txInfo.GasAccountIndex] = true
+	accountIndexMap[types.ProtocolAccount] = true
+	accountIndexMap[txInfo.BuyOffer.ChannelAccountIndex] = true
+	accountIndexMap[txInfo.SellOffer.ChannelAccountIndex] = true
+
+	nftIndexMap[txInfo.SellOffer.NftIndex] = true
 }
 
 func (e *AtomicMatchExecutor) Prepare() error {
@@ -113,15 +127,15 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 	}
 
 	// only gas assets are allowed for atomic match
-	//found := false
-	//for _, assetId := range types.GasAssets {
-	//	if assetId == txInfo.SellOffer.AssetId {
-	//		found = true
-	//	}
-	//}
-	//if !found {
-	//	return types.AppErrInvalidAssetOfOffer
-	//}
+	found := false
+	for _, assetId := range types.GasAssets {
+		if assetId == txInfo.SellOffer.AssetId {
+			found = true
+		}
+	}
+	if !found {
+		return types.AppErrInvalidAssetOfOffer
+	}
 
 	// Check offer expired time.
 	if err := e.bc.VerifyExpiredAt(txInfo.BuyOffer.ExpiredAt); err != nil {
@@ -167,13 +181,18 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 			txInfo.BuyChannelAmount),
 			txInfo.GasFeeAssetAmount)
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(totalBalance) < 0 {
-			return types.AppErrSellerBalanceNotEnough
+			return types.AppErrBuyerBalanceNotEnough
 		}
 	} else {
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-			return types.AppErrSellerBalanceNotEnough
+			if txInfo.AccountIndex == txInfo.BuyOffer.AccountIndex {
+				return types.AppErrBuyerBalanceNotEnough
+			} else if txInfo.AccountIndex == txInfo.SellOffer.AccountIndex {
+				return types.AppErrSellerBalanceNotEnough
+			} else {
+				return types.AppErrCommitNotEnough
+			}
 		}
-
 		buyDeltaAmount := ffmath.Add(ffmath.Add(ffmath.Add(
 			txInfo.BuyOffer.AssetAmount, txInfo.BuyOffer.ProtocolAmount),
 			txInfo.RoyaltyAmount),
@@ -630,4 +649,10 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 
 	return txDetails, nil
+}
+
+func (e *AtomicMatchExecutor) Finalize() error {
+	metrics.ProtocolFeeRevenueCounter.Add(common2.GetFeeFromWei(e.TxInfo.BuyOffer.ProtocolAmount))
+	metrics.TotalRevenueCounter.Add(common2.GetFeeFromWei(e.TxInfo.BuyOffer.ProtocolAmount))
+	return nil
 }

@@ -37,6 +37,13 @@ var (
 		Name:      "sent_tx_total_count",
 		Help:      "sent tx total count",
 	})
+	channelTxMetric = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "zkbnb",
+			Name:      "channel_tx",
+			Help:      "channel_tx metrics.",
+		},
+		[]string{"channel", "type"})
 )
 
 type ServiceContext struct {
@@ -64,6 +71,7 @@ type ServiceContext struct {
 
 	SendTxTotalMetrics prometheus.Counter
 	SendTxMetrics      prometheus.Counter
+	ChannelTxMetric    *prometheus.CounterVec
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -87,9 +95,13 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	rawDB.SetMaxOpenConns(c.Postgres.MaxConn)
 	rawDB.SetMaxIdleConns(c.Postgres.MaxIdle)
 
-	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
+	redisCache := dbcache.NewRedisCache(c.CacheRedis, 15*time.Minute)
 
-	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
+	redisConn, err := redis.NewRedis(redis.RedisConf{Host: c.CacheRedis[0].Host, Pass: c.CacheRedis[0].Pass, Type: c.CacheRedis[0].Type})
+	if err != nil {
+		logx.Errorf("fail to new redis instance, error: %s", err.Error())
+		panic("fail to new redis instance, error" + err.Error())
+	}
 
 	txPoolModel := tx.NewTxPoolModel(db)
 	accountModel := account.NewAccountModel(db)
@@ -103,12 +115,16 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.TxPendingExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum, redisCache)
 
 	if err := prometheus.Register(sendTxMetrics); err != nil {
-		logx.Error("prometheus.Register sendTxHandlerMetrics error: %v", err)
+		logx.Errorf("prometheus.Register sendTxHandlerMetrics error: %s", err.Error())
 		return nil
 	}
 
 	if err := prometheus.Register(sendTxTotalMetrics); err != nil {
-		logx.Error("prometheus.Register sendTxTotalMetrics error: %v", err)
+		logx.Errorf("prometheus.Register sendTxTotalMetrics error: %s", err.Error())
+		return nil
+	}
+	if err := prometheus.Register(channelTxMetric); err != nil {
+		logx.Errorf("prometheus.Register ChannelTxMetric error: %s", err.Error())
 		return nil
 	}
 	common.NewIPFS(c.IpfsUrl)
@@ -137,13 +153,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 		SendTxTotalMetrics: sendTxTotalMetrics,
 		SendTxMetrics:      sendTxMetrics,
-	}
-}
-
-func WithRedis(redisType string, redisPass string) redis.Option {
-	return func(p *redis.Redis) {
-		p.Type = redisType
-		p.Pass = redisPass
+		ChannelTxMetric:    channelTxMetric,
 	}
 }
 

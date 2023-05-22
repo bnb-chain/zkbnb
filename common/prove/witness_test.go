@@ -20,6 +20,7 @@ package prove
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/log"
 	"os/exec"
 	"testing"
 	"time"
@@ -64,7 +65,8 @@ func TestConstructWitness(t *testing.T) {
 		err = witnessHelper.ResetCache(h)
 		assert.NoError(t, err)
 		for idx, tx := range b[0].Txs {
-			txWitness, err := witnessHelper.ConstructTxWitness(tx, uint64(0))
+			ctx := log.NewCtxWithKV(log.BlockHeightContext, h)
+			txWitness, err := witnessHelper.ConstructTxWitness(tx, uint64(0), ctx)
 			assert.NoError(t, err)
 			expectedBz, _ := json.Marshal(cBlock.Txs[idx])
 			actualBz, _ := json.Marshal(txWitness)
@@ -79,15 +81,15 @@ func TestConstructWitness(t *testing.T) {
 }
 
 func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
-	ctx, err := tree.NewContext("witness", tree.MemoryDB, false, false, 128, nil, nil)
+	ctx, err := tree.NewContext("witness", tree.MemoryDB, false, false, 128, nil, nil, assetTreeCacheSize, true, 200)
 	if err != nil {
 		return nil, err
 	}
-	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, make([]int64, 0), blockHeight, ctx, assetTreeCacheSize, true)
+	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, make([]int64, 0), blockHeight, ctx)
 	if err != nil {
 		return nil, err
 	}
-	nftTree, err := tree.InitNftTree(nftModel, nftHistoryModel, blockHeight, ctx, true)
+	nftTree, err := tree.InitNftTree(nftModel, nftHistoryModel, blockHeight, ctx)
 	if err != nil {
 		return nil, err
 	}

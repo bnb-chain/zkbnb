@@ -19,8 +19,10 @@ package common
 
 import (
 	"bytes"
+	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/mr-tron/base58/base58"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -56,4 +58,17 @@ func GenerateCid(nftContentHash string) string {
 	b, _ := hexutil.Decode(hash)
 	cid := base58.Encode(b)
 	return cid
+}
+
+func FormatVersion(versions []bsmt.Version) string {
+	str := "["
+	for _, version := range versions {
+		str += strconv.FormatUint(uint64(version), 10) + ","
+	}
+	if str != "[" {
+		str = str[0 : len(str)-1]
+	}
+	str += "]"
+
+	return str
 }

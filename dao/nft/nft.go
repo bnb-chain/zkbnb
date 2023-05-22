@@ -34,6 +34,7 @@ type (
 		CreateL2NftTable() error
 		DropL2NftTable() error
 		GetNft(nftIndex int64) (nftAsset *L2Nft, err error)
+		GetNftsByNftIndexes(nftIndexes []int64) (nftAssets []*L2Nft, err error)
 		GetLatestNftIndex() (nftIndex int64, err error)
 		GetNftsByAccountIndex(accountIndex, limit, offset int64) (nfts []*L2Nft, err error)
 		GetNftsCountByAccountIndex(accountIndex int64) (int64, error)
@@ -94,9 +95,19 @@ func (m *defaultL2NftModel) GetNft(nftIndex int64) (nftAsset *L2Nft, err error) 
 	return nftAsset, nil
 }
 
+func (m *defaultL2NftModel) GetNftsByNftIndexes(nftIndexes []int64) (nftAssets []*L2Nft, err error) {
+	dbTx := m.DB.Table(m.table).Where("nft_index in ?", nftIndexes).Find(&nftAssets)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return nftAssets, nil
+}
+
 func (m *defaultL2NftModel) GetLatestNftIndex() (nftIndex int64, err error) {
 	var nftInfo *L2Nft
-	dbTx := m.DB.Table(m.table).Order("nft_index desc").Find(&nftInfo)
+	dbTx := m.DB.Table(m.table).Order("nft_index desc").Limit(1).Find(&nftInfo)
 	if dbTx.Error != nil {
 		return -1, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -154,7 +165,7 @@ func (m *defaultL2NftModel) BatchInsertOrUpdateInTransact(tx *gorm.DB, nfts []*L
 		return dbTx.Error
 	}
 	if int(dbTx.RowsAffected) != len(nfts) {
-		logx.Errorf("BatchInsertOrUpdateInTransact failed,rows affected not equal nfts length,dbTx.RowsAffected:%s,len(nfts):%s", int(dbTx.RowsAffected), len(nfts))
+		logx.Errorf("BatchInsertOrUpdateInTransact failed,rows affected not equal nfts length,dbTx.RowsAffected:%d,len(nfts):%d", int(dbTx.RowsAffected), len(nfts))
 		return types.DbErrFailToUpdateAccount
 	}
 	return nil
@@ -166,7 +177,7 @@ func (m *defaultL2NftModel) BatchInsertInTransact(tx *gorm.DB, nfts []*L2Nft) (e
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(nfts)) {
-		logx.Errorf("BatchInsertInTransact failed,rows affected not equal nfts length,dbTx.RowsAffected:%s,len(txs):%s", int(dbTx.RowsAffected), len(nfts))
+		logx.Errorf("BatchInsertInTransact failed,rows affected not equal nfts length,dbTx.RowsAffected:%d,len(txs):%d", int(dbTx.RowsAffected), len(nfts))
 		return types.DbErrFailToCreateAccount
 	}
 	return nil

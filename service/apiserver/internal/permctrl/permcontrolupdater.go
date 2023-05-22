@@ -20,12 +20,13 @@ func (u *PermControlUpdater) OnChange(event *storage.ChangeEvent) {
 		err := json.Unmarshal([]byte(newRateLimitConfigJson), newPermissionControlConfig)
 		if err != nil {
 			logx.Errorf("Fail to update PermissionControlConfig from the apollo server, Reason:%s", err.Error())
+			return
 		}
 
 		// Validate the permission control configuration from the apollo server side
 		if err = newPermissionControlConfig.ValidatePermissionControlConfig(); err != nil {
-			logx.Severef("Fail to validate PermissionControlConfig from the apollo server, Reason:%s", err.Error())
-			panic("Fail to validate PermissionControlConfig from the apollo server!")
+			logx.Errorf("Fail to validate PermissionControlConfig from the apollo server, Reason:%s", err.Error())
+			return
 		}
 		permissionControlConfig = newPermissionControlConfig
 		logx.Info("Update PermissionControlConfig Successfully!")

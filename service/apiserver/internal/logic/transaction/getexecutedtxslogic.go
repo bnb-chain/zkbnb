@@ -56,12 +56,7 @@ func (l *GetExecutedTxsLogic) GetExecutedTxs(req *types.ReqGetRangeWithFromHash)
 		return nil, types2.AppErrInternal
 	}
 	for _, pendingTx := range pendingTxs {
-		tx := utils.ConvertTx(pendingTx)
-		tx.L1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.AccountIndex)
-		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
-		if tx.ToAccountIndex >= 0 {
-			tx.ToL1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.ToAccountIndex)
-		}
+		tx := utils.ConvertTx(pendingTx, l.svcCtx.MemCache)
 		resp.Txs = append(resp.Txs, tx)
 	}
 	return resp, nil

@@ -3,7 +3,6 @@ package tree
 import (
 	"encoding/json"
 	"github.com/bnb-chain/zkbnb/types"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"hash"
 	"strings"
 	"time"
@@ -183,18 +182,26 @@ func SetNamespace(
 
 const (
 	defaultTreeRoutinePoolSize = 10240
+	defaultDbRoutinePoolSize   = 200
 )
 
 func NewContext(
 	name string, driver Driver,
 	reload bool, onlyQuery bool, routineSize int,
 	levelDBOption *LevelDBOption,
-	redisDBOption *RedisDBOption) (*Context, error) {
+	redisDBOption *RedisDBOption, assetCacheSize int, fromHistory bool, dbRoutineSize int) (*Context, error) {
 
 	if routineSize <= 0 {
 		routineSize = defaultTreeRoutinePoolSize
 	}
-	pool, err := ants.NewPool(routineSize)
+	if dbRoutineSize <= 0 {
+		dbRoutineSize = defaultDbRoutinePoolSize
+	}
+	//pool, err := ants.NewPool(routineSize)
+	pool, err := ants.NewPool(routineSize, ants.WithPanicHandler(func(p interface{}) {
+		//sets up panic handler.
+		panic("worker exits from a panic")
+	}))
 	if err != nil {
 		return nil, err
 	}
@@ -206,8 +213,11 @@ func NewContext(
 		reload:         reload,
 		onlyQuery:      onlyQuery,
 		routinePool:    pool,
-		hasher:         bsmt.NewHasherPool(func() hash.Hash { return poseidon.NewPoseidon() }),
+		hasher:         bsmt.NewHasherPool(func() hash.Hash { return NewGMimc() }),
 		defaultOptions: []bsmt.Option{bsmt.GoRoutinePool(pool)},
+		assetCacheSize: assetCacheSize,
+		fromHistory:    fromHistory,
+		dbRoutineSize:  dbRoutineSize,
 	}, nil
 }
 
@@ -224,6 +234,9 @@ type Context struct {
 	batchReloadSize int
 	routinePool     *ants.Pool
 	hasher          *bsmt.Hasher
+	assetCacheSize  int
+	fromHistory     bool
+	dbRoutineSize   int
 }
 
 func (ctx *Context) IsLoad() bool {

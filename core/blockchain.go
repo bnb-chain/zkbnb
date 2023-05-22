@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/common/apollo"
 	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/dgraph-io/ristretto"
+	"github.com/panjf2000/ants/v2"
 	"gorm.io/plugin/dbresolver"
 	"math/big"
 	"time"
@@ -37,27 +39,27 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
+type TreeDB struct {
+	Driver tree.Driver
+	//nolint:staticcheck
+	LevelDBOption tree.LevelDBOption `json:",optional"`
+	//nolint:staticcheck
+	RedisDBOption tree.RedisDBOption `json:",optional"`
+	//nolint:staticcheck
+	RoutinePoolSize    int `json:",optional"`
+	AssetTreeCacheSize int
+}
+
 type ChainConfig struct {
-	Postgres struct {
-		MasterDataSource string
-		SlaveDataSource  string
-		LogLevel         logger.LogLevel `json:",optional"`
-	}
+	Postgres   apollo.Postgres
 	CacheRedis cache.CacheConf
 	//second
 	RedisExpiration int `json:",optional"`
 	//nolint:staticcheck
-	CacheConfig statedb.CacheConfig `json:",optional"`
-	TreeDB      struct {
-		Driver tree.Driver
-		//nolint:staticcheck
-		LevelDBOption tree.LevelDBOption `json:",optional"`
-		//nolint:staticcheck
-		RedisDBOption tree.RedisDBOption `json:",optional"`
-		//nolint:staticcheck
-		RoutinePoolSize    int `json:",optional"`
-		AssetTreeCacheSize int
-	}
+	CacheConfig   statedb.CacheConfig `json:",optional"`
+	TreeDB        TreeDB
+	DbRoutineSize int `json:",optional"`
+	DbBatchSize   int
 }
 
 type BlockChain struct {
@@ -72,7 +74,7 @@ type BlockChain struct {
 	processor        Processor
 }
 
-func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
+func NewBlockChain(config *ChainConfig, maxPackedInterval int, moduleName string) (*BlockChain, error) {
 	masterDataSource := config.Postgres.MasterDataSource
 	slaveDataSource := config.Postgres.SlaveDataSource
 	db, err := gorm.Open(postgres.Open(config.Postgres.MasterDataSource), &gorm.Config{
@@ -95,17 +97,18 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		ChainDB:     sdb.NewChainDB(db),
 		chainConfig: config,
 	}
-	expiration := dbcache.RedisExpiration
+
+	expiration := 5 * time.Duration(maxPackedInterval) * time.Second
 	if config.RedisExpiration != 0 {
 		expiration = time.Duration(config.RedisExpiration) * time.Second
 	}
-	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, expiration)
-	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
+	redisCache := dbcache.NewRedisCache(config.CacheRedis, expiration)
+	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption, config.TreeDB.AssetTreeCacheSize, true, config.DbRoutineSize)
 	if err != nil {
 		return nil, err
 	}
 	treeCtx.SetOptions(bsmt.BatchSizeLimit(3 * 1024 * 1024))
-
+	treeCtx.SetBatchReloadSize(config.DbBatchSize)
 	var statuses = []int{block.StatusPending, block.StatusCommitted, block.StatusVerifiedAndExecuted}
 	curHeight, err := bc.BlockModel.GetLatestHeight(statuses)
 	if err != nil {
@@ -118,12 +121,12 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		return nil, fmt.Errorf("get block by height failed: %v,curHeight=%d", err.Error(), curHeight)
 	}
 
-	accountIndexList, nftIndexList, heights, err := preRollBackFunc(bc, redisCache)
+	accountIndexList, nftIndexList, heights, accountIndexMap, err := preRollBackFunc(bc, redisCache)
 	if err != nil {
 		return nil, fmt.Errorf("pre rollBack func failed: %v,curHeight=%d", err.Error(), curHeight)
 	}
 
-	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, config.TreeDB.AssetTreeCacheSize, bc.currentBlock.StateRoot, accountIndexList, curHeight)
+	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, bc.currentBlock.StateRoot, accountIndexList, curHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +153,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		return nil, err
 	}
 
-	err = verifyRollbackTreesFunc(bc, bc.currentBlock)
+	err = verifyRollbackTreesFunc(bc, bc.currentBlock, accountIndexMap)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +175,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	}
 	bc.Statedb.UpdateAccountIndex(types.NilAccountIndex)
 	if poolTx != nil {
-		bc.Statedb.UpdateAccountIndex(poolTx.AccountIndex)
+		bc.Statedb.UpdateAccountIndex(poolTx.ToAccountIndex)
 	}
 
 	latestRollback, err := bc.TxPoolModel.GetLatestRollback(tx.StatusPending, true)
@@ -248,23 +251,23 @@ func NewBlockChainForDesertExit(config *config.Config) (*BlockChain, error) {
 	return bc, nil
 }
 
-func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64, []int64, error) {
+func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64, []int64, map[int64]bool, error) {
 	accountIndexList := make([]int64, 0)
 	nftIndexList := make([]int64, 0)
 	heights := make([]int64, 0)
 
 	curHeight, err := bc.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("get current block height failed: %s", err.Error())
+		return nil, nil, nil, nil, fmt.Errorf("get current block height failed: %s", err.Error())
 	}
 	logx.Infof("get current block height: %d", curHeight)
 
 	blocks, err := bc.BlockModel.GetBlockByStatus([]int{block.StatusProposing, block.StatusPacked})
 	if err != nil && err != types.DbErrNotFound {
-		return nil, nil, nil, fmt.Errorf("get blocks by status (StatusProposing,StatusPacked) failed: %s", err.Error())
+		return nil, nil, nil, nil, fmt.Errorf("get blocks by status (StatusProposing,StatusPacked) failed: %s", err.Error())
 	}
 	if blocks == nil {
-		return accountIndexList, nftIndexList, heights, nil
+		return accountIndexList, nftIndexList, heights, nil, nil
 	}
 
 	accountIndexMap := make(map[int64]bool, 0)
@@ -275,7 +278,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 			var accountIndexes []int64
 			err = json.Unmarshal([]byte(blockInfo.AccountIndexes), &accountIndexes)
 			if err != nil {
-				return nil, nil, nil, fmt.Errorf("json err unmarshal failed: %s", err.Error())
+				return nil, nil, nil, nil, fmt.Errorf("json err unmarshal failed: %s", err.Error())
 			}
 			for _, accountIndex := range accountIndexes {
 				accountIndexMap[accountIndex] = true
@@ -286,7 +289,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 			var nftIndexes []int64
 			err = json.Unmarshal([]byte(blockInfo.NftIndexes), &nftIndexes)
 			if err != nil {
-				return nil, nil, nil, fmt.Errorf("json err unmarshal failed: %s", err.Error())
+				return nil, nil, nil, nil, fmt.Errorf("json err unmarshal failed: %s", err.Error())
 			}
 			for _, nftIndex := range nftIndexes {
 				nftIndexMap[nftIndex] = true
@@ -296,7 +299,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 		heights = append(heights, blockInfo.BlockHeight)
 	}
 	if len(heights) == 0 {
-		return accountIndexList, nftIndexList, heights, nil
+		return accountIndexList, nftIndexList, heights, nil, nil
 	}
 
 	for k := range accountIndexMap {
@@ -331,7 +334,7 @@ func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64
 		}
 	}
 
-	return accountIndexList, nftIndexList, heights, nil
+	return accountIndexList, nftIndexList, heights, accountIndexMap, nil
 }
 
 func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64, heights []int64, curHeight int64) (err error) {
@@ -433,9 +436,20 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 			for k := range deleteAccountIndexMap {
 				deleteAccountIndexList = append(deleteAccountIndexList, k)
 			}
-			err := bc.AccountModel.DeleteByIndexesInTransact(dbTx, deleteAccountIndexList)
-			if err != nil {
-				return fmt.Errorf("roll back account,delete account failed: %s", err.Error())
+			from := 0
+			to := 0
+			batch := 1000
+			count := len(deleteAccountIndexList)
+			for from < count {
+				to = from + batch
+				if to > count {
+					to = count
+				}
+				err := bc.AccountModel.DeleteByIndexesInTransact(dbTx, deleteAccountIndexList[from:to])
+				if err != nil {
+					return fmt.Errorf("roll back account,delete account failed: %s", err.Error())
+				}
+				from = to
 			}
 		}
 
@@ -466,9 +480,20 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 			for k := range deleteNftIndexMap {
 				deleteNftIndexList = append(deleteNftIndexList, k)
 			}
-			err := bc.L2NftModel.DeleteByIndexesInTransact(dbTx, deleteNftIndexList)
-			if err != nil {
-				return fmt.Errorf("roll back nft,delete nft failed: %s", err.Error())
+			from := 0
+			to := 0
+			batch := 1000
+			count := len(deleteNftIndexList)
+			for from < count {
+				to = from + batch
+				if to > count {
+					to = count
+				}
+				err := bc.L2NftModel.DeleteByIndexesInTransact(dbTx, deleteNftIndexList)
+				if err != nil {
+					return fmt.Errorf("roll back nft,delete nft failed: %s", err.Error())
+				}
+				from = to
 			}
 		}
 
@@ -535,6 +560,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 			return fmt.Errorf("unmarshal pollTxIds failed: %s", err.Error())
 
 		}
+		metrics.RollbackTxGauge.Set(float64(len(pollTxIds)))
 
 		fromTxHash := ""
 		fromPoolTxId := uint(0)
@@ -556,7 +582,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 }
 
 func verifyRollbackTableDataFunc(bc *BlockChain, curHeight int64) error {
-	logx.Infof("verify rollback start,height:%s", curHeight)
+	logx.Infof("verify rollback start,height:%d", curHeight)
 	blocks, err := bc.BlockModel.GetBlockByStatus([]int{block.StatusPacked})
 	if err != nil && err != types.DbErrNotFound {
 		return fmt.Errorf("get statusPacked block height failed: %s", err.Error())
@@ -656,20 +682,26 @@ func verifyRollbackTableDataFunc(bc *BlockChain, curHeight int64) error {
 	return nil
 }
 
-func verifyRollbackTreesFunc(bc *BlockChain, currentBlock *block.Block) error {
-	hFunc := poseidon.NewPoseidon()
-	hFunc.Write(bc.Statedb.AccountTree.Root())
-	hFunc.Write(bc.Statedb.NftTree.Root())
-	stateRoot := common.Bytes2Hex(hFunc.Sum(nil))
-	logx.Infof("smt tree stateRoot=%s equal currentBlock.StateRoot=%s,height:%s,AccountTree.Root=%s,NftTree.Root=%s", stateRoot, currentBlock.StateRoot, currentBlock.BlockHeight, common.Bytes2Hex(bc.Statedb.AccountTree.Root()), common.Bytes2Hex(bc.Statedb.NftTree.Root()))
-	if stateRoot != currentBlock.StateRoot {
-		return fmt.Errorf("smt tree stateRoot=%s not equal currentBlock.StateRoot=%s,height:%d,AccountTree.Root=%s,NftTree.Root=%s", stateRoot, currentBlock.StateRoot, currentBlock.BlockHeight, common.Bytes2Hex(bc.Statedb.AccountTree.Root()), common.Bytes2Hex(bc.Statedb.NftTree.Root()))
+func verifyRollbackTreesFunc(bc *BlockChain, currentBlock *block.Block, accountIndexMap map[int64]bool) error {
+	err := tree.CheckAssetRoot(accountIndexMap, currentBlock.BlockHeight, bc.Statedb.AccountAssetTrees, bc.AccountHistoryModel)
+	if err != nil {
+		return err
 	}
+
+	err = tree.CheckStateRoot(currentBlock.BlockHeight, bc.Statedb.AccountTree, bc.Statedb.NftTree, bc.BlockModel)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (bc *BlockChain) ApplyTransaction(tx *tx.Tx) error {
 	return bc.processor.Process(tx)
+}
+
+func (bc *BlockChain) PreApplyTransaction(tx *tx.Tx, accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	bc.processor.PreProcess(tx, accountIndexMap, nftIndexMap, addressMap)
 }
 
 func (bc *BlockChain) InitNewBlock() (*block.Block, error) {
@@ -813,7 +845,6 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 		logx.Infof("committer verify nonce start,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
 		if nonce != expectNonce {
 			logx.Infof("committer verify nonce failed,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
-			bc.Statedb.SetPendingNonceToRedisCache(accountIndex, expectNonce-1)
 			return types.AppErrInvalidNonce
 		} else {
 			logx.Infof("committer verify nonce success,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
@@ -885,4 +916,119 @@ func (bc *BlockChain) resetCurrentBlockTimeStamp() {
 	}
 
 	bc.currentBlock.CreatedAt = time.Time{}
+}
+
+func (bc *BlockChain) LoadAllAccounts(pool *ants.Pool) error {
+	start := time.Now()
+	logx.Infof("load all accounts start")
+	totalTask := 0
+
+	batchReloadSize := 1000
+	maxAccountIndex, err := bc.AccountModel.GetMaxAccountIndex()
+	if err != nil && err != types.DbErrNotFound {
+		return fmt.Errorf("load all accounts failed: %s", err.Error())
+	}
+	if maxAccountIndex == -1 {
+		return nil
+	}
+
+	errChan := make(chan error, common2.MaxInt64(maxAccountIndex/int64(batchReloadSize), 1))
+	defer close(errChan)
+
+	for i := 0; int64(i) <= maxAccountIndex; i += batchReloadSize {
+		toAccountIndex := int64(i+batchReloadSize) - 1
+		if toAccountIndex > maxAccountIndex {
+			toAccountIndex = maxAccountIndex
+		}
+		totalTask++
+		err := func(fromAccountIndex int64, toAccountIndex int64) error {
+			return pool.Submit(func() {
+				start := time.Now()
+				accounts, err := bc.AccountModel.GetByAccountIndexRange(fromAccountIndex, toAccountIndex)
+				if err != nil && err != types.DbErrNotFound {
+					logx.Severef("load all accounts failed:%s", err.Error())
+					errChan <- err
+					return
+				}
+				for _, accountInfo := range accounts {
+					formatAccount, err := chain.ToFormatAccountInfo(accountInfo)
+					if err != nil {
+						logx.Severef("load all accounts failed:%s", err.Error())
+						errChan <- err
+						return
+					}
+					bc.Statedb.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
+					bc.Statedb.L1AddressCache.Add(formatAccount.L1Address, accountInfo.AccountIndex)
+				}
+				logx.Infof("GetByNftIndexRange cost time %v", float64(time.Since(start)))
+				errChan <- nil
+			})
+		}(int64(i), toAccountIndex)
+		if err != nil {
+			return fmt.Errorf("load all accounts failed: %s", err.Error())
+		}
+	}
+
+	for i := 0; i < totalTask; i++ {
+		err := <-errChan
+		if err != nil {
+			return fmt.Errorf("load all accounts failed:  %s", err.Error())
+		}
+	}
+	logx.Infof("load all accounts end. cost time %v", float64(time.Since(start)))
+	return nil
+}
+
+func (bc *BlockChain) LoadAllNfts(pool *ants.Pool) error {
+	start := time.Now()
+	logx.Infof("load all nfts start")
+	totalTask := 0
+
+	batchReloadSize := 1000
+	maxNftIndex, err := bc.L2NftModel.GetMaxNftIndex()
+	if err != nil && err != types.DbErrNotFound {
+		return fmt.Errorf("load all nfts failed:  %s", err.Error())
+	}
+	if maxNftIndex == -1 {
+		return nil
+	}
+
+	errChan := make(chan error, common2.MaxInt64(maxNftIndex/int64(batchReloadSize), 1))
+	defer close(errChan)
+
+	for i := 0; int64(i) <= maxNftIndex; i += batchReloadSize {
+		toNftIndex := int64(i+batchReloadSize) - 1
+		if toNftIndex > maxNftIndex {
+			toNftIndex = maxNftIndex
+		}
+		totalTask++
+		err := func(fromNftIndex int64, toNftIndex int64) error {
+			return pool.Submit(func() {
+				start := time.Now()
+				nfts, err := bc.L2NftModel.GetByNftIndexRange(fromNftIndex, toNftIndex)
+				if err != nil && err != types.DbErrNotFound {
+					logx.Severef("load all nfts failed:%s", err.Error())
+					errChan <- err
+					return
+				}
+				for _, nftInfo := range nfts {
+					bc.Statedb.NftCache.Add(nftInfo.NftIndex, nftInfo)
+				}
+				logx.Infof("GetByNftIndexRange cost time %v", float64(time.Since(start)))
+				errChan <- nil
+			})
+		}(int64(i), toNftIndex)
+		if err != nil {
+			return fmt.Errorf("load all nfts failed:  %s", err.Error())
+		}
+	}
+
+	for i := 0; i < totalTask; i++ {
+		err := <-errChan
+		if err != nil {
+			return fmt.Errorf("load all nfts failed:  %s", err.Error())
+		}
+	}
+	logx.Infof("load all nfts end. cost time %v", float64(time.Since(start)))
+	return nil
 }

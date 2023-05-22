@@ -38,9 +38,8 @@ type (
 		GetTxsTotalCount(options ...GetTxOptionFunc) (count int64, err error)
 		GetTxByTxHash(hash string) (txs *Tx, err error)
 		GetTxUnscopedByTxHash(hash string) (txs *Tx, err error)
-		GetTxsByStatus(status int) (txs []*Tx, err error)
-		GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
-		GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
+		GetTxsUnscopedByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
+		GetTxCountUnscopedByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
 		GetTxsByStatusAndMaxId(status int, maxId uint, limit int64) (txs []*Tx, err error)
 		GetTxsByStatusAndCreateTime(status int, fromCreatedAt time.Time, toId uint) (txs []*Tx, err error)
 		CreateTxs(txs []*PoolTx) error
@@ -85,7 +84,7 @@ type (
 
 		// Assigned when created in the tx pool.
 		TxHash           string `gorm:"uniqueIndex"`
-		TxType           int64
+		TxType           int64  `gorm:"index"`
 		TxInfo           string
 		AccountIndex     int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:1"`
 		Nonce            int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:2"`
@@ -96,7 +95,7 @@ type (
 		// Assigned after executed.
 		GasFee          string
 		GasFeeAssetId   int64
-		NftIndex        int64
+		NftIndex        int64 `gorm:"index"`
 		CollectionId    int64
 		AssetId         int64
 		TxAmount        string
@@ -108,8 +107,8 @@ type (
 		TxIndex     int64
 		ChannelName string
 		BlockHeight int64 `gorm:"index"`
-		BlockId     uint  `gorm:"index"`
-		TxStatus    int   `gorm:"index"`
+		BlockId     uint
+		TxStatus    int `gorm:"index"`
 
 		TxDetails []*TxDetail `gorm:"-"`
 	}
@@ -156,14 +155,6 @@ func (m *defaultTxPoolModel) GetTxs(limit int64, offset int64, options ...GetTxO
 	}
 
 	dbTx = dbTx.Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&txs)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	}
-	return txs, nil
-}
-
-func (m *defaultTxPoolModel) GetTxsByStatus(status int) (txs []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Where("tx_status = ?", status).Order("created_at, id").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	}
@@ -263,13 +254,13 @@ func (m *defaultTxPoolModel) GetTxUnscopedByTxHash(hash string) (tx *Tx, err err
 	return tx, nil
 }
 
-func (m *defaultTxPoolModel) GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txs []*Tx, err error) {
+func (m *defaultTxPoolModel) GetTxsUnscopedByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txs []*Tx, err error) {
 	opt := &getTxOption{}
 	for _, f := range options {
 		f(opt)
 	}
 
-	dbTx := m.DB.Table(m.table).Where("account_index = ? and deleted_at is null", accountIndex)
+	dbTx := m.DB.Unscoped().Table(m.table).Where("from_account_index = ? or to_account_index = ?", accountIndex, accountIndex)
 	if len(opt.Types) > 0 {
 		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}
@@ -283,17 +274,16 @@ func (m *defaultTxPoolModel) GetTxsByAccountIndex(accountIndex int64, limit int6
 	return txs, nil
 }
 
-func (m *defaultTxPoolModel) GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error) {
+func (m *defaultTxPoolModel) GetTxCountUnscopedByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error) {
 	opt := &getTxOption{}
 	for _, f := range options {
 		f(opt)
 	}
 
-	dbTx := m.DB.Table(m.table).Where("account_index = ? and deleted_at is null", accountIndex)
+	dbTx := m.DB.Unscoped().Table(m.table).Where("from_account_index = ? or to_account_index = ?", accountIndex, accountIndex)
 	if len(opt.Types) > 0 {
 		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}
-
 	dbTx = dbTx.Count(&count)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
@@ -301,6 +291,7 @@ func (m *defaultTxPoolModel) GetTxsCountByAccountIndex(accountIndex int64, optio
 		return 0, nil
 	}
 	return count, nil
+
 }
 
 func (m *defaultTxPoolModel) CreateTxs(txs []*PoolTx) error {
@@ -337,7 +328,7 @@ func (m *defaultTxPoolModel) GetPendingTxsByAccountIndex(accountIndex int64, opt
 }
 
 func (m *defaultTxPoolModel) GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error) {
-	dbTx := m.DB.Table(m.table).Select("nonce").Where("deleted_at is null and account_index = ?", accountIndex).Order("nonce desc").Limit(1).Find(&nonce)
+	dbTx := m.DB.Table(m.table).Select("nonce").Where("deleted_at is null and account_index = ? and tx_type in ?", accountIndex, types.GetL2TxTypes()).Order("nonce desc").Limit(1).Find(&nonce)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -347,6 +338,10 @@ func (m *defaultTxPoolModel) GetMaxNonceByAccountIndex(accountIndex int64) (nonc
 }
 
 func (m *defaultTxPoolModel) CreateTxsInTransact(tx *gorm.DB, txs []*PoolTx) error {
+	if len(txs) == 0 {
+		return nil
+	}
+
 	dbTx := tx.Table(m.table).CreateInBatches(txs, len(txs))
 	if dbTx.Error != nil {
 		return dbTx.Error
@@ -541,7 +536,7 @@ func (m *defaultTxPoolModel) BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (e
 		return dbTx.Error
 	}
 	if int(dbTx.RowsAffected) != len(txs) {
-		logx.Errorf("BatchUpdateNftIndexOrCollectionId failed,rows affected not equal txs length,dbTx.RowsAffected:%s,len(txs):%s", int(dbTx.RowsAffected), len(txs))
+		logx.Errorf("BatchUpdateNftIndexOrCollectionId failed,rows affected not equal txs length,dbTx.RowsAffected:%d,len(txs):%d", int(dbTx.RowsAffected), len(txs))
 		return types.DbErrFailToUpdatePoolTx
 	}
 	return nil

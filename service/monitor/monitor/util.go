@@ -18,17 +18,21 @@ package monitor
 
 import (
 	"encoding/hex"
-	"strconv"
-
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"strconv"
 )
 
 func ComputeL1TxTxHash(requestId int64, txHash string) string {
 	hFunc := mimc.NewMiMC()
-	hFunc.Write([]byte(strconv.FormatInt(requestId, 10)))
-	hFunc.Write(common.FromHex(txHash))
+	var x fr.Element
+	b := []byte(strconv.FormatInt(requestId, 10))
+	b = append(b, common.FromHex(txHash)[:]...)
+	_ = x.SetBytes(b)
+	bts := x.Bytes()
+	hFunc.Write(bts[:])
 	return hex.EncodeToString(hFunc.Sum(nil))
 }
 

@@ -42,6 +42,12 @@ func NewDepositNftExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxEx
 	}, nil
 }
 
+func (e *DepositNftExecutor) PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	txInfo := e.TxInfo
+	addressMap[txInfo.L1Address] = true
+	nftIndexMap[txInfo.NftIndex] = true
+}
+
 func (e *DepositNftExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo
@@ -261,6 +267,7 @@ func (e *DepositNftExecutor) Finalize() error {
 		txInfo := e.TxInfo
 		if !e.isDesertExit {
 			bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
+			logx.Infof("create account,pool id =%d,new AccountIndex=%d,BlockHeight=%d", e.tx.ID, txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
 		}
 		accountInfo := e.GetCreatingAccount()
 		bc.StateDB().SetPendingAccountL1AddressMap(accountInfo.L1Address, accountInfo.AccountIndex)

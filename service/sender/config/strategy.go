@@ -2,68 +2,64 @@ package config
 
 import (
 	"encoding/json"
-	"github.com/apolloconfig/agollo/v4"
-	apollo "github.com/apolloconfig/agollo/v4/env/config"
 	"github.com/apolloconfig/agollo/v4/storage"
+	"github.com/bnb-chain/zkbnb/common/apollo"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-const SenderConfigKey = "SenderConfig"
+const (
+	SenderConfigKey = "SenderConfig"
+)
 
-var senderConfig *SenderConfig = &SenderConfig{}
-
-// Apollo client to get the sender configuration
-// so that it could be updated it from the apollo server side
-var apolloClient agollo.Client
+var senderConfig = &SenderConfig{}
+var senderUpdater = &SenderUpdater{}
 
 type SenderConfig struct {
+	DisableCommitBlock bool
+	DisableVerifyBlock bool
+
+	CommitControlSwitch bool
+	VerifyControlSwitch bool
+
 	MaxCommitBlockCount uint64
 	CommitTxCountLimit  uint64
 
+	MaxCommitTotalGasFee uint64
+
 	MaxVerifyBlockCount uint64
 	VerifyTxCountLimit  uint64
+
+	MaxVerifyTotalGasFee uint64
 
 	MaxCommitTxCount uint64
 	MaxVerifyTxCount uint64
 
 	MaxCommitBlockInterval uint64
 	MaxVerifyBlockInterval uint64
-
-	MaxCommitAvgUnitGas uint64
-	MaxVerifyAvgUnitGas uint64
 }
 
 type SenderUpdater struct {
 }
 
-func InitApolloConfiguration(c Config) {
-	apolloConfig := &apollo.AppConfig{
-		AppID:          c.Apollo.AppID,
-		Cluster:        c.Apollo.Cluster,
-		IP:             c.Apollo.ApolloIp,
-		NamespaceName:  c.Apollo.Namespace,
-		IsBackupConfig: c.Apollo.IsBackupConfig,
-	}
+func InitSenderConfiguration(c Config) {
+	//Add the apollo configuration updater listener for SenderConfig
+	apollo.AddChangeListener(SenderAppId, Namespace, senderUpdater)
 
-	client, err := agollo.StartWithConfig(func() (*apollo.AppConfig, error) {
-		return apolloConfig, nil
-	})
+	newSenderConfig := &SenderConfig{}
+	newSenderConfigString, err := apollo.LoadApolloConfigFromEnvironment(SenderAppId, Namespace, SenderConfigKey)
 	if err != nil {
-		logx.Severef("Fail to start Apollo Client in Permission Control Configuration, Reason:%s", err.Error())
-		panic("Fail to start Apollo Client in Permission Control Configuration!")
-	}
-
-	apolloClient = client
-	senderUpdater := &SenderUpdater{}
-	apolloClient.AddChangeListener(senderUpdater)
-
-	apolloCache := apolloClient.GetConfigCache(apolloConfig.NamespaceName)
-	newSenderConfigObject, err := apolloCache.Get(SenderConfigKey)
-	if newSenderConfigObjectJson, ok := newSenderConfigObject.(string); ok {
-		newSenderConfig := &SenderConfig{}
-		err := json.Unmarshal([]byte(newSenderConfigObjectJson), newSenderConfig)
+		// If fails to initiate sender strategy configuration from apollo, directly switch it off
+		logx.Severef("Fail to Initiate Sender Configuration from the apollo server!")
+		newSenderConfig.CommitControlSwitch = false
+		newSenderConfig.VerifyControlSwitch = false
+		newSenderConfig.MaxCommitBlockCount = 5
+		newSenderConfig.MaxVerifyBlockCount = 5
+		senderConfig = newSenderConfig
+	} else {
+		err := json.Unmarshal([]byte(newSenderConfigString), newSenderConfig)
 		if err != nil {
 			logx.Errorf("Fail to update SenderConfig from the apollo server, Reason:%s", err.Error())
+			panic("Fail to update SenderConfig from the apollo server, Reason:" + err.Error())
 		}
 
 		// Validate the Sender Configuration from the apollo server side
@@ -72,10 +68,16 @@ func InitApolloConfiguration(c Config) {
 			panic("Fail to validate SenderConfig from the apollo server!")
 		}
 		senderConfig = newSenderConfig
+
+		logx.Info("Initiate and load SenderConfig Successfully!")
+		logx.Info("SenderConfig:", newSenderConfigString)
 	}
 }
 
 func (u *SenderUpdater) OnChange(event *storage.ChangeEvent) {
+
+	logx.Info("Get updates from apollo server")
+
 	configChange := event.Changes[SenderConfigKey]
 	if configChange == nil {
 		return
@@ -95,7 +97,7 @@ func (u *SenderUpdater) OnChange(event *storage.ChangeEvent) {
 			return
 		}
 		senderConfig = newSenderConfig
-		logx.Info("Update SenderConfig Successfully!")
+		logx.Info("Update SenderConfig Successfully:", newSenderConfigObjectJson)
 	}
 }
 

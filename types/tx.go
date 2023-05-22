@@ -124,7 +124,7 @@ const (
 const (
 	TypeAccountIndex = iota
 	TypeAssetId
-	TypeAccountName
+	TypeAccountAddress
 	TypeAccountNameOmitSpace
 	TypeAccountPk
 	TypeLimit

@@ -52,11 +52,11 @@ type (
 		// related txVerification hash
 		L1TxHash string
 		// related block height
-		L1BlockHeight int64
+		L1BlockHeight int64 `gorm:"index"`
 		// sender
 		SenderAddress string
 		// request id
-		RequestId int64
+		RequestId int64 `gorm:"index"`
 		// tx type
 		TxType int64
 		// pub data
@@ -64,7 +64,7 @@ type (
 		// expirationBlock
 		ExpirationBlock int64
 		// status
-		Status int
+		Status int `gorm:"index"`
 		// L2TxHash for the relation to tx table
 		L2TxHash string `gorm:"index"`
 	}
@@ -100,7 +100,7 @@ func (m *defaultPriorityRequestModel) GetL2TxEventMonitors() (txs []*PriorityReq
 }
 
 func (m *defaultPriorityRequestModel) GetPriorityRequestsByStatus(status int) (txs []*PriorityRequest, err error) {
-	dbTx := m.DB.Table(m.table).Where("status = ?", status).Order("request_id").Find(&txs)
+	dbTx := m.DB.Table(m.table).Where("status = ?", status).Order("request_id asc").Limit(1000).Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -111,7 +111,7 @@ func (m *defaultPriorityRequestModel) GetPriorityRequestsByStatus(status int) (t
 
 func (m *defaultPriorityRequestModel) GetLatestHandledRequestId() (requestId int64, err error) {
 	var event *PriorityRequest
-	dbTx := m.DB.Table(m.table).Where("status = ?", HandledStatus).Order("request_id desc").Find(&event)
+	dbTx := m.DB.Table(m.table).Where("status = ?", HandledStatus).Order("request_id desc").Limit(1).Find(&event)
 	if dbTx.Error != nil {
 		return -1, dbTx.Error
 	}

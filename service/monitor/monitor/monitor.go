@@ -18,6 +18,8 @@ package monitor
 
 import (
 	"fmt"
+	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
+	"github.com/bnb-chain/zkbnb/core/rpc_client"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	lru "github.com/hashicorp/golang-lru"
@@ -29,7 +31,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -115,8 +116,6 @@ var (
 type Monitor struct {
 	Config config.Config
 
-	cli *rpc.ProviderClient
-
 	zkbnbContractAddress      string
 	governanceContractAddress string
 
@@ -155,7 +154,7 @@ func NewMonitor(c config.Config) (monitor *Monitor, err error) {
 		logx.Severef("init account cache failed:%v", err)
 		return nil, err
 	}
-	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
+	redisCache := dbcache.NewRedisCache(c.CacheRedis, 15*time.Minute)
 	monitor = &Monitor{
 		Config:               c,
 		db:                   db,
@@ -185,24 +184,14 @@ func NewMonitor(c config.Config) (monitor *Monitor, err error) {
 		return nil, err
 	}
 
-	networkRpc, err := monitor.SysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
+	err = rpc_client.InitRpcClients(monitor.SysConfigModel, c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
-		logx.Severef("failed to get network RPC configuration err:%v, SysConfigName:%s",
-			err, c.ChainConfig.NetworkRPCSysConfigName)
-		return nil, err
-	}
-	logx.Infof("ChainName: %s, zkbnbContractAddress: %s, networkRpc: %s",
-		c.ChainConfig.NetworkRPCSysConfigName, zkbnbAddressConfig.Value, networkRpc.Value)
-
-	bscRpcCli, err := rpc.NewClient(networkRpc.Value)
-	if err != nil {
-		logx.Severef("failed to create rpc client, %v", err)
-		return nil, err
+		logx.Severef("failed to create rpc client instance, %v", err)
+		panic("failed to create rpc client instance, err:" + err.Error())
 	}
 
 	monitor.zkbnbContractAddress = zkbnbAddressConfig.Value
 	monitor.governanceContractAddress = governanceAddressConfig.Value
-	monitor.cli = bscRpcCli
 
 	if err := prometheus.Register(priorityOperationMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
@@ -273,7 +262,7 @@ func (m *Monitor) Shutdown() {
 	}
 }
 
-func (m *Monitor) getBlockRangeToSync(monitorType int) (int64, int64, error) {
+func (m *Monitor) getBlockRangeToSync(monitorType int, cli *rpc.ProviderClient) (int64, int64, error) {
 	latestHandledBlock, err := m.L1SyncedBlockModel.GetLatestL1SyncedBlockByType(monitorType)
 	var handledHeight int64
 	if err != nil {
@@ -287,7 +276,7 @@ func (m *Monitor) getBlockRangeToSync(monitorType int) (int64, int64, error) {
 	}
 
 	// get latest l1 block height(latest height - pendingBlocksCount)
-	latestHeight, err := m.cli.GetHeight()
+	latestHeight, err := cli.GetHeight()
 	if err != nil {
 		l1MonitorHeightMetric.Set(float64(0))
 		return 0, 0, fmt.Errorf("failed to get l1 height, err: %v", err)
@@ -297,4 +286,8 @@ func (m *Monitor) getBlockRangeToSync(monitorType int) (int64, int64, error) {
 	safeHeight = uint64(common2.MinInt64(int64(safeHeight), handledHeight+m.Config.ChainConfig.MaxHandledBlocksCount))
 
 	return handledHeight + 1, int64(safeHeight), nil
+}
+
+func (m *Monitor) GetProviderClient() *rpc.ProviderClient {
+	return rpc_client.GetRpcClient()
 }

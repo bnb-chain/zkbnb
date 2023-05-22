@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/monitor"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -38,6 +39,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		if err != types.DbErrNotFound {
 			return err
 		}
+		time.Sleep(5 * time.Second)
 		return nil
 	}
 	var (
@@ -60,10 +62,12 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		txHash := ComputeL1TxTxHash(request.RequestId, request.L1TxHash)
 
 		poolTx := &tx.PoolTx{BaseTx: tx.BaseTx{
-			TxHash:       txHash,
-			AccountIndex: types.NilAccountIndex,
-			Nonce:        types.NilNonce,
-			ExpiredAt:    types.NilExpiredAt,
+			TxHash:           txHash,
+			AccountIndex:     types.NilAccountIndex,
+			FromAccountIndex: types.NilAccountIndex,
+			ToAccountIndex:   types.NilAccountIndex,
+			Nonce:            types.NilNonce,
+			ExpiredAt:        types.NilExpiredAt,
 
 			GasFeeAssetId: types.NilAssetId,
 			GasFee:        types.NilAssetAmount,
@@ -93,11 +97,12 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
+			poolTx.AssetId = txInfo.AssetId
+			poolTx.TxAmount = txInfo.AssetAmount.String()
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err == nil {
-				poolTx.AccountIndex = accountIndex
-				poolTx.FromAccountIndex = accountIndex
 				poolTx.ToAccountIndex = accountIndex
+				poolTx.AccountIndex = accountIndex
 			} else {
 				logx.Errorf("unable to get account index : %v", err)
 			}
@@ -112,11 +117,12 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info: %v", err)
 			}
+			poolTx.NftIndex = txInfo.NftIndex
+			poolTx.CollectionId = txInfo.CollectionId
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err == nil {
-				poolTx.AccountIndex = accountIndex
-				poolTx.FromAccountIndex = accountIndex
 				poolTx.ToAccountIndex = accountIndex
+				poolTx.AccountIndex = accountIndex
 			} else {
 				logx.Errorf("unable to get account index : %v", err)
 			}
@@ -131,11 +137,12 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
+			poolTx.AssetId = txInfo.AssetId
+			poolTx.TxAmount = txInfo.AssetAmount.String()
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err == nil {
 				poolTx.AccountIndex = accountIndex
 				poolTx.FromAccountIndex = accountIndex
-				poolTx.ToAccountIndex = accountIndex
 			} else {
 				logx.Errorf("unable to get account index : %v", err)
 			}
@@ -150,11 +157,12 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
+			poolTx.NftIndex = txInfo.NftIndex
+			poolTx.CollectionId = txInfo.CollectionId
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err == nil {
 				poolTx.AccountIndex = accountIndex
 				poolTx.FromAccountIndex = accountIndex
-				poolTx.ToAccountIndex = accountIndex
 			} else {
 				logx.Errorf("unable to get account index : %v", err)
 			}
@@ -163,7 +171,17 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		}
 		poolTx.TxInfo = string(txInfoBytes)
 		poolTx.L1RequestId = request.RequestId
-		pendingNewPoolTxs = append(pendingNewPoolTxs, poolTx)
+
+		_, err := m.TxPoolModel.GetTxUnscopedByTxHash(poolTx.TxHash)
+		if err != nil {
+			if err == types.DbErrNotFound {
+				pendingNewPoolTxs = append(pendingNewPoolTxs, poolTx)
+			} else {
+				return fmt.Errorf("fail to get pool tx by TxHash=%s,L1TxHash=%s,L1RequestId=%d,err=%v", poolTx.TxHash, request.L1TxHash, request.RequestId, err)
+			}
+		} else {
+			logx.Infof("This tx hash already exists in the pool tx table,TxHash=%s,L1TxHash=%s,L1RequestId=%d", poolTx.TxHash, request.L1TxHash, request.RequestId)
+		}
 	}
 
 	// update db

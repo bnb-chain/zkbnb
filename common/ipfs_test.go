@@ -12,6 +12,8 @@ import (
 	file "github.com/ipfs/go-ipfs-files"
 	"github.com/mr-tron/base58/base58"
 	"io/ioutil"
+	"math"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -154,4 +156,12 @@ func TestPK(t *testing.T) {
 	//pk.A.X.SetBytes(common.FromHex("0x0dfc378542f05a22fe8d4e08ddce9b5b63eb55d1d51826f6415a492baa77429e"))
 	pk.A.Y.SetBytes(common.FromHex("0x2706f1710710b1f3aa0f5e8dd6af532c1d784ebd0b9aa571c346a70bd4efa7d1"))
 	fmt.Println(common.Bytes2Hex(pk.Bytes()))
+}
+
+func TestValue(t *testing.T) {
+	fbalance := new(big.Float)
+	fbalance.SetString("0.00002")
+
+	ethValue := new(big.Float).Mul(fbalance, big.NewFloat(math.Pow10(18)))
+	fmt.Println(fmt.Sprintf("%.0f", ethValue))
 }

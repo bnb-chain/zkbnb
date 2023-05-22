@@ -2,7 +2,8 @@ package nft
 
 import (
 	"context"
-	"github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/dao/nft"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	types2 "github.com/bnb-chain/zkbnb/types"
 
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
@@ -26,22 +27,36 @@ func NewGetNftByTxHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetNftByTxHashLogic) GetNftByTxHash(req *types.ReqGetNftIndex) (resp *types.NftIndex, err error) {
-	tx, err := l.svcCtx.TxModel.GetTxByHash(req.TxHash)
+	poolTx, err := l.svcCtx.TxPoolModel.GetTxUnscopedByTxHash(req.TxHash)
 	if err != nil {
 		if err == types2.DbErrNotFound {
-			return nil, types2.AppErrNftNotFound
+			return nil, types2.AppErrPoolTxNotFound
 		}
 		return nil, types2.AppErrInternal
 	}
-	nft, err := l.svcCtx.NftModel.GetNft(tx.NftIndex)
-	if err != nil {
-		if err == types2.DbErrNotFound {
-			return nil, types2.AppErrNftNotFound
+	if poolTx.TxType != types2.TxTypeMintNft {
+		return nil, types2.AppErrNftNotFound
+	}
+	if poolTx.TxStatus == tx.StatusPending {
+		return nil, types2.AppErrPoolTxRunning
+	} else if poolTx.TxStatus == tx.StatusFailed {
+		return nil, types2.AppErrPoolTxFailed
+	}
+	history, err := l.svcCtx.NftMetadataHistoryModel.GetL2NftMetadataHistoryByHash(req.TxHash)
+	if err == nil {
+		if history.NftIndex == types2.NilNftIndex {
+			history.NftIndex = poolTx.NftIndex
+			history.Status = nft.NotConfirmed
+			l.svcCtx.NftMetadataHistoryModel.UpdateL2NftMetadataHistoryInTransact(history)
 		}
-		return nil, types2.AppErrInternal
+	} else {
+		return nil, types2.AppErrNftNotFound
 	}
 	return &types.NftIndex{
-		Index:  nft.NftIndex,
-		IpfsId: common.GenerateCid(nft.NftContentHash),
+		Index:             poolTx.NftIndex,
+		IpfsId:            history.IpfsCid,
+		IpnsId:            history.IpnsId,
+		Metadata:          history.Metadata,
+		MutableAttributes: history.Mutable,
 	}, nil
 }

@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/apollo"
 	"os/exec"
 	"testing"
 	"time"
@@ -83,12 +84,7 @@ func (s *ApiServerSuite) SetupSuite() {
 			MaxKeyNum           int64
 		}{AccountExpiration: 10000, AssetExpiration: 10000, BlockExpiration: 10000, TxExpiration: 10000, PriceExpiration: 3600000, MaxCounterNum: 10000, MaxKeyNum: 10000},
 	}
-	c.Postgres = struct {
-		MasterDataSource string
-		SlaveDataSource  string
-		MaxIdle          int
-		MaxConn          int
-	}{
+	c.Postgres = apollo.Postgres{
 		MasterDataSource: "host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5433 sslmode=disable",
 		SlaveDataSource:  "host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5433 sslmode=disable",
 		MaxIdle:          10,

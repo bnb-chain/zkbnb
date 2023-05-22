@@ -14,6 +14,10 @@ var (
 		Name:  "contractAddr",
 		Usage: "the contract addresses file",
 	}
+	OptionalBlockSizesFlag = &cli.StringFlag{
+		Name:  "optionalBlockSizes",
+		Usage: "optional block sizes",
+	}
 	DSNFlag = &cli.StringFlag{
 		Name:  "dsn",
 		Usage: "data source name",
@@ -106,6 +110,11 @@ var (
 		Usage: "nftIndexList",
 		Value: "",
 	}
+	AccountIndexListFlag = &cli.StringFlag{
+		Name:  "accountIndexList",
+		Usage: "accountIndexList",
+		Value: "",
+	}
 	AddressFlag = &cli.StringFlag{
 		Name:  "address",
 		Usage: "address",
@@ -119,6 +128,41 @@ var (
 	RevertBlockHeightFlag = &cli.Int64Flag{
 		Name:  "height",
 		Usage: "height",
+		Value: 0,
+	}
+	RevertBlockByBlockFlag = &cli.Int64Flag{
+		Name:  "byBlock",
+		Usage: "byBlock",
+		Value: 1,
+	}
+	RollbackBlockHeightFlag = &cli.Int64Flag{
+		Name:  "height",
+		Usage: "height",
+		Value: 0,
+	}
+	EstimateGasFromHeightFlag = &cli.Int64Flag{
+		Name:  "fromHeight",
+		Usage: "fromHeight",
+		Value: 0,
+	}
+	EstimateGasToHeightFlag = &cli.Int64Flag{
+		Name:  "toHeight",
+		Usage: "toHeight",
+		Value: 0,
+	}
+	EstimateGasMaxBlockCountFlag = &cli.Int64Flag{
+		Name:  "maxBlockCount",
+		Usage: "maxBlockCount",
+		Value: 0,
+	}
+	SendToL1Flag = &cli.Int64Flag{
+		Name:  "sendToL1",
+		Usage: "sendToL1",
+		Value: 0,
+	}
+	ProverIdFlag = &cli.UintFlag{
+		Name:  "proverId",
+		Usage: "proverId",
 		Value: 0,
 	}
 )

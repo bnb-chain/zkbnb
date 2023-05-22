@@ -48,8 +48,8 @@ type (
 
 	AccountHistory struct {
 		gorm.Model
-		AccountIndex    int64  `gorm:"index"`
-		PublicKey       string `gorm:"index"`
+		AccountIndex    int64 `gorm:"index"`
+		PublicKey       string
 		L1Address       string `gorm:"index"`
 		Nonce           int64
 		CollectionNonce int64
@@ -136,7 +136,7 @@ func (m *defaultAccountHistoryModel) CreateAccountHistoriesInTransact(tx *gorm.D
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(histories)) {
-		logx.Errorf("CreateAccountHistories failed,rows affected not equal histories length,dbTx.RowsAffected:%s,len(histories):%s", int(dbTx.RowsAffected), len(histories))
+		logx.Errorf("CreateAccountHistories failed,rows affected not equal histories length,dbTx.RowsAffected:%d,len(histories):%d", int(dbTx.RowsAffected), len(histories))
 		return types.DbErrFailToCreateAccountHistory
 	}
 	return nil

@@ -30,7 +30,6 @@ var (
 		"ZkBNBContract",
 		"GovernanceContract",
 		"DefaultNftFactory",
-		"ZnsPriceOracle",
 		"AssetGovernanceContract",
 	}
 )
@@ -111,6 +110,8 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(fromCache bool) (*types.Lay
 			if err != types2.DbErrNotFound {
 				return nil, types2.AppErrInternal
 			}
+			logx.Errorf("there is no contractName=%s at SysConfig table,pls check", contractName)
+			continue
 		}
 		resp.ContractAddresses = append(resp.ContractAddresses,
 			types.ContractAddress{Name: contractName, Address: contract.Value})
