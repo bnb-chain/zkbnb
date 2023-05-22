@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.15
 	github.com/aws/aws-sdk-go-v2/service/kms v1.20.7
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.19.3
-	github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d
+	github.com/bnb-chain/zkbnb-go-sdk v1.0.7-0.20230522134048-bcfa8070ef7e
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/goccy/go-json v0.9.11
@@ -197,8 +197,8 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20230302070022-85232f1ac10d
-	github.com/bnb-chain/zkbnb-eth-rpc v0.0.3
+	github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20230522071809-e4ad33260f18
+	github.com/bnb-chain/zkbnb-eth-rpc v0.0.3-0.20230522124337-4e3b2805b2d9
 	github.com/bnb-chain/zkbnb-smt v0.0.3-0.20230519064631-0f9993341ee0
 	github.com/consensys/gnark v0.8.0
 	github.com/consensys/gnark-crypto v0.9.1
@@ -215,9 +215,6 @@ require (
 )
 
 replace (
-	github.com/bnb-chain/zkbnb-crypto => github.com/15000785133/zkbnb-crypto v0.0.8-0.20230512113230-4f6cd1921672
-	github.com/bnb-chain/zkbnb-eth-rpc => github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230421201753-4f608602d198
-	github.com/bnb-chain/zkbnb-go-sdk => github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230511204654-319e95cc2b84
 	github.com/consensys/gnark => github.com/bnb-chain/gnark v0.7.2-0.20230425010344-8e482963e1ae
 	github.com/consensys/gnark-crypto => github.com/bnb-chain/gnark-crypto v0.8.1-0.20230412133626-30223a679fb7
 )
