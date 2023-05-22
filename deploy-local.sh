@@ -58,7 +58,7 @@ cd ~
 rm -rf ${DEPLOY_PATH}-bak && mv ${DEPLOY_PATH} ${DEPLOY_PATH}-bak
 mkdir -p ${DEPLOY_PATH} && cd ${DEPLOY_PATH}
 git clone --branch qa https://github.com/bnb-chain/zkbnb-contract.git
-git clone --branch qa https://github.com/15000785133/zkbnb-crypto.git
+git clone --branch testnet https://github.com/bnb-chain/zkbnb-crypto.git
 cp -r ${ZkBNB_REPO_PATH} ${DEPLOY_PATH}
 
 
