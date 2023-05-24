@@ -702,12 +702,6 @@ func (c *Committer) preSaveBlockDataFunc(stateDataCopy *statedb.StateDataCopy) e
 		return fmt.Errorf("preSaveBlockDataFunc failed:%s,blockHeight:%d", err, stateDataCopy.CurrentBlock.BlockHeight)
 	}
 
-	latestVerifiedBlockNr, err := c.bc.BlockModel.GetLatestVerifiedHeight()
-	if err != nil {
-		return fmt.Errorf("get latest verified height failed:%s", err.Error())
-	}
-	c.bc.Statedb.UpdatePrunedBlockHeight(latestVerifiedBlockNr)
-
 	metrics.PreSaveBlockDataMetrics.WithLabelValues("all").Set(float64(time.Since(start).Milliseconds()))
 	c.updateAssetTreeWorker.Enqueue(stateDataCopy)
 	return nil
@@ -1075,6 +1069,7 @@ func (c *Committer) finalSaveBlockDataFunc(blockStates *block.BlockStates) error
 		return fmt.Errorf("finalSaveBlockDataFunc failed:%s,blockHeight:%d", err.Error(), blockStates.Block.BlockHeight)
 	}
 	c.bc.Statedb.UpdateMaxPoolTxIdFinished(blockStates.Block.Txs[len(blockStates.Block.Txs)-1].PoolTxId)
+	c.bc.Statedb.UpdatePrunedBlockHeight(blockStates.Block.BlockHeight)
 	metrics.L2BlockDbHeightMetric.Set(float64(blockStates.Block.BlockHeight))
 	metrics.FinalSaveBlockDataMetrics.WithLabelValues("all").Set(float64(time.Since(start).Milliseconds()))
 	return nil

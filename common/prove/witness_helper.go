@@ -65,13 +65,13 @@ func NewWitnessHelper(treeCtx *tree.Context, accountTree, nftTree bsmt.SparseMer
 	}
 }
 
-func (w *WitnessHelper) ConstructTxWitness(oTx *tx.Tx, finalityBlockNr uint64, ctx context.Context,
+func (w *WitnessHelper) ConstructTxWitness(oTx *tx.Tx, ctx context.Context,
 ) (cryptoTx *TxWitness, err error) {
 	switch oTx.TxType {
 	case types.TxTypeEmpty:
 		return nil, fmt.Errorf("there should be no empty tx")
 	default:
-		cryptoTx, err = w.constructTxWitness(oTx, finalityBlockNr, ctx)
+		cryptoTx, err = w.constructTxWitness(oTx, ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -79,11 +79,11 @@ func (w *WitnessHelper) ConstructTxWitness(oTx *tx.Tx, finalityBlockNr uint64, c
 	return cryptoTx, nil
 }
 
-func (w *WitnessHelper) constructTxWitness(oTx *tx.Tx, finalityBlockNr uint64, ctx context.Context) (witness *TxWitness, err error) {
+func (w *WitnessHelper) constructTxWitness(oTx *tx.Tx, ctx context.Context) (witness *TxWitness, err error) {
 	if oTx == nil || w.accountTree == nil || w.assetTrees == nil || w.nftTree == nil {
 		return nil, fmt.Errorf("failed because of nil tx or tree")
 	}
-	witness, err = w.constructWitnessInfo(oTx, finalityBlockNr, ctx)
+	witness, err = w.constructWitnessInfo(oTx, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,6 @@ func (w *WitnessHelper) constructTxWitness(oTx *tx.Tx, finalityBlockNr uint64, c
 
 func (w *WitnessHelper) constructWitnessInfo(
 	oTx *tx.Tx,
-	finalityBlockNr uint64,
 	ctx context.Context,
 ) (
 	cryptoTx *TxWitness,
@@ -135,7 +134,7 @@ func (w *WitnessHelper) constructWitnessInfo(
 	}
 	// construct account witness
 	accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err :=
-		w.constructAccountWitness(oTx, finalityBlockNr, accountKeys, proverAccounts, ctx)
+		w.constructAccountWitness(oTx, accountKeys, proverAccounts, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +162,6 @@ func (w *WitnessHelper) constructWitnessInfo(
 
 func (w *WitnessHelper) constructAccountWitness(
 	oTx *tx.Tx,
-	finalityBlockNr uint64,
 	accountKeys []int64,
 	proverAccounts []*AccountWitnessInfo,
 	ctx context.Context,
