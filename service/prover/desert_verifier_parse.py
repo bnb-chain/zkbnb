@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     vks = []
     ics = []
-    with open(src_filename[i], "r") as f:
+    with open(src_filename, "r") as f:
         lines = f.readlines()
         for nu in range(len(lines)):
             s = lines[nu]
