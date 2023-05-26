@@ -59,47 +59,9 @@ type VerifyAndExecuteBlocksCallData struct {
 }
 
 type PerformDesertAssetData struct {
-	StoredBlockInfo    *StoredBlockInfo
-	AssetExitData      DesertVerifierAssetExitData
-	AccountExitData    DesertVerifierAccountExitData
-	AssetMerkleProof   []string
-	AccountMerkleProof []string
-	NftRoot            string
-}
-
-type PerformDesertNftData struct {
-	StoredBlockInfo    *StoredBlockInfo
-	AccountExitData    DesertVerifierAccountExitData
-	ExitNfts           []DesertVerifierNftExitData
-	AssetRoot          string
-	NftMerkleProofs    [][]string
-	AccountMerkleProof []string
-}
-
-type DesertVerifierAssetExitData struct {
-	AssetId                  uint16
-	Amount                   string
-	OfferCanceledOrFinalized string
-}
-
-type DesertVerifierAccountExitData struct {
-	AccountId       uint32
-	L1Address       string
-	PubKeyX         string
-	PubKeyY         string
-	Nonce           int64
-	CollectionNonce int64
-}
-
-type DesertVerifierNftExitData struct {
-	NftIndex            uint64
-	OwnerAccountIndex   int64
-	CreatorAccountIndex int64
-	NftContentHash1     string
-	NftContentHash2     string
-	NftContentType      uint8
-	RoyaltyRate         int64
-	CollectionId        int64
+	StoredBlockInfo *StoredBlockInfo
+	PubData         string
+	Proofs          string
 }
 
 type StoredBlockInfo struct {

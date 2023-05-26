@@ -37,10 +37,12 @@ type Config struct {
 		RoutinePoolSize    int `json:",optional"`
 		AssetTreeCacheSize int
 	}
-	LogConf logx.LogConf
+	LogConf       logx.LogConf
+	KeyPath       string `json:",optional"`
+	R1CSBatchSize int    `json:",optional"`
 
-	Address      string  `json:",optional"`
-	Token        string  `json:",optional"`
-	NftIndexList []int64 `json:",optional"`
-	ProofFolder  string  `json:",optional"`
+	Address     string `json:",optional"`
+	Token       string `json:",optional"`
+	NftIndex    int64  `json:",optional"`
+	ProofFolder string `json:",optional"`
 }

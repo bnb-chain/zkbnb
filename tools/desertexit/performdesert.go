@@ -1,7 +1,6 @@
 package desertexit
 
 import (
-	"encoding/json"
 	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
 	"github.com/bnb-chain/zkbnb/tools/desertexit/desertexit"
 	"github.com/ethereum/go-ethereum/common"
@@ -9,25 +8,23 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 	"math/big"
+	"strconv"
 )
 
 const CommandActivateDesert = "activateDesert"
-const CommandPerformAsset = "performAsset"
-const CommandPerformNft = "performNft"
+const CommandPerform = "perform"
 const CommandCancelOutstandingDeposit = "cancelOutstandingDeposit"
 const CommandWithdrawNFT = "withdrawNFT"
 const CommandWithdrawAsset = "withdrawAsset"
 const CommandGetBalance = "getBalance"
 const CommandGetPendingBalance = "getPendingBalance"
 
-func Perform(configFile string, command string, amount string, nftIndexListStr string, owner string, privateKey string, proof string, token string) error {
+func Perform(configFile string, command string, amount string, nftIndex string, owner string, privateKey string, proof string, token string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
-	proc.AddShutdownListener(func() {
-		logx.Close()
-	})
+
 	if privateKey != "" {
 		c.ChainConfig.PrivateKey = privateKey
 	}
@@ -37,19 +34,26 @@ func Perform(configFile string, command string, amount string, nftIndexListStr s
 	if token != "" {
 		c.Token = token
 	}
-	if nftIndexListStr != "" {
-		var nftIndexList []int64
-		err := json.Unmarshal([]byte(nftIndexListStr), &nftIndexList)
+	if nftIndex != "" {
+		var err error
+		c.NftIndex, err = strconv.ParseInt(nftIndex, 10, 64)
 		if err != nil {
+			logx.Severe(err)
 			return err
 		}
-		c.NftIndexList = nftIndexList
 	}
 	m, err := desertexit.NewPerformDesert(c)
 	if err != nil {
 		logx.Severe(err)
 		return err
 	}
+
+	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
+	proc.AddShutdownListener(func() {
+		logx.Info("start to shutdown desertexit......")
+		_ = logx.Close()
+	})
+
 	switch command {
 	case CommandActivateDesert:
 		err = m.ActivateDesertMode()
@@ -58,19 +62,10 @@ func Perform(configFile string, command string, amount string, nftIndexListStr s
 			return err
 		}
 		break
-	case CommandPerformAsset:
+	case CommandPerform:
 		var performDesertAsset desertexit.PerformDesertAssetData
 		conf.MustLoad(proof, &performDesertAsset)
 		err = m.PerformDesert(performDesertAsset)
-		if err != nil {
-			logx.Severe(err)
-			return err
-		}
-		break
-	case CommandPerformNft:
-		var performDesertNftData desertexit.PerformDesertNftData
-		conf.MustLoad(proof, &performDesertNftData)
-		err = m.PerformDesertNft(performDesertNftData)
 		if err != nil {
 			logx.Severe(err)
 			return err
@@ -84,7 +79,7 @@ func Perform(configFile string, command string, amount string, nftIndexListStr s
 		}
 		break
 	case CommandWithdrawNFT:
-		err = m.WithdrawPendingNFTBalance(c.NftIndexList)
+		err = m.WithdrawPendingNFTBalance(c.NftIndex)
 		if err != nil {
 			logx.Severe(err)
 			return err
