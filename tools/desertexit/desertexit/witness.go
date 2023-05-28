@@ -2,6 +2,7 @@ package desertexit
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/bnb-chain/zkbnb-crypto/circuit"
 	"github.com/bnb-chain/zkbnb-crypto/circuit/desert"
@@ -104,6 +105,12 @@ func (c *GenerateProof) generateWitness(blockHeight int64, accountIndex int64, n
 			}
 		}
 
+		accountsInfo[0].AssetsInfo = &cryptoTypes.AccountAsset{
+			AssetId:                  formatAccountInfo.AssetInfo[int64(assetId)].AssetId,
+			Balance:                  formatAccountInfo.AssetInfo[int64(assetId)].Balance,
+			OfferCanceledOrFinalized: formatAccountInfo.AssetInfo[int64(assetId)].OfferCanceledOrFinalized,
+		}
+
 		assetMerkleProof, err := accountAssetTrees.Get(accountIndex).GetProof(uint64(assetId))
 		if err != nil {
 			return desertInfo, pubData, err
@@ -129,7 +136,7 @@ func (c *GenerateProof) generateWitness(blockHeight int64, accountIndex int64, n
 			return desertInfo, pubData, err
 		}
 		accountsInfo[1] = desertTypes.EmptyAccount(circuit.LastAccountIndex, tree.NilAccountAssetRoot)
-		// get account before
+		// get account
 		accountMerkleProofs, err := accountTree.GetProof(circuit.LastAccountIndex)
 		if err != nil {
 			return desertInfo, pubData, err
@@ -211,6 +218,18 @@ func (c *GenerateProof) generateWitness(blockHeight int64, accountIndex int64, n
 		}
 
 		accountsInfo[1].AssetsInfo = cryptoTypes.EmptyAccountAsset(circuit.LastAccountAssetId)
+
+		// get account
+		accountMerkleProofs, err := accountTree.GetProof(uint64(creatorAccountInfo.AccountIndex))
+		if err != nil {
+			return desertInfo, pubData, err
+		}
+		// set account merkle proof
+		merkleProofsAccounts[1], err = prove.SetFixedAccountArray(accountMerkleProofs)
+		if err != nil {
+			return desertInfo, pubData, err
+		}
+
 		assetMerkleProof, err = accountAssetTrees.Get(creatorAccountInfo.AccountIndex).GetProof(circuit.LastAccountAssetId)
 		if err != nil {
 			return desertInfo, pubData, err
@@ -235,6 +254,10 @@ func (c *GenerateProof) generateWitness(blockHeight int64, accountIndex int64, n
 	}
 
 	cryptoTx := &desert.Tx{
+		TxType:                    txType,
+		ExitTxInfo:                exitTxInfo,
+		ExitNftTxInfo:             exitNftTxInfo,
+		AccountRoot:               accountRoot,
 		AccountsInfo:              accountsInfo,
 		NftRoot:                   nftRoot,
 		Nft:                       nft,
@@ -248,6 +271,11 @@ func (c *GenerateProof) generateWitness(blockHeight int64, accountIndex int64, n
 		Commitment: common.Hex2Bytes(CreateCommitment(stateRoot, pubData)),
 		Tx:         cryptoTx,
 	}
+	bz, err := json.Marshal(desertInfo)
+	if err != nil {
+		return desertInfo, pubData, err
+	}
+	logx.Infof("witness desertInfo=%s", bz)
 
 	return desertInfo, pubData, nil
 }

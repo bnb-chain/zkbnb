@@ -23,10 +23,10 @@ performdesert --m perform  --proof ./tools/desertexit/proofdata/performDesert.js
 performdesert --m cancelOutstandingDeposit  --privateKey 7f9294e5f4e6e7015434b89de498b096c761101d448695b28e632b581d6eb887  --config ./tools/desertexit/etc/config.yaml
 
 
-performdesert --m withdrawAsset  --address 0x9069Bfe50613D85E2125Fc529cba75a781E19622  --token 0x00 --amount 10000000000000000 --privateKey 7f9294e5f4e6e7015434b89de498b096c761101d448695b28e632b581d6eb887 --config ./tools/desertexit/etc/config.yaml
+performdesert --m withdrawAsset  --address 0xd757C6bDb5837d721B04DE87c155DBa72c9B076C  --token 0x00 --amount 9777000000000000 --privateKey 7f9294e5f4e6e7015434b89de498b096c761101d448695b28e632b581d6eb887 --config ./tools/desertexit/etc/config.yaml
 performdesert --m withdrawNFT  --config ./tools/desertexit/etc/config.yaml
 
 
-performdesert --m getBalance  --address 0x9069Bfe50613D85E2125Fc529cba75a781E19622  --token 0x00 --config ./tools/desertexit/etc/config.yaml
-performdesert --m getPendingBalance  --address 0x9069Bfe50613D85E2125Fc529cba75a781E19622  --token 0x00 --config ./tools/desertexit/etc/config.yaml
+performdesert --m getBalance  --address 0xd757C6bDb5837d721B04DE87c155DBa72c9B076C  --token 0x00 --config ./tools/desertexit/etc/config.yaml
+performdesert --m getPendingBalance  --address 0xd757C6bDb5837d721B04DE87c155DBa72c9B076C  --token 0x00 --config ./tools/desertexit/etc/config.yaml
 
