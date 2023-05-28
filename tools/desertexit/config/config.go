@@ -16,6 +16,7 @@ type Config struct {
 	ChainConfig struct {
 		StartL1BlockHeight               int64
 		ConfirmBlocksCount               uint64
+		MaxWaitingTime                   int64
 		MaxHandledBlocksCount            int64
 		MaxCancelOutstandingDepositCount int64
 		KeptHistoryBlocksCount           int64 // KeptHistoryBlocksCount define the count of blocks to keep in table, old blocks will be cleaned

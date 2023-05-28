@@ -31,6 +31,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 	"sort"
+	"time"
 )
 
 type PerformDesert struct {
@@ -114,6 +115,10 @@ func (m *PerformDesert) doPerformDesert(storedBlockInfo zkbnb.StorageStoredBlock
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}
+	err = m.checkTxSuccess(txHash)
+	if err != nil {
+		return err
+	}
 	logx.Infof("performDesert success,txHash=%s", txHash)
 	return nil
 }
@@ -163,6 +168,12 @@ func (m *PerformDesert) WithdrawPendingBalance(owner common.Address, token commo
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}
+
+	err = m.checkTxSuccess(txHash)
+	if err != nil {
+		return err
+	}
+
 	logx.Infof("withdrawPendingBalance success,txHash=%s", txHash)
 
 	pendingBalanceAfter, err := m.GetPendingBalance(owner, token)
@@ -193,6 +204,12 @@ func (m *PerformDesert) WithdrawPendingNFTBalance(nftIndex int64) error {
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}
+
+	err = m.checkTxSuccess(txHash)
+	if err != nil {
+		return err
+	}
+
 	logx.Infof("withdrawPendingNFTBalance success,nftIndex=%d,txHash=%s", nftIndex, txHash)
 	return nil
 }
@@ -237,7 +254,10 @@ func (m *PerformDesert) CancelOutstandingDeposit() error {
 			depositsPubData = append(depositsPubData, common.FromHex(request.Pubdata))
 			maxRequestId = common2.MaxInt64(request.RequestId, maxRequestId)
 			if int64(len(depositsPubData[index])) == m.Config.ChainConfig.MaxCancelOutstandingDepositCount {
-				m.doCancelOutstandingDeposit(uint64(maxRequestId), depositsPubData)
+				err := m.doCancelOutstandingDeposit(uint64(maxRequestId), depositsPubData)
+				if err != nil {
+					return err
+				}
 				maxRequestId = int64(0)
 				depositsPubData = make([][]byte, 0)
 				index = 0
@@ -246,28 +266,37 @@ func (m *PerformDesert) CancelOutstandingDeposit() error {
 			index++
 		}
 
-		m.doCancelOutstandingDeposit(uint64(maxRequestId), depositsPubData)
+		err = m.doCancelOutstandingDeposit(uint64(maxRequestId), depositsPubData)
+		if err != nil {
+			return err
+		}
 		requestId = uint64(maxRequestId + 1)
 	}
 	return nil
 }
 
-func (m *PerformDesert) doCancelOutstandingDeposit(maxRequestId uint64, depositsPubData [][]byte) {
+func (m *PerformDesert) doCancelOutstandingDeposit(maxRequestId uint64, depositsPubData [][]byte) error {
 	if len(depositsPubData) == 0 {
-		return
+		return nil
 	}
 	gasPrice, err := m.cli.SuggestGasPrice(context.Background())
 	if err != nil {
 		logx.Errorf("failed to fetch gas price: %v", err)
-		return
+		return err
 	}
 
 	txHash, err := m.zkBNBCli.CancelOutstandingDepositsForExodusMode(maxRequestId, depositsPubData, gasPrice, m.Config.ChainConfig.GasLimit)
 	if err != nil {
 		logx.Errorf("failed to send tx: %v:%s", err, txHash)
-		return
+		return err
 	}
+	err = m.checkTxSuccess(txHash)
+	if err != nil {
+		return err
+	}
+
 	logx.Infof("cancelOutstandingDepositsForDesertMode success,txHash=%s", txHash)
+	return nil
 }
 
 func (m *PerformDesert) ActivateDesertMode() error {
@@ -290,6 +319,12 @@ func (m *PerformDesert) ActivateDesertMode() error {
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}
+
+	err = m.checkTxSuccess(txHash)
+	if err != nil {
+		return err
+	}
+
 	logx.Infof("activateDesertMode success,txHash=%s", txHash)
 	return nil
 }
@@ -326,4 +361,31 @@ func (m *PerformDesert) GetPendingBalance(address common.Address, token common.A
 	}
 	logx.Infof("get pending balance,pendingBalance=%d", amount.Int64())
 	return amount, nil
+}
+
+func (m *PerformDesert) checkTxSuccess(txHash string) error {
+	startDate := time.Now()
+	for {
+		receipt, err := m.cli.GetTransactionReceipt(txHash)
+		if err != nil {
+			logx.Errorf("query transaction receipt %s failed, err: %v", txHash, err)
+			if time.Now().After(startDate.Add(time.Duration(m.Config.ChainConfig.MaxWaitingTime) * time.Second)) {
+				return fmt.Errorf("failed to sent tx, tx_hash=%s,error=%s", txHash, err)
+			}
+			continue
+		}
+
+		latestL1Height, err := m.cli.GetHeight()
+		if err != nil {
+			return fmt.Errorf("failed to get l1 block height, err: %v", err)
+		}
+		if latestL1Height < receipt.BlockNumber.Uint64()+m.Config.ChainConfig.ConfirmBlocksCount {
+			continue
+		} else {
+			if receipt.Status == 0 {
+				return fmt.Errorf("failed to sent tx, tx_hash=%s,receipt.Status=0", txHash)
+			}
+			return nil
+		}
+	}
 }
