@@ -74,7 +74,7 @@ if [ $flag = "new" ]; then
 
   echo '2-2 start generate zkbnb.desert.vk and zkbnb.desert.pk'
   cd ${DEPLOY_PATH}
-  cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportDesertSol -batchsize=100000
+  cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportDesertSol
   cd ${DEPLOY_PATH}
   mkdir -p $KEY_PATH
   cp -r ./zkbnb-crypto/circuit/solidity/* $KEY_PATH

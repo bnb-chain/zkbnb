@@ -38,9 +38,8 @@ type Config struct {
 		RoutinePoolSize    int `json:",optional"`
 		AssetTreeCacheSize int
 	}
-	LogConf       logx.LogConf
-	KeyPath       string `json:",optional"`
-	R1CSBatchSize int    `json:",optional"`
+	LogConf logx.LogConf
+	KeyPath string `json:",optional"`
 
 	Address     string `json:",optional"`
 	Token       string `json:",optional"`

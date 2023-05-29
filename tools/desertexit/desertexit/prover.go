@@ -21,7 +21,6 @@ var (
 
 func (c *GenerateProof) proveDesert(cDesert *desert.Desert) (string, error) {
 	std.RegisterHints()
-
 	nbConstraints, err := prove.LoadR1CSLen(c.config.KeyPath + ".r1cslen")
 	if err != nil {
 		logx.Severe("r1cs nb constraints read error")
@@ -29,7 +28,7 @@ func (c *GenerateProof) proveDesert(cDesert *desert.Desert) (string, error) {
 	}
 
 	r1cs = groth16.NewCS(ecc.BN254)
-	r1cs.LoadFromSplitBinaryConcurrent(c.config.KeyPath, nbConstraints, c.config.R1CSBatchSize, runtime.NumCPU())
+	r1cs.LoadFromSplitBinaryConcurrent(c.config.KeyPath, nbConstraints, nbConstraints, runtime.NumCPU())
 	if err != nil {
 		logx.Severe("r1cs init error")
 		panic("r1cs init error")
