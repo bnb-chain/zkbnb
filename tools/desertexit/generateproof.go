@@ -1,26 +1,27 @@
 package desertexit
 
 import (
+	"fmt"
+	desertTypes "github.com/bnb-chain/zkbnb-crypto/circuit/desert/types"
 	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
 	"github.com/bnb-chain/zkbnb/tools/desertexit/desertexit"
-	"github.com/goccy/go-json"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
+	"strconv"
 	"time"
 )
 
+const GracefulShutdownTimeout = 10 * time.Second
 const CommandRunGenerateProof = "run"
 const CommandContinueGenerateProof = "continue"
 
-func Run(configFile string, address string, token string, nftIndexListStr string, proofFolder string) error {
+func Run(configFile string, address string, token string, nftIndex string, proofFolder string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
-	proc.AddShutdownListener(func() {
-		logx.Close()
-	})
+
 	if address != "" {
 		c.Address = address
 	}
@@ -30,13 +31,25 @@ func Run(configFile string, address string, token string, nftIndexListStr string
 	if proofFolder != "" {
 		c.ProofFolder = proofFolder
 	}
-	if nftIndexListStr != "" {
-		var nftIndexList []int64
-		err := json.Unmarshal([]byte(nftIndexListStr), &nftIndexList)
+	if nftIndex != "" {
+		var err error
+		c.NftIndex, err = strconv.ParseInt(nftIndex, 10, 64)
 		if err != nil {
+			logx.Severe(err)
 			return err
 		}
-		c.NftIndexList = nftIndexList
+	}
+
+	if c.Address == "" || (c.Token == "" && c.NftIndex <= 0) || (c.Token != "" && c.NftIndex > 0) {
+		logx.Severe("invalid parameter")
+		return fmt.Errorf("invalid parameter")
+	}
+
+	var txType uint8
+	if c.Token != "" {
+		txType = desertTypes.TxTypeExit
+	} else {
+		txType = desertTypes.TxTypeExitNft
 	}
 
 	m, err := desertexit.NewDesertExit(&c)
@@ -44,6 +57,13 @@ func Run(configFile string, address string, token string, nftIndexListStr string
 		logx.Severe(err)
 		return err
 	}
+
+	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
+	proc.AddShutdownListener(func() {
+		logx.Info("start to shutdown desertexit......")
+		m.Shutdown()
+		_ = logx.Close()
+	})
 
 	go func() {
 		for {
@@ -68,13 +88,22 @@ func Run(configFile string, address string, token string, nftIndexListStr string
 
 	desertExit, err := desertexit.NewGenerateProof(&c)
 	if err != nil {
+		logx.Severe(err)
 		return err
 	}
 
-	err = desertExit.Run()
+	blockHeight, err := desertExit.Run()
 	if err != nil {
 		logx.Severe(err)
 		return err
 	}
+	logx.Info("execute all the l2 blocks successfully")
+
+	err = desertExit.GenerateProof(blockHeight, txType)
+	if err != nil {
+		logx.Severe(err)
+		return err
+	}
+	logx.Info("generate proof successfully")
 	return nil
 }

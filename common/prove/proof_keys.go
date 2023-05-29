@@ -3,6 +3,7 @@ package prove
 import (
 	"bytes"
 	"fmt"
+	"github.com/bnb-chain/zkbnb-crypto/circuit/desert"
 	"github.com/consensys/gnark/constraint"
 	"math/big"
 	"os"
@@ -96,6 +97,51 @@ func GenerateProof(
 	return proof, nil
 }
 
+func GenerateDesertProof(
+	r1cs constraint.ConstraintSystem,
+	provingKey []groth16.ProvingKey,
+	verifyingKey groth16.VerifyingKey,
+	cDesert *desert.Desert,
+	session string,
+) (proof groth16.Proof, err error) {
+	// verify CryptoBlock
+	bN, err := circuit.ChooseBN(1)
+	if err != nil {
+		return proof, err
+	}
+	desertWitness, err := desert.SetDesertWitness(cDesert, bN)
+	if err != nil {
+		return proof, err
+	}
+	var verifyWitness desert.DesertConstraints
+	verifyWitness.StateRoot = cDesert.StateRoot
+	verifyWitness.Commitment = cDesert.Commitment
+	witness, err := frontend.NewWitness(&desertWitness, ecc.BN254.ScalarField())
+	if err != nil {
+		return proof, err
+	}
+
+	vWitness, err := frontend.NewWitness(&verifyWitness, ecc.BN254.ScalarField(), frontend.PublicOnly())
+	if err != nil {
+		return proof, err
+	}
+	// This is for test
+	//witnessFullBytes, _ := witness.MarshalJSON()
+	//err = os.WriteFile("witness_full.save", witnessFullBytes, 0666)
+	//witnessPubBytes, _ := vWitness.MarshalJSON()
+	//err = os.WriteFile("witness_pub.save", witnessPubBytes, 0666)
+	proof, err = groth16.ProveRoll(r1cs, provingKey[0], provingKey[1], witness, session, backend.WithHints(types.PubDataToBytesForDesert))
+	if err != nil {
+		return proof, err
+	}
+	err = groth16.Verify(proof, verifyingKey, vWitness)
+	if err != nil {
+		return proof, err
+	}
+
+	return proof, nil
+}
+
 type FormattedProof struct {
 	A      [2]*big.Int
 	B      [2][2]*big.Int
@@ -126,5 +172,30 @@ func FormatProof(oProof groth16.Proof, oldRoot, newRoot, commitment []byte) (pro
 	proof.Inputs[0] = new(big.Int).SetBytes(oldRoot)
 	proof.Inputs[1] = new(big.Int).SetBytes(newRoot)
 	proof.Inputs[2] = new(big.Int).SetBytes(commitment)
+	return proof, nil
+}
+
+func FormatDesertProof(oProof groth16.Proof, root, commitment []byte) (proof *FormattedProof, err error) {
+	proof = new(FormattedProof)
+	const fpSize = 4 * 8
+	var buf bytes.Buffer
+	_, err = oProof.WriteRawTo(&buf)
+	if err != nil {
+		return nil, err
+	}
+	proofBytes := buf.Bytes()
+	// proof.Ar, proof.Bs, proof.Krs
+	proof.A[0] = new(big.Int).SetBytes(proofBytes[fpSize*0 : fpSize*1])
+	proof.A[1] = new(big.Int).SetBytes(proofBytes[fpSize*1 : fpSize*2])
+	proof.B[0][0] = new(big.Int).SetBytes(proofBytes[fpSize*2 : fpSize*3])
+	proof.B[0][1] = new(big.Int).SetBytes(proofBytes[fpSize*3 : fpSize*4])
+	proof.B[1][0] = new(big.Int).SetBytes(proofBytes[fpSize*4 : fpSize*5])
+	proof.B[1][1] = new(big.Int).SetBytes(proofBytes[fpSize*5 : fpSize*6])
+	proof.C[0] = new(big.Int).SetBytes(proofBytes[fpSize*6 : fpSize*7])
+	proof.C[1] = new(big.Int).SetBytes(proofBytes[fpSize*7 : fpSize*8])
+
+	// public witness
+	proof.Inputs[0] = new(big.Int).SetBytes(root)
+	proof.Inputs[1] = new(big.Int).SetBytes(commitment)
 	return proof, nil
 }

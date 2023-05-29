@@ -65,17 +65,25 @@ cp -r ${ZkBNB_REPO_PATH} ${DEPLOY_PATH}
 flag=$1
 if [ $flag = "new" ]; then
   echo "new crypto env"
-  echo '2. start generate zkbnb.vk and zkbnb.pk'
+  echo '2-1. start generate zkbnb.vk and zkbnb.pk'
   cd ${DEPLOY_PATH}
   cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportSol -blocksizes=${ZKBNB_OPTIONAL_BLOCK_SIZES} -batchsize=${ZKBNB_R1CS_BATCH_SIZE}
   cd ${DEPLOY_PATH}
   mkdir -p $KEY_PATH
   cp -r ./zkbnb-crypto/circuit/solidity/* $KEY_PATH
+
+  echo '2-2 start generate zkbnb.desert.vk and zkbnb.desert.pk'
+  cd ${DEPLOY_PATH}
+  cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportDesertSol
+  cd ${DEPLOY_PATH}
+  mkdir -p $KEY_PATH
+  cp -r ./zkbnb-crypto/circuit/solidity/* $KEY_PATH
+
 fi
 
 
 
-echo '3. start verify_parse for ZkBNBVerifier'
+echo '3-1. start verify_parse for ZkBNBVerifier'
 cd ${DEPLOY_PATH}/zkbnb/service/prover/
 contracts=()
 keys=()
@@ -88,6 +96,12 @@ done
 VERIFIER_CONTRACTS=$(echo "${contracts[*]}" | tr ' ' ',')
 PROVING_KEYS=$(echo "${keys[*]}" | tr ' ' ',')
 python3 verifier_parse.py ${VERIFIER_CONTRACTS} ${ZKBNB_OPTIONAL_BLOCK_SIZES} ${DEPLOY_PATH}/zkbnb-contract/contracts/ZkBNBVerifier.sol
+
+echo '3-2 start verify_parse for DesertVerifier'
+cd ${DEPLOY_PATH}/zkbnb/service/prover/
+
+python3 desert_verifier_parse.py ${KEY_PATH}/DesertVerifier1.sol  ${DEPLOY_PATH}/zkbnb-contract/contracts/DesertVerifier.sol
+
 
 echo '4-1. get latest block number'
 hexNumber=`curl -X POST ${BSC_TESTNET_RPC} --header 'Content-Type: application/json' --data-raw '{"jsonrpc":"2.0", "method":"eth_blockNumber", "params": [], "id":1 }' | jq -r '.result'`
