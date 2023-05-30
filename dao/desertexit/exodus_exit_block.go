@@ -61,10 +61,8 @@ type (
 		BlockHeight       int64 `gorm:"uniqueIndex"`
 		PubData           string
 		CommittedTxHash   string
-		CommittedAt       int64
 		L1CommittedHeight uint64 `gorm:"index"`
 		VerifiedTxHash    string
-		VerifiedAt        int64
 		L1VerifiedHeight  uint64 `gorm:"index"`
 		BlockStatus       int64  `gorm:"index"`
 	}
