@@ -218,6 +218,9 @@ func (m *DesertExit) MonitorGenericBlocks() (err error) {
 			if pendingUpdateBlock.CommittedTxHash == "" {
 				pendingUpdateBlock.CommittedTxHash = block.CommittedTxHash
 			}
+			if pendingUpdateBlock.L1CommittedHeight == 0 {
+				pendingUpdateBlock.L1CommittedHeight = block.L1CommittedHeight
+			}
 		}
 
 		commitBlockInfoHashMap := make(map[uint32]*ZkBNBCommitBlockInfo, 0)
