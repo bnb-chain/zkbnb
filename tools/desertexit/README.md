@@ -30,3 +30,6 @@ performdesert --m withdrawNFT  --config ./tools/desertexit/etc/config.yaml
 performdesert --m getBalance  --address 0xd757C6bDb5837d721B04DE87c155DBa72c9B076C  --token 0x00 --config ./tools/desertexit/etc/config.yaml
 performdesert --m getPendingBalance  --address 0xd757C6bDb5837d721B04DE87c155DBa72c9B076C  --token 0x00 --config ./tools/desertexit/etc/config.yaml
 
+
+performdesert --m getNftList --address 0xd757C6bDb5837d721B04DE87c155DBa72c9B076C  --config ./tools/desertexit/etc/config.yaml
+

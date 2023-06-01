@@ -25,10 +25,15 @@ import (
 	common2 "github.com/bnb-chain/zkbnb/common"
 	monitor2 "github.com/bnb-chain/zkbnb/common/monitor"
 	"github.com/bnb-chain/zkbnb/common/prove"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/tools/desertexit/config"
 	"github.com/bnb-chain/zkbnb/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/plugin/dbresolver"
 	"math/big"
 	"sort"
 	"time"
@@ -41,14 +46,29 @@ type PerformDesert struct {
 	zkBNBCli             *zkbnb.ZkBNBClient
 	zkbnbInstance        *zkbnb.ZkBNB
 	ZkBnbContractAddress string
+	AccountModel         account.AccountModel
+	L2NftModel           nft.L2NftModel
 }
 
 func NewPerformDesert(c config.Config) (*PerformDesert, error) {
+	masterDataSource := c.Postgres.MasterDataSource
+	db, err := gorm.Open(postgres.Open(masterDataSource))
+	if err != nil {
+		logx.Severef("gorm connect db error, err: %s", err.Error())
+		return nil, err
+	}
+
+	db.Use(dbresolver.Register(dbresolver.Config{
+		Sources: []gorm.Dialector{postgres.Open(masterDataSource)},
+	}))
+
 	if c.ChainConfig.MaxCancelOutstandingDepositCount == 0 {
 		c.ChainConfig.MaxCancelOutstandingDepositCount = 100
 	}
 	newPerformDesert := &PerformDesert{
-		Config: c,
+		Config:       c,
+		AccountModel: account.NewAccountModel(db),
+		L2NftModel:   nft.NewL2NftModel(db),
 	}
 	bscRpcCli, err := rpc.NewClient(c.ChainConfig.BscTestNetRpc)
 	if err != nil {
@@ -62,28 +82,29 @@ func NewPerformDesert(c config.Config) (*PerformDesert, error) {
 		logx.Severe(err)
 		return nil, err
 	}
-	newPerformDesert.authCli, err = rpc.NewAuthClient(c.ChainConfig.PrivateKey, chainId)
-	if err != nil {
-		logx.Severe(err)
-		return nil, err
-	}
-	newPerformDesert.zkbnbInstance, err = zkbnb.LoadZkBNBInstance(newPerformDesert.cli, newPerformDesert.ZkBnbContractAddress)
-	if err != nil {
-		logx.Severe(err)
-		return nil, err
-	}
+	if c.ChainConfig.PrivateKey != "" {
+		newPerformDesert.authCli, err = rpc.NewAuthClient(c.ChainConfig.PrivateKey, chainId)
+		if err != nil {
+			logx.Severe(err)
+			return nil, err
+		}
+		newPerformDesert.zkbnbInstance, err = zkbnb.LoadZkBNBInstance(newPerformDesert.cli, newPerformDesert.ZkBnbContractAddress)
+		if err != nil {
+			logx.Severe(err)
+			return nil, err
+		}
 
-	newPerformDesert.zkBNBCli, err = zkbnb.NewZkBNBClient(newPerformDesert.cli, newPerformDesert.ZkBnbContractAddress)
-	if err != nil {
-		logx.Severe(err)
-		return nil, err
+		newPerformDesert.zkBNBCli, err = zkbnb.NewZkBNBClient(newPerformDesert.cli, newPerformDesert.ZkBnbContractAddress)
+		if err != nil {
+			logx.Severe(err)
+			return nil, err
+		}
+		newPerformDesert.zkBNBCli.ActivateConstructor = newPerformDesert.authCli
+		newPerformDesert.zkBNBCli.RevertConstructor = newPerformDesert.authCli
+		newPerformDesert.zkBNBCli.PerformConstructor = newPerformDesert.authCli
+		newPerformDesert.zkBNBCli.WithdrawConstructor = newPerformDesert.authCli
+		newPerformDesert.zkBNBCli.CancelDepositConstructor = newPerformDesert.authCli
 	}
-	newPerformDesert.zkBNBCli.ActivateConstructor = newPerformDesert.authCli
-	newPerformDesert.zkBNBCli.RevertConstructor = newPerformDesert.authCli
-	newPerformDesert.zkBNBCli.PerformConstructor = newPerformDesert.authCli
-	newPerformDesert.zkBNBCli.WithdrawConstructor = newPerformDesert.authCli
-	newPerformDesert.zkBNBCli.CancelDepositConstructor = newPerformDesert.authCli
-
 	return newPerformDesert, nil
 }
 
@@ -361,6 +382,27 @@ func (m *PerformDesert) GetPendingBalance(address common.Address, token common.A
 	}
 	logx.Infof("get pending balance,pendingBalance=%d", amount.Int64())
 	return amount, nil
+}
+
+func (m *PerformDesert) GetNftList(address string) error {
+	accountInfo, err := m.AccountModel.GetAccountByL1Address(address)
+	if err != nil {
+		return err
+	}
+	nftList, err := m.L2NftModel.GetAllNftByAccountIndex(accountInfo.AccountIndex)
+	if err != nil {
+		return err
+	}
+	nftIndexList := make([]int64, 0)
+	for _, nftInfo := range nftList {
+		nftIndexList = append(nftIndexList, nftInfo.NftIndex)
+	}
+	nftIndexListJson, err := json.Marshal(nftIndexList)
+	if err != nil {
+		return types.JsonErrMarshal
+	}
+	logx.Infof("get nft list,nftIndexList=%s", string(nftIndexListJson))
+	return nil
 }
 
 func (m *PerformDesert) checkTxSuccess(txHash string) error {

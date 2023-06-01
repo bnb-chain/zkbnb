@@ -1,10 +1,8 @@
 package desertexit
 
 import (
-	"github.com/bnb-chain/zkbnb/types"
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 func (m *DesertExit) CleanHistoryBlocks() (err error) {
@@ -22,11 +20,9 @@ func (m *DesertExit) CleanHistoryBlocks() (err error) {
 		return nil
 	}
 
-	logx.Infof("start to clean historical synced blocks for height less than: %d", keepHeight)
 	err = m.L1SyncedBlockModel.DeleteL1SyncedBlocksForHeightLessThan(keepHeight)
 	if err != nil {
 		return err
 	}
-	logx.Infof("finish to clean historical synced blocks for height less than: %d", keepHeight)
 	return nil
 }

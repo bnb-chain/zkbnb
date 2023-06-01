@@ -18,6 +18,7 @@ const CommandWithdrawNFT = "withdrawNFT"
 const CommandWithdrawAsset = "withdrawAsset"
 const CommandGetBalance = "getBalance"
 const CommandGetPendingBalance = "getPendingBalance"
+const CommandGetNftList = "getNftList"
 
 func Perform(configFile string, command string, amount string, nftIndex string, owner string, privateKey string, proof string, token string) error {
 	var c config.Config
@@ -106,6 +107,13 @@ func Perform(configFile string, command string, amount string, nftIndex string, 
 		break
 	case CommandGetPendingBalance:
 		_, err := m.GetPendingBalance(common.HexToAddress(c.Address), common.HexToAddress(c.Token))
+		if err != nil {
+			logx.Severe(err)
+			return err
+		}
+		break
+	case CommandGetNftList:
+		err := m.GetNftList(c.Address)
 		if err != nil {
 			logx.Severe(err)
 			return err

@@ -14,6 +14,7 @@ export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo 'start install'
 ZKBNB_CONTAINERS=$(docker ps -a |grep zkbnb-desert|awk '{print $1}')
 [[ -z "${ZKBNB_CONTAINERS}" ]] || docker rm -f ${ZKBNB_CONTAINERS}
+docker run -d --name zkbnb-desert-kvrocks -p 6666:6666 apache/kvrocks
 docker run -d --name zkbnb-desert-postgres -p 5432:5432 \
   -e PGDATA=/var/lib/postgresql/pgdata  \
   -e POSTGRES_PASSWORD=ZkBNB@123 \
@@ -35,7 +36,7 @@ echo "
 Name: desertexit
 
 Postgres:
-  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb_desert port=5432 sslmode=disable
+  MasterDataSource: host=localhost user=postgres password=ZkBNB@123 dbname=zkbnb_desert port=5432 sslmode=disable
   LogLevel: 4
 
 ChainConfig:
@@ -52,13 +53,23 @@ ChainConfig:
   GovernanceContractAddress: 0xE48fC034056eac15F9063b502d08f5968A90E694
 
 TreeDB:
-  Driver: memorydb
-  AssetTreeCacheSize: 1000000
-
+  Driver: redis
+  RedisDBOption:
+    Addr: localhost:6666
+    DialTimeout: 10s
+    ReadTimeout: 10s
+    WriteTimeout: 10s
+    PoolTimeout: 15s
+    IdleTimeout: 5m
+    PoolSize: 500
+    MaxRetries: 3
+    MinRetryBackoff: 8ms
+    MaxRetryBackoff: 512ms
+  AssetTreeCacheSize: 10000000
 CacheConfig:
-  AccountCacheSize: 5000000
-  NftCacheSize: 5000000
-  MemCacheSize: 100000
+  AccountCacheSize: 10000000
+  NftCacheSize: 10000000
+  MemCacheSize: 1000000
 
 KeyPath: /Users/user/.zkbnb/zkbnb.desert1
 

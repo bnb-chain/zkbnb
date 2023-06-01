@@ -2,6 +2,7 @@ package desertexit
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/bnb-chain/zkbnb-crypto/circuit"
@@ -15,6 +16,7 @@ import (
 	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/bnb-chain/zkbnb/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/go-redis/redis/v8"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -36,7 +38,11 @@ func (c *GenerateProof) generateWitness(blockHeight int64, accountIndex int64, n
 		exitTxInfo    *desert.ExitTx
 		exitNftTxInfo *desert.ExitNftTx
 	)
+
 	accountTree, accountAssetTrees, nftTree, err := c.initSmtTree(blockHeight)
+	if err != nil {
+		return desertInfo, pubData, err
+	}
 
 	accountInfo, err := c.bc.DB().AccountModel.GetAccountByIndex(accountIndex)
 	if err != nil {
@@ -58,16 +64,6 @@ func (c *GenerateProof) generateWitness(blockHeight int64, accountIndex int64, n
 		Nonce:           formatAccountInfo.Nonce,
 		CollectionNonce: formatAccountInfo.CollectionNonce,
 		AssetRoot:       accountAssetTrees.Get(accountIndex).Root(),
-	}
-	accountRoot := accountTree.Root()
-	nftRoot := nftTree.Root()
-	stateRoot := tree.ComputeStateRootHash(accountRoot, nftRoot)
-	storedBlockInfo, err := c.getStoredBlockInfo()
-	if err != nil {
-		return desertInfo, pubData, err
-	}
-	if common.Bytes2Hex(stateRoot) != storedBlockInfo.StateRoot {
-		return desertInfo, pubData, fmt.Errorf("stateRoot is not equal storedBlockInfo.StateRoot")
 	}
 
 	// get account before
@@ -257,15 +253,16 @@ func (c *GenerateProof) generateWitness(blockHeight int64, accountIndex int64, n
 		TxType:                    txType,
 		ExitTxInfo:                exitTxInfo,
 		ExitNftTxInfo:             exitNftTxInfo,
-		AccountRoot:               accountRoot,
+		AccountRoot:               accountTree.Root(),
 		AccountsInfo:              accountsInfo,
-		NftRoot:                   nftRoot,
+		NftRoot:                   nftTree.Root(),
 		Nft:                       nft,
 		MerkleProofsAccountAssets: merkleProofsAccountAssets,
 		MerkleProofsAccounts:      merkleProofsAccounts,
 		MerkleProofsNft:           merkleProofsNft,
 	}
 
+	stateRoot := tree.ComputeStateRootHash(accountTree.Root(), nftTree.Root())
 	desertInfo = &desert.Desert{
 		StateRoot:  stateRoot,
 		Commitment: common.Hex2Bytes(CreateCommitment(stateRoot, pubData)),
@@ -320,7 +317,45 @@ func GenerateExitNftPubData(exitNftTxInfo *desert.ExitNftTx) []byte {
 }
 
 func (c *GenerateProof) initSmtTree(blockHeight int64) (accountTree bsmt.SparseMerkleTree, accountAssetTrees *tree.AssetTreeCache, nftTree bsmt.SparseMerkleTree, err error) {
-	treeCtx, err := tree.NewContext("desertexit", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption, c.config.TreeDB.AssetTreeCacheSize, false, 200)
+	storedBlockInfo, err := c.getStoredBlockInfo()
+	if err != nil {
+		return accountTree, accountAssetTrees, nftTree, err
+	}
+
+	if c.config.TreeDB.Driver == tree.MemoryDB {
+		accountTree, accountAssetTrees, nftTree, err = c.doInitSmtTree(blockHeight, true)
+		if err != nil {
+			return accountTree, accountAssetTrees, nftTree, err
+		}
+	} else {
+		accountTree, accountAssetTrees, nftTree, err = c.doInitSmtTree(blockHeight, false)
+		if err != nil {
+			return accountTree, accountAssetTrees, nftTree, err
+		}
+
+		stateRoot := tree.ComputeStateRootHash(accountTree.Root(), nftTree.Root())
+		if common.Bytes2Hex(stateRoot) != storedBlockInfo.StateRoot {
+			nodeClient := redis.NewClient(&redis.Options{Addr: c.config.TreeDB.RedisDBOption.Addr, Password: c.config.TreeDB.RedisDBOption.Password})
+			nodeClient.FlushAll(context.Background())
+			accountTree, accountAssetTrees, nftTree, err = c.doInitSmtTree(blockHeight, true)
+			if err != nil {
+				return accountTree, accountAssetTrees, nftTree, err
+			}
+		}
+	}
+	stateRoot := tree.ComputeStateRootHash(accountTree.Root(), nftTree.Root())
+	if err != nil {
+		return accountTree, accountAssetTrees, nftTree, err
+	}
+	if common.Bytes2Hex(stateRoot) != storedBlockInfo.StateRoot {
+		return accountTree, accountAssetTrees, nftTree, fmt.Errorf("stateRoot is not equal storedBlockInfo.StateRoot")
+	}
+
+	return accountTree, accountAssetTrees, nftTree, nil
+}
+
+func (c *GenerateProof) doInitSmtTree(blockHeight int64, reload bool) (accountTree bsmt.SparseMerkleTree, accountAssetTrees *tree.AssetTreeCache, nftTree bsmt.SparseMerkleTree, err error) {
+	treeCtx, err := tree.NewContext("desertexit", c.config.TreeDB.Driver, reload, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption, c.config.TreeDB.AssetTreeCacheSize, false, 200)
 	if err != nil {
 		logx.Errorf("init tree database failed: %s", err)
 		return nil, nil, nil, err
