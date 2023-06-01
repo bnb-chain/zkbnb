@@ -78,16 +78,19 @@ func (c *GenerateProof) Run() (int64, error) {
 				break
 			}
 
+			start := time.Now()
 			err := c.executeBlockFunc(pendingBlock)
 			if err != nil {
 				return 0, err
 			}
+			logx.Infof("executeBlockFunc end. cost time %v", time.Since(start))
 
+			start = time.Now()
 			err = c.saveToDb(pendingBlock)
 			if err != nil {
 				return 0, err
 			}
-
+			logx.Infof("saveToDb end. cost time %v", time.Since(start))
 			executedTxMaxHeight = pendingBlock.BlockHeight
 		}
 	}
