@@ -1,6 +1,7 @@
 package desertexit
 
 import (
+	"github.com/bnb-chain/zkbnb/types"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
@@ -8,8 +9,11 @@ import (
 
 func (m *DesertExit) CleanHistoryBlocks() (err error) {
 	latestGenericBlock, err := m.L1SyncedBlockModel.GetLatestL1SyncedBlockByType(l1syncedblock.TypeGeneric)
-	if err != nil {
+	if err != nil && err != types.DbErrNotFound {
 		return err
+	}
+	if err == types.DbErrNotFound {
+		return nil
 	}
 
 	minHeight := latestGenericBlock.L1BlockHeight
