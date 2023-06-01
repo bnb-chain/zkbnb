@@ -175,8 +175,15 @@ func FormatProof(oProof groth16.Proof, oldRoot, newRoot, commitment []byte) (pro
 	return proof, nil
 }
 
-func FormatDesertProof(oProof groth16.Proof, root, commitment []byte) (proof *FormattedProof, err error) {
-	proof = new(FormattedProof)
+type FormattedDesertProof struct {
+	A      [2]*big.Int
+	B      [2][2]*big.Int
+	C      [2]*big.Int
+	Inputs [2]*big.Int
+}
+
+func FormatDesertProof(oProof groth16.Proof, root, commitment []byte) (proof *FormattedDesertProof, err error) {
+	proof = new(FormattedDesertProof)
 	const fpSize = 4 * 8
 	var buf bytes.Buffer
 	_, err = oProof.WriteRawTo(&buf)
