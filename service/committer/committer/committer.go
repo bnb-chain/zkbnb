@@ -1249,6 +1249,7 @@ func (c *Committer) SendIpfsServer() error {
 func saveIpfs(history *nft.L2NftMetadataHistory) error {
 	cid, err := common.Ipfs.Upload(history.Mutable)
 	if err != nil {
+		logx.Severef("upload ipfs failed: %v", err)
 		return err
 	}
 	_, err = common.Ipfs.PublishWithDetails(cid, history.IpnsName)
@@ -1271,6 +1272,7 @@ func (c *Committer) RefreshServer() error {
 		for _, hostory := range histories {
 			_, err = common.Ipfs.PublishWithDetails(hostory.IpnsCid, hostory.IpnsName)
 			if err != nil {
+				logx.Severef("refresh ipns failed: %v", err)
 				return err
 			}
 		}
