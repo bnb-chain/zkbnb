@@ -18,16 +18,6 @@ import (
 )
 
 func (c *GenerateProof) Run() (int64, error) {
-	err := c.bc.LoadAllAccounts(c.pool)
-	if err != nil {
-		return 0, err
-	}
-
-	err = c.bc.LoadAllNfts(c.pool)
-	if err != nil {
-		return 0, err
-	}
-
 	limit := 1000
 	executedBlock, err := c.bc.DesertExitBlockModel.GetLatestExecutedBlock()
 	if err != nil && err != types.DbErrNotFound {
@@ -37,6 +27,24 @@ func (c *GenerateProof) Run() (int64, error) {
 	var executedTxMaxHeight int64 = 0
 	if executedBlock != nil {
 		executedTxMaxHeight = executedBlock.BlockHeight
+	}
+
+	isDone, err := c.isDone(executedTxMaxHeight)
+	if err != nil {
+		return 0, err
+	}
+	if isDone {
+		return executedTxMaxHeight, nil
+	}
+
+	err = c.bc.LoadAllAccounts(c.pool)
+	if err != nil {
+		return 0, err
+	}
+
+	err = c.bc.LoadAllNfts(c.pool)
+	if err != nil {
+		return 0, err
 	}
 
 	for {
@@ -84,6 +92,24 @@ func (c *GenerateProof) Run() (int64, error) {
 		}
 	}
 	return executedTxMaxHeight, nil
+}
+
+func (c *GenerateProof) isDone(executedTxMaxHeight int64) (bool, error) {
+	_, err := c.bc.DesertExitBlockModel.GetBlocksByStatusAndMaxHeight(desertexit.StatusVerified, executedTxMaxHeight, 1)
+	if err != nil && err != types.DbErrNotFound {
+		return false, fmt.Errorf("get pending blocks from desert exit block failed:%s", err.Error())
+	}
+	if err == types.DbErrNotFound {
+		l1SyncedBlock, err := c.bc.L1SyncedBlockModel.GetLatestL1SyncedBlockByType(l1syncedblock.TypeDesert)
+		if err != nil && err != types.DbErrNotFound {
+			return false, fmt.Errorf("failed to get latest l1 monitor block, err: %v", err)
+		}
+		if l1SyncedBlock != nil {
+			logx.Info("execute all the l2 blocks successfully")
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (c *GenerateProof) executeBlockFunc(desertExitBlock *desertexit.DesertExitBlock) error {
