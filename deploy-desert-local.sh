@@ -36,7 +36,7 @@ echo "
 Name: desertexit
 
 Postgres:
-  MasterDataSource: host=localhost user=postgres password=ZkBNB@123 dbname=zkbnb_desert port=5432 sslmode=disable
+  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb_desert port=5432 sslmode=disable
   LogLevel: 4
 
 ChainConfig:
