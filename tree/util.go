@@ -18,94 +18,79 @@
 package tree
 
 import (
-	"bytes"
-	"math/big"
-
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"context"
+	"github.com/bnb-chain/zkbnb-crypto/circuit/types"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+	bsmt "github.com/bnb-chain/zkbnb-smt"
+	zkbnbtypes "github.com/bnb-chain/zkbnb/types"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-
-	curve "github.com/bnb-chain/zkbnb-crypto/ecc/ztwistededwards/tebn254"
-	"github.com/bnb-chain/zkbnb-crypto/ffmath"
-	bsmt "github.com/bnb-chain/zkbnb-smt"
+	"github.com/zeromicro/go-zero/core/logx"
+	"math/big"
+	"sort"
+	"time"
 
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/gopool"
 )
 
 func EmptyAccountNodeHash() []byte {
-	hFunc := mimc.NewMiMC()
-	zero := big.NewInt(0).FillBytes(make([]byte, 32))
 	/*
-		AccountNameHash
+		L1Address
 		PubKey
 		Nonce
 		CollectionNonce
 		AssetRoot
 	*/
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	// asset root
-	hFunc.Write(NilAccountAssetRoot)
-	return hFunc.Sum(nil)
+	zero := &fr.Element{0, 0, 0, 0}
+	NilAccountAssetRootElement := txtypes.FromBigIntToFr(new(big.Int).SetBytes(NilAccountAssetRoot))
+	ele := GMimcElements([]*fr.Element{zero, zero, zero, zero, zero, NilAccountAssetRootElement})
+	hash := ele.Bytes()
+	return hash[:]
 }
 
 func EmptyAccountAssetNodeHash() []byte {
-	hFunc := mimc.NewMiMC()
-	zero := big.NewInt(0).FillBytes(make([]byte, 32))
 	/*
 		balance
 		offerCanceledOrFinalized
 	*/
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	return hFunc.Sum(nil)
+	zero := &fr.Element{0, 0, 0, 0}
+	ele := GMimcElements([]*fr.Element{zero, zero})
+	hash := ele.Bytes()
+	return hash[:]
 }
 
 func EmptyNftNodeHash() []byte {
-	hFunc := mimc.NewMiMC()
-	zero := big.NewInt(0).FillBytes(make([]byte, 32))
 	/*
 		creatorAccountIndex
 		ownerAccountIndex
 		nftContentHash
-		nftL1Address
-		nftL1TokenId
-		creatorTreasuryRate
+		royaltyRate
 		collectionId
 	*/
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	return hFunc.Sum(nil)
+	zero := &fr.Element{0, 0, 0, 0}
+	ele := GMimcElements([]*fr.Element{zero, zero, zero, zero, zero})
+	hash := ele.Bytes()
+	return hash[:]
 }
 
-func CommitTrees(
-	version uint64,
+func CommitAccountAndNftTree(
+	prunedVersion uint64,
+	blockHeight int64,
 	accountTree bsmt.SparseMerkleTree,
-	assetTrees *AssetTreeCache,
 	nftTree bsmt.SparseMerkleTree) error {
-
-	assetTreeChanges := assetTrees.GetChanges()
-	defer assetTrees.CleanChanges()
-	totalTask := len(assetTreeChanges) + 2
-
+	totalTask := 2
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
 
 	err := gopool.Submit(func() {
-		accPrunedVersion := bsmt.Version(version)
+		accPrunedVersion := bsmt.Version(GetAssetLatestVerifiedHeight(int64(prunedVersion), accountTree.Versions()))
+		newVersion := bsmt.Version(blockHeight)
 		if accountTree.LatestVersion() < accPrunedVersion {
 			accPrunedVersion = accountTree.LatestVersion()
 		}
-		ver, err := accountTree.Commit(&accPrunedVersion)
+		ver, err := accountTree.CommitWithNewVersion(&accPrunedVersion, &newVersion)
 		if err != nil {
 			errChan <- errors.Wrapf(err, "unable to commit account tree, tree ver: %d, prune ver: %d", ver, accPrunedVersion)
 			return
@@ -116,30 +101,13 @@ func CommitTrees(
 		return err
 	}
 
-	for _, idx := range assetTreeChanges {
-		err := func(i int64) error {
-			return gopool.Submit(func() {
-				asset := assetTrees.Get(i)
-				version := asset.LatestVersion()
-				ver, err := asset.Commit(&version)
-				if err != nil {
-					errChan <- errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", i, ver, version)
-					return
-				}
-				errChan <- nil
-			})
-		}(idx)
-		if err != nil {
-			return err
-		}
-	}
-
 	err = gopool.Submit(func() {
-		nftPrunedVersion := bsmt.Version(version)
+		nftPrunedVersion := bsmt.Version(GetAssetLatestVerifiedHeight(int64(prunedVersion), nftTree.Versions()))
+		newVersion := bsmt.Version(blockHeight)
 		if nftTree.LatestVersion() < nftPrunedVersion {
 			nftPrunedVersion = nftTree.LatestVersion()
 		}
-		ver, err := nftTree.Commit(&nftPrunedVersion)
+		ver, err := nftTree.CommitWithNewVersion(&nftPrunedVersion, &newVersion)
 		if err != nil {
 			errChan <- errors.Wrapf(err, "unable to commit nft tree, tree ver: %d, prune ver: %d", ver, nftPrunedVersion)
 			return
@@ -160,26 +128,29 @@ func CommitTrees(
 	return nil
 }
 
-func RollBackTrees(
-	version uint64,
+func CommitTrees(
+	prunedVersion uint64,
+	blockHeight int64,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *AssetTreeCache,
 	nftTree bsmt.SparseMerkleTree) error {
-
+	start := time.Now()
 	assetTreeChanges := assetTrees.GetChanges()
-	defer assetTrees.CleanChanges()
-	totalTask := len(assetTreeChanges) + 3
+	logx.Infof("GetChanges=%v", time.Since(start))
+	totalTask := len(assetTreeChanges) + 2
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
 
-	ver := bsmt.Version(version)
 	err := gopool.Submit(func() {
-		if accountTree.LatestVersion() > ver && !accountTree.IsEmpty() {
-			err := accountTree.Rollback(ver)
-			if err != nil {
-				errChan <- errors.Wrapf(err, "unable to rollback account tree, ver: %d", ver)
-				return
-			}
+		accPrunedVersion := bsmt.Version(GetAssetLatestVerifiedHeight(int64(prunedVersion), accountTree.Versions()))
+		newVersion := bsmt.Version(blockHeight)
+		if accountTree.LatestVersion() < accPrunedVersion {
+			accPrunedVersion = accountTree.LatestVersion()
+		}
+		ver, err := accountTree.CommitWithNewVersion(&accPrunedVersion, &newVersion)
+		if err != nil {
+			errChan <- errors.Wrapf(err, "unable to commit account tree, tree ver: %d, prune ver: %d", ver, accPrunedVersion)
+			return
 		}
 		errChan <- nil
 	})
@@ -191,10 +162,15 @@ func RollBackTrees(
 		err := func(i int64) error {
 			return gopool.Submit(func() {
 				asset := assetTrees.Get(i)
-				version := asset.RecentVersion()
-				err := asset.Rollback(version)
+				prunedVersion := bsmt.Version(GetAssetLatestVerifiedHeight(int64(prunedVersion), asset.Versions()))
+				latestVersion := asset.LatestVersion()
+				if prunedVersion > latestVersion {
+					prunedVersion = latestVersion
+				}
+				newVersion := bsmt.Version(blockHeight)
+				ver, err := asset.CommitWithNewVersion(&prunedVersion, &newVersion)
 				if err != nil {
-					errChan <- errors.Wrapf(err, "unable to rollback asset tree [%d], ver: %d", i, version)
+					errChan <- errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", i, ver, prunedVersion)
 					return
 				}
 				errChan <- nil
@@ -206,12 +182,15 @@ func RollBackTrees(
 	}
 
 	err = gopool.Submit(func() {
-		if nftTree.LatestVersion() > ver && !nftTree.IsEmpty() {
-			err := nftTree.Rollback(ver)
-			if err != nil {
-				errChan <- errors.Wrapf(err, "unable to rollback nft tree, tree ver: %d", ver)
-				return
-			}
+		nftPrunedVersion := bsmt.Version(GetAssetLatestVerifiedHeight(int64(prunedVersion), nftTree.Versions()))
+		newVersion := bsmt.Version(blockHeight)
+		if nftTree.LatestVersion() < nftPrunedVersion {
+			nftPrunedVersion = nftTree.LatestVersion()
+		}
+		ver, err := nftTree.CommitWithNewVersion(&nftPrunedVersion, &newVersion)
+		if err != nil {
+			errChan <- errors.Wrapf(err, "unable to commit nft tree, tree ver: %d, prune ver: %d", ver, nftPrunedVersion)
+			return
 		}
 		errChan <- nil
 	})
@@ -230,81 +209,135 @@ func RollBackTrees(
 }
 
 func ComputeAccountLeafHash(
-	accountNameHash string,
+	l1Address string,
 	pk string,
 	nonce int64,
 	collectionNonce int64,
 	assetRoot []byte,
+	ctx context.Context,
 ) (hashVal []byte, err error) {
-	hFunc := mimc.NewMiMC()
-	var buf bytes.Buffer
-	buf.Write(common.FromHex(accountNameHash))
-	err = common2.PaddingPkIntoBuf(&buf, pk)
+	var e0 *fr.Element
+	if l1Address == "" {
+		e0 = &fr.Element{0, 0, 0, 0}
+		e0.SetBytes([]byte{})
+	} else {
+		e0, err = txtypes.FromBytesToFr(common.FromHex(l1Address))
+		if err != nil {
+			return nil, err
+		}
+	}
+	pubKey, err := common2.ParsePubKey(pk)
 	if err != nil {
 		return nil, err
 	}
-	common2.PaddingInt64IntoBuf(&buf, nonce)
-	common2.PaddingInt64IntoBuf(&buf, collectionNonce)
-	buf.Write(assetRoot)
-	hFunc.Reset()
-	hFunc.Write(buf.Bytes())
-	hashVal = hFunc.Sum(nil)
-	return hashVal, nil
+	e1 := &pubKey.A.X
+	e2 := &pubKey.A.Y
+	e3 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(nonce))
+	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionNonce))
+	e5 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(assetRoot))
+	ele := GMimcElements([]*fr.Element{e0, e1, e2, e3, e4, e5})
+	hash := ele.Bytes()
+	logx.WithContext(ctx).Debugf("compute account leaf hash,l1Address=%s,pk=%s,nonce=%d,collectionNonce=%d,assetRoot=%s,hash=%s",
+		l1Address, pk, nonce, collectionNonce, common.Bytes2Hex(assetRoot), common.Bytes2Hex(hash[:]))
+	return hash[:], nil
 }
 
 func ComputeAccountAssetLeafHash(
 	balance string,
 	offerCanceledOrFinalized string,
+	ctx context.Context,
 ) (hashVal []byte, err error) {
-	hFunc := mimc.NewMiMC()
-	var buf bytes.Buffer
-	err = common2.PaddingStringBigIntIntoBuf(&buf, balance)
-	if err != nil {
-		return nil, err
+	balanceBigInt, isValid := new(big.Int).SetString(balance, 10)
+	if !isValid {
+		return nil, zkbnbtypes.AppErrInvalidBalanceString
 	}
-	err = common2.PaddingStringBigIntIntoBuf(&buf, offerCanceledOrFinalized)
-	if err != nil {
-		return nil, err
+	e0 := txtypes.FromBigIntToFr(balanceBigInt)
+
+	offerCanceledOrFinalizedBigInt, isValid := new(big.Int).SetString(offerCanceledOrFinalized, 10)
+	if !isValid {
+		return nil, zkbnbtypes.AppErrInvalidBalanceString
 	}
-	hFunc.Write(buf.Bytes())
-	return hFunc.Sum(nil), nil
+	e1 := txtypes.FromBigIntToFr(offerCanceledOrFinalizedBigInt)
+	ele := GMimcElements([]*fr.Element{e0, e1})
+	hash := ele.Bytes()
+	logx.WithContext(ctx).Debugf("compute account asset leaf hash,balance=%s,offerCanceledOrFinalized=%s,hash=%s",
+		balance, offerCanceledOrFinalized, common.Bytes2Hex(hash[:]))
+	return hash[:], nil
 }
 
 func ComputeNftAssetLeafHash(
 	creatorAccountIndex int64,
 	ownerAccountIndex int64,
 	nftContentHash string,
-	nftL1Address string,
-	nftL1TokenId string,
-	creatorTreasuryRate int64,
+	royaltyRate int64,
 	collectionId int64,
+	ctx context.Context,
 ) (hashVal []byte, err error) {
-	hFunc := mimc.NewMiMC()
-	var buf bytes.Buffer
-	common2.PaddingInt64IntoBuf(&buf, creatorAccountIndex)
-	common2.PaddingInt64IntoBuf(&buf, ownerAccountIndex)
-	buf.Write(ffmath.Mod(new(big.Int).SetBytes(common.FromHex(nftContentHash)), curve.Modulus).FillBytes(make([]byte, 32)))
-	err = common2.PaddingAddressIntoBuf(&buf, nftL1Address)
+	e0 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(creatorAccountIndex))
+	e1 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(ownerAccountIndex))
+
+	var e2 *fr.Element
+	var e3 *fr.Element
+	contentHash := common.Hex2Bytes(nftContentHash)
+	if len(contentHash) >= types.NftContentHashBytesSize {
+		e2, err = txtypes.FromBytesToFr(contentHash[:types.NftContentHashBytesSize])
+		e3, err = txtypes.FromBytesToFr(contentHash[types.NftContentHashBytesSize:])
+	} else {
+		e2, err = txtypes.FromBytesToFr(contentHash[:])
+	}
 	if err != nil {
 		return nil, err
 	}
-	err = common2.PaddingStringBigIntIntoBuf(&buf, nftL1TokenId)
-	if err != nil {
-		return nil, err
+
+	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(royaltyRate))
+	e5 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionId))
+	var hash [32]byte
+	if e3 != nil {
+		ele := GMimcElements([]*fr.Element{e0, e1, e2, e3, e4, e5})
+		hash = ele.Bytes()
+	} else {
+		ele := GMimcElements([]*fr.Element{e0, e1, e2, e4, e5})
+		hash = ele.Bytes()
 	}
-	common2.PaddingInt64IntoBuf(&buf, creatorTreasuryRate)
-	common2.PaddingInt64IntoBuf(&buf, collectionId)
-	hFunc.Write(buf.Bytes())
-	hashVal = hFunc.Sum(nil)
-	return hashVal, nil
+	logx.WithContext(ctx).Debugf("compute nft asset leaf hash,creatorAccountIndex=%d,ownerAccountIndex=%d,nftContentHash=%s,royaltyRate=%d,collectionId=%d,hash=%s",
+		creatorAccountIndex, ownerAccountIndex, nftContentHash, royaltyRate, collectionId, common.Bytes2Hex(hash[:]))
+
+	return hash[:], nil
 }
 
 func ComputeStateRootHash(
 	accountRoot []byte,
 	nftRoot []byte,
 ) []byte {
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(accountRoot)
-	hFunc.Write(nftRoot)
-	return hFunc.Sum(nil)
+	e0 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(accountRoot))
+	e1 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(nftRoot))
+
+	ele := GMimcElements([]*fr.Element{e0, e1})
+	hash := ele.Bytes()
+	return hash[:]
+}
+
+func GetAssetLatestVerifiedHeight(height int64, versions []bsmt.Version) int64 {
+	if versions == nil {
+		return height
+	}
+	sort.Slice(versions, func(i, j int) bool {
+		return versions[i] < versions[j]
+	})
+
+	latestVerifiedHeight := height
+	for _, version := range versions {
+		if int64(version) > height {
+			break
+		}
+		latestVerifiedHeight = int64(version)
+	}
+	return latestVerifiedHeight
+}
+
+func GetTreeLatestVersion(versions []bsmt.Version) bsmt.Version {
+	if versions == nil || len(versions) == 0 {
+		return bsmt.Version(0)
+	}
+	return versions[len(versions)-1]
 }

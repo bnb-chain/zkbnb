@@ -20,6 +20,7 @@ package prove
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/log"
 	"os/exec"
 	"testing"
 	"time"
@@ -43,6 +44,7 @@ var (
 	accountModel        account.AccountModel
 	accountHistoryModel account.AccountHistoryModel
 	nftHistoryModel     nft.L2NftHistoryModel
+	nftModel            nft.L2NftModel
 	assetTreeCacheSize  = 512000
 )
 
@@ -53,7 +55,7 @@ func TestConstructWitness(t *testing.T) {
 	for h := int64(1); h < maxTestBlockHeight; h++ {
 		witnessHelper, err := getWitnessHelper(h - 1)
 		assert.NoError(t, err)
-		b, err := blockModel.GetBlocksBetween(h, h)
+		b, err := blockModel.GetPendingBlocksBetween(h, h)
 		assert.NoError(t, err)
 		w, err := witnessModel.GetBlockWitnessByHeight(h)
 		assert.NoError(t, err)
@@ -63,7 +65,8 @@ func TestConstructWitness(t *testing.T) {
 		err = witnessHelper.ResetCache(h)
 		assert.NoError(t, err)
 		for idx, tx := range b[0].Txs {
-			txWitness, err := witnessHelper.ConstructTxWitness(tx, uint64(0))
+			ctx := log.NewCtxWithKV(log.BlockHeightContext, h)
+			txWitness, err := witnessHelper.ConstructTxWitness(tx, uint64(0), ctx)
 			assert.NoError(t, err)
 			expectedBz, _ := json.Marshal(cBlock.Txs[idx])
 			actualBz, _ := json.Marshal(txWitness)
@@ -78,15 +81,15 @@ func TestConstructWitness(t *testing.T) {
 }
 
 func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
-	ctx, err := tree.NewContext("witness", tree.MemoryDB, false, 128, nil, nil)
+	ctx, err := tree.NewContext("witness", tree.MemoryDB, false, false, 128, nil, nil, assetTreeCacheSize, true, 200)
 	if err != nil {
 		return nil, err
 	}
-	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight, ctx, assetTreeCacheSize)
+	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, make([]int64, 0), blockHeight, ctx)
 	if err != nil {
 		return nil, err
 	}
-	nftTree, err := tree.InitNftTree(nftHistoryModel, blockHeight, ctx)
+	nftTree, err := tree.InitNftTree(nftModel, nftHistoryModel, blockHeight, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +106,7 @@ func testDBSetup() {
 	time.Sleep(5 * time.Second)
 	cmd := exec.Command("docker", "run", "--name", "postgres-ut-witness", "-p", "5434:5432",
 		"-e", "POSTGRES_PASSWORD=ZkBNB@123", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_DB=zkbnb",
-		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbnb/zkbnb-ut-postgres:blockgas")
+		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbnb/zkbnb-ut-postgres:latest")
 	if err := cmd.Run(); err != nil {
 		panic(err)
 	}
@@ -114,6 +117,7 @@ func testDBSetup() {
 	accountModel = account.NewAccountModel(db)
 	accountHistoryModel = account.NewAccountHistoryModel(db)
 	nftHistoryModel = nft.NewL2NftHistoryModel(db)
+	nftModel = nft.NewL2NftModel(db)
 }
 
 func testDBShutdown() {

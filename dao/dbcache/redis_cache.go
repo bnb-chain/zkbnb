@@ -10,28 +10,42 @@ import (
 	"github.com/eko/gocache/v2/metrics"
 	"github.com/eko/gocache/v2/store"
 	"github.com/go-redis/redis/v8"
+	zeroCache "github.com/zeromicro/go-zero/core/stores/cache"
+	zeroRedis "github.com/zeromicro/go-zero/core/stores/redis"
 )
 
 var (
 	redisKeyNotExist = errors.New("redis: nil")
+	RedisExpiration  = 15 * time.Minute
 )
 
 type RedisCache struct {
-	clint      *redis.Client
-	marshal    *marshaler.Marshaler
-	expiration time.Duration
+	clusterClient *redis.ClusterClient
+	nodeClient    *redis.Client
+	marshal       *marshaler.Marshaler
+	expiration    time.Duration
 }
 
-func NewRedisCache(redisAdd, password string, expiration time.Duration) Cache {
-	client := redis.NewClient(&redis.Options{Addr: redisAdd, Password: password})
-	redisInstance := store.NewRedis(client, &store.Options{Expiration: expiration})
+func NewRedisCache(cacheRedis zeroCache.CacheConf, expiration time.Duration) Cache {
+	var redisInstance *store.RedisStore
+	var clusterClient *redis.ClusterClient
+	var nodeClient *redis.Client
+	if cacheRedis[0].Type == zeroRedis.ClusterType {
+		clusterClient = redis.NewClusterClient(&redis.ClusterOptions{Addrs: []string{cacheRedis[0].Host}, Password: cacheRedis[0].Pass})
+		redisInstance = store.NewRedis(clusterClient, &store.Options{Expiration: expiration})
+	} else {
+		nodeClient = redis.NewClient(&redis.Options{Addr: cacheRedis[0].Host, Password: cacheRedis[0].Pass})
+		redisInstance = store.NewRedis(nodeClient, &store.Options{Expiration: expiration})
+	}
+
 	redisCacheManager := cache.New(redisInstance)
 	promMetrics := metrics.NewPrometheus("zkbnb")
 	cacheManager := cache.NewMetric(promMetrics, redisCacheManager)
 	return &RedisCache{
-		clint:      client,
-		marshal:    marshaler.New(cacheManager),
-		expiration: expiration,
+		clusterClient: clusterClient,
+		nodeClient:    nodeClient,
+		marshal:       marshaler.New(cacheManager),
+		expiration:    expiration,
 	}
 }
 
@@ -67,5 +81,11 @@ func (c *RedisCache) Delete(ctx context.Context, key string) error {
 }
 
 func (c *RedisCache) Close() error {
-	return c.clint.Close()
+	if c.nodeClient != nil {
+		return c.nodeClient.Close()
+	}
+	if c.clusterClient != nil {
+		return c.clusterClient.Close()
+	}
+	return nil
 }

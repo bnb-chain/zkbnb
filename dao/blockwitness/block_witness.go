@@ -19,7 +19,7 @@ package blockwitness
 
 import (
 	"fmt"
-	"time"
+	"strconv"
 
 	"gorm.io/gorm"
 
@@ -42,8 +42,11 @@ type (
 		GetLatestBlockWitnessHeight() (height int64, err error)
 		GetBlockWitnessByHeight(height int64) (witness *BlockWitness, err error)
 		UpdateBlockWitnessStatus(witness *BlockWitness, status int64) error
-		GetLatestBlockWitness() (witness *BlockWitness, err error)
+		GetLatestBlockWitness(blockSizes []int) (witness *BlockWitness, err error)
+		GetLatestReceivedBlockWitness(blockSizes []int) (witness *BlockWitness, err error)
 		CreateBlockWitness(witness *BlockWitness) error
+		UpdateBlockWitnessStatusByHeight(height int64) error
+		DeleteGreaterOrEqualToHeight(height int64) error
 	}
 
 	defaultBlockWitnessModel struct {
@@ -55,7 +58,8 @@ type (
 		gorm.Model
 		Height      int64 `gorm:"index:idx_height,unique"`
 		WitnessData string
-		Status      int64
+		BlockSize   uint16
+		Status      int64 `gorm:"index"`
 	}
 )
 
@@ -89,8 +93,18 @@ func (m *defaultBlockWitnessModel) GetLatestBlockWitnessHeight() (blockNumber in
 	return row.Height, nil
 }
 
-func (m *defaultBlockWitnessModel) GetLatestBlockWitness() (witness *BlockWitness, err error) {
-	dbTx := m.DB.Table(m.table).Where("status = ?", StatusPublished).Order("height asc").Limit(1).Find(&witness)
+func (m *defaultBlockWitnessModel) GetLatestBlockWitness(blockSizes []int) (witness *BlockWitness, err error) {
+	dbTx := m.DB.Table(m.table).Where("status = ? AND block_size IN ?", StatusPublished, ToStringArr(blockSizes)).Order("height asc").Limit(1).Find(&witness)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return witness, nil
+}
+
+func (m *defaultBlockWitnessModel) GetLatestReceivedBlockWitness(blockSizes []int) (witness *BlockWitness, err error) {
+	dbTx := m.DB.Table(m.table).Where("status = ? AND block_size IN ?", StatusReceived, ToStringArr(blockSizes)).Order("height desc").Limit(1).Find(&witness)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -125,11 +139,38 @@ func (m *defaultBlockWitnessModel) CreateBlockWitness(witness *BlockWitness) err
 }
 
 func (m *defaultBlockWitnessModel) UpdateBlockWitnessStatus(witness *BlockWitness, status int64) error {
-	witness.Status = status
-	witness.UpdatedAt = time.Now()
-	dbTx := m.DB.Table(m.table).Save(witness)
+	dbTx := m.DB.Model(&witness).Update("status", status)
 	if dbTx.Error != nil {
 		return types.DbErrSqlOperation
 	}
 	return nil
+}
+
+func (m *defaultBlockWitnessModel) UpdateBlockWitnessStatusByHeight(height int64) error {
+	dbTx := m.DB.Table(m.table).Where("height = ?", height).Update("status", StatusPublished)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToUpdateTx
+	}
+	return nil
+}
+
+func (m *defaultBlockWitnessModel) DeleteGreaterOrEqualToHeight(height int64) error {
+	return m.DB.Transaction(func(tx *gorm.DB) error {
+		dbTx := tx.Table(m.table).Unscoped().Where("height >= ?", height).Delete(&BlockWitness{})
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		return nil
+	})
+}
+
+func ToStringArr(nums []int) []string {
+	strArr := make([]string, len(nums))
+	for i, num := range nums {
+		strArr[i] = strconv.Itoa(num)
+	}
+	return strArr
 }

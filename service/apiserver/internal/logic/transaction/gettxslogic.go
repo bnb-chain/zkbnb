@@ -26,7 +26,7 @@ func NewGetTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxsLogi
 }
 
 func (l *GetTxsLogic) GetTxs(req *types.ReqGetRange) (resp *types.Txs, err error) {
-	total, err := l.svcCtx.MemCache.GetTxTotalCountWithFallback(func() (interface{}, error) {
+	total, err := l.svcCtx.MemCache.GetTxTotalCountWithFallback(true, func() (interface{}, error) {
 		return l.svcCtx.TxModel.GetTxsTotalCount()
 	})
 	if err != nil {
@@ -46,12 +46,7 @@ func (l *GetTxsLogic) GetTxs(req *types.ReqGetRange) (resp *types.Txs, err error
 		return nil, types2.AppErrInternal
 	}
 	for _, dbTx := range txs {
-		tx := utils.ConvertTx(dbTx)
-		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
-		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
-		if tx.ToAccountIndex >= 0 {
-			tx.ToAccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.ToAccountIndex)
-		}
+		tx := utils.ConvertTx(dbTx, l.svcCtx.MemCache)
 		resp.Txs = append(resp.Txs, tx)
 	}
 

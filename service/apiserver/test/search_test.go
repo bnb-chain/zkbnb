@@ -32,7 +32,7 @@ func (s *ApiServerSuite) TestSearch() {
 	statusCode, accounts := GetAccounts(s, 0, 100)
 	if statusCode == http.StatusOK && len(accounts.Accounts) > 0 {
 		tests = append(tests, []testcase{
-			{"found by account name", accounts.Accounts[0].Name, 200, types2.TypeAccountName},
+			{"found by l1_address", accounts.Accounts[0].L1Address, 200, types2.TypeAccountAddress},
 			{"found by account pk", accounts.Accounts[0].Pk, 200, types2.TypeAccountPk},
 		}...)
 	}

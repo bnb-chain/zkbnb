@@ -3,7 +3,6 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -19,35 +18,61 @@ import (
 type DepositNftExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.DepositNftTxInfo
+	TxInfo          *txtypes.DepositNftTxInfo
+	IsCreateAccount bool
 }
 
 func NewDepositNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	txInfo, err := types.ParseDepositNftTxInfo(tx.TxInfo)
 	if err != nil {
 		logx.Errorf("parse deposit nft tx failed: %s", err.Error())
-		return nil, errors.New("invalid tx info")
+		return nil, types.AppErrInvalidTxInfo
 	}
 
 	return &DepositNftExecutor{
-		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo, false),
+		TxInfo:       txInfo,
 	}, nil
+}
+
+func NewDepositNftExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &DepositNftExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.DepositNftTxInfo),
+	}, nil
+}
+
+func (e *DepositNftExecutor) PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	txInfo := e.TxInfo
+	addressMap[txInfo.L1Address] = true
+	nftIndexMap[txInfo.NftIndex] = true
 }
 
 func (e *DepositNftExecutor) Prepare() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
-	// The account index from txInfo isn't true, find account by account name hash.
-	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
-	account, err := bc.StateDB().GetAccountByNameHash(accountNameHash)
-	if err != nil {
+	// The account index from txInfo isn't true, find account by l1Address.
+	l1Address := txInfo.L1Address
+	account, err := bc.StateDB().GetAccountByL1Address(l1Address)
+	if err != nil && err != types.AppErrAccountNotFound {
 		return err
 	}
-
-	// Set the right account index.
-	txInfo.AccountIndex = account.AccountIndex
+	if err == types.AppErrAccountNotFound {
+		if !e.isDesertExit {
+			if e.tx.Rollback == false {
+				nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
+				txInfo.AccountIndex = nextAccountIndex
+			} else {
+				//for rollback
+				txInfo.AccountIndex = e.tx.AccountIndex
+			}
+		}
+		e.IsCreateAccount = true
+	} else {
+		// Set the right account index.
+		txInfo.AccountIndex = account.AccountIndex
+	}
 
 	_, err = e.bc.StateDB().PrepareNft(txInfo.NftIndex)
 	if err != nil {
@@ -57,13 +82,19 @@ func (e *DepositNftExecutor) Prepare() error {
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkNftDirty(txInfo.NftIndex)
+	if e.IsCreateAccount {
+		err := e.CreateEmptyAccount(txInfo.AccountIndex, l1Address, []int64{types.EmptyAccountAssetId})
+		if err != nil {
+			return err
+		}
+	}
 	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{types.EmptyAccountAssetId}) // Prepare asset 0 for generate an empty tx detail.
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	nft, err := bc.StateDB().GetNft(txInfo.NftIndex)
 	if err != nil {
@@ -77,46 +108,53 @@ func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 }
 
 func (e *DepositNftExecutor) ApplyTransaction() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
+	bc := e.bc
+	var depositAccount *types.AccountInfo
+	var err error
+	if e.IsCreateAccount {
+		depositAccount = e.GetCreatingAccount()
+	} else {
+		depositAccount, err = bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+		if err != nil {
+			return err
+		}
+	}
 
 	nft := &nft.L2Nft{
 		NftIndex:            txInfo.NftIndex,
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.AccountIndex,
 		NftContentHash:      common.Bytes2Hex(txInfo.NftContentHash),
-		NftL1Address:        txInfo.NftL1Address,
-		NftL1TokenId:        txInfo.NftL1TokenId.String(),
-		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
+		RoyaltyRate:         txInfo.RoyaltyRate,
 		CollectionId:        txInfo.CollectionId,
+		NftContentType:      txInfo.NftContentType,
 	}
-
+	cacheNft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
+	if err == nil {
+		nft.ID = cacheNft.ID
+	}
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingNft(txInfo.NftIndex, nft)
+	stateCache.SetPendingAccount(depositAccount.AccountIndex, depositAccount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *DepositNftExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeDepositNft))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
-	buf.Write(common2.AddressStrToBytes(txInfo.NftL1Address))
-	chunk1 := common2.SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
-	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
+	buf.Write(common2.Uint16ToBytes(uint16(txInfo.RoyaltyRate)))
+	buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CollectionId)))
-	chunk2 := common2.PrefixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk1)
-	buf.Write(chunk2)
+	buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
 	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.NftContentHash))
-	buf.Write(common2.Uint256ToBytes(txInfo.NftL1TokenId))
-	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
-	buf.Write(common2.PrefixPaddingBufToChunkSize([]byte{}))
-	pubData := buf.Bytes()
+	buf.WriteByte(uint8(txInfo.NftContentType))
+
+	pubData := common2.SuffixPaddingBuToPubdataSize(buf.Bytes())
 
 	stateCache := e.bc.StateDB()
 	stateCache.PriorityOperations++
@@ -125,25 +163,35 @@ func (e *DepositNftExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *DepositNftExecutor) GetExecutedTx() (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+func (e *DepositNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return nil, errors.New("unmarshal tx failed")
+		return nil, types.AppErrMarshalTxFailed
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.NftIndex = e.txInfo.NftIndex
-	e.tx.AccountIndex = e.txInfo.AccountIndex
-	return e.BaseExecutor.GetExecutedTx()
+	e.tx.NftIndex = e.TxInfo.NftIndex
+	e.tx.IsCreateAccount = e.IsCreateAccount
+	if e.tx.ToAccountIndex != e.iTxInfo.GetToAccountIndex() || e.IsCreateAccount {
+		e.tx.IsPartialUpdate = true
+	}
+	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
-	depositAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
-	if err != nil {
-		return nil, err
+	txInfo := e.TxInfo
+	var depositAccount *types.AccountInfo
+	var err error
+	if e.IsCreateAccount {
+		depositAccount = e.GetEmptyAccount()
+	} else {
+		depositAccount, err = e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	txDetails := make([]*tx.TxDetail, 0, 2)
 
 	// user info
@@ -159,14 +207,31 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:         types.EmptyAccountAssetId,
 		AssetType:       types.FungibleAssetType,
 		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     depositAccount.AccountName,
+		L1Address:       depositAccount.L1Address,
 		Balance:         baseBalance.String(),
 		BalanceDelta:    deltaBalance.String(),
 		AccountOrder:    accountOrder,
 		Order:           order,
 		Nonce:           depositAccount.Nonce,
 		CollectionNonce: depositAccount.CollectionNonce,
+		PublicKey:       depositAccount.PublicKey,
 	})
+	if e.IsCreateAccount {
+		order++
+		txDetails = append(txDetails, &tx.TxDetail{
+			AssetId:         types.EmptyAccountAssetId,
+			AssetType:       types.CreateAccountType,
+			AccountIndex:    txInfo.AccountIndex,
+			L1Address:       depositAccount.L1Address,
+			Balance:         depositAccount.L1Address,
+			BalanceDelta:    txInfo.L1Address,
+			Order:           order,
+			AccountOrder:    accountOrder,
+			Nonce:           depositAccount.Nonce,
+			CollectionNonce: depositAccount.CollectionNonce,
+			PublicKey:       depositAccount.PublicKey,
+		})
+	}
 	// nft info
 	order++
 	baseNft := types.EmptyNftInfo(txInfo.NftIndex)
@@ -175,23 +240,41 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		txInfo.CreatorAccountIndex,
 		txInfo.AccountIndex,
 		common.Bytes2Hex(txInfo.NftContentHash),
-		txInfo.NftL1TokenId.String(),
-		txInfo.NftL1Address,
-		txInfo.CreatorTreasuryRate,
+		txInfo.RoyaltyRate,
 		txInfo.CollectionId,
+		txInfo.NftContentType,
 	)
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:         txInfo.NftIndex,
 		AssetType:       types.NftAssetType,
 		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     depositAccount.AccountName,
+		L1Address:       depositAccount.L1Address,
 		Balance:         baseNft.String(),
 		BalanceDelta:    newNft.String(),
 		AccountOrder:    types.NilAccountOrder,
 		Order:           order,
 		Nonce:           depositAccount.Nonce,
 		CollectionNonce: depositAccount.CollectionNonce,
+		PublicKey:       depositAccount.PublicKey,
 	})
 
 	return txDetails, nil
+}
+
+func (e *DepositNftExecutor) Finalize() error {
+	if e.IsCreateAccount {
+		bc := e.bc
+		txInfo := e.TxInfo
+		if !e.isDesertExit {
+			bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
+			logx.Infof("create account,pool id =%d,new AccountIndex=%d,BlockHeight=%d", e.tx.ID, txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
+		}
+		accountInfo := e.GetCreatingAccount()
+		bc.StateDB().SetPendingAccountL1AddressMap(accountInfo.L1Address, accountInfo.AccountIndex)
+	}
+	err := e.BaseExecutor.Finalize()
+	if err != nil {
+		return err
+	}
+	return nil
 }

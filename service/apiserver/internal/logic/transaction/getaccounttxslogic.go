@@ -15,8 +15,7 @@ import (
 
 const (
 	queryByAccountIndex = "account_index"
-	queryByAccountName  = "account_name"
-	queryByAccountPk    = "account_pk"
+	queryByL1Address    = "l1_address"
 )
 
 type GetAccountTxsLogic struct {
@@ -45,12 +44,10 @@ func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *t
 		if err != nil || accountIndex < 0 {
 			return nil, types2.AppErrInvalidAccountIndex
 		}
-	case queryByAccountName:
-		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
-	case queryByAccountPk:
-		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
+	case queryByL1Address:
+		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByL1Address(req.Value)
 	default:
-		return nil, types2.AppErrInvalidParam.RefineError("param by should be account_index|account_name|account_pk")
+		return nil, types2.AppErrInvalidParam.RefineError("param by should be account_index|l1_address")
 	}
 
 	if err != nil {
@@ -81,12 +78,7 @@ func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *t
 	}
 
 	for _, dbTx := range txs {
-		tx := utils.ConvertTx(dbTx)
-		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
-		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
-		if tx.ToAccountIndex >= 0 {
-			tx.ToAccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.ToAccountIndex)
-		}
+		tx := utils.ConvertTx(dbTx, l.svcCtx.MemCache)
 		resp.Txs = append(resp.Txs, tx)
 	}
 	return resp, nil

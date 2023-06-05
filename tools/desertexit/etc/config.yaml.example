@@ -1,0 +1,31 @@
+Name: desertexit
+
+Postgres:
+  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb_desertexit port=5432 sslmode=disable
+  LogLevel: 4
+
+ChainConfig:
+  ConfirmBlocksCount: 0
+  MaxHandledBlocksCount: 5000
+  MaxCancelOutstandingDepositCount: 100
+  KeptHistoryBlocksCount: 100000
+  GasLimit: 5000000
+
+  StartL1BlockHeight: 1
+  BscTestNetRpc: http://127.0.0.1:8545
+  ZkBnbContractAddress: 0xeF44a38f16dC3e4b29727F63be6E0a32549f6EB8
+  GovernanceContractAddress: 0x3d272c80315B0Ac2E6d0e4Ea426c318C073D3DB3
+  PrivateKey: 7f9294e5f4e6e7015434b89de498b096c761101d448695b28e632b581d6eb887
+
+TreeDB:
+  Driver: memorydb
+  AssetTreeCacheSize: 1000000
+
+CacheConfig:
+  AccountCacheSize: 5000000
+  NftCacheSize: 5000000
+  MemCacheSize: 100000
+
+Address: 0x9069Bfe50613D85E2125Fc529cba75a781E19622
+Token: "0x00"
+NftIndexList: [1]

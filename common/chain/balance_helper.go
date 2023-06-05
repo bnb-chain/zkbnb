@@ -18,13 +18,13 @@
 package chain
 
 import (
-	"errors"
-
+	"context"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func ComputeNewBalance(assetType int64, balance string, balanceDelta string) (newBalance string, err error) {
+func ComputeNewBalance(assetType int64, balance string, balanceDelta string, ctx context.Context) (newBalance string, err error) {
 	switch assetType {
 	case types.FungibleAssetType:
 		assetInfo, err := types.ParseAccountAsset(balance)
@@ -47,7 +47,8 @@ func ComputeNewBalance(assetType int64, balance string, balanceDelta string) (ne
 		// just set the old one as the new one
 		newBalance = balanceDelta
 	default:
-		return "", errors.New("[ComputeNewBalance] invalid asset type")
+		logx.WithContext(ctx).Errorf("Invalid Asset Type, assetType:%d", assetType)
+		return "", types.AppErrInvalidAssetType
 	}
 	return newBalance, nil
 }

@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/robfig/cron/v3"
-	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 
@@ -16,13 +15,15 @@ const GracefulShutdownTimeout = 5 * time.Second
 
 func Run(configFile string) error {
 	var c config.Config
-	conf.MustLoad(configFile, &c)
-	logx.MustSetup(c.LogConf)
-	logx.DisableStat()
+	if err := config.InitSystemConfiguration(&c, configFile); err != nil {
+		logx.Severef("failed to initiate system configuration, %v", err)
+		panic("failed to initiate system configuration, err:" + err.Error())
+	}
 
-	w, err := witness.NewWitness(c)
+	w, err := witness.NewWitness(c, true)
 	if err != nil {
-		panic(err)
+		logx.Severef("failed to create witness instance, %v", err)
+		panic("failed to create witness instance, err:" + err.Error())
 	}
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
@@ -31,12 +32,14 @@ func Run(configFile string) error {
 		logx.Info("==========start generate block witness==========")
 		err := w.GenerateBlockWitness()
 		if err != nil {
-			logx.Errorf("failed to generate block witness, %v", err)
+			logx.Severef("failed to generate block witness, %v", err)
+			panic("failed to generate block witness, err:" + err.Error())
 		}
 		w.RescheduleBlockWitness()
 	})
 	if err != nil {
-		panic(err)
+		logx.Severef("failed to start generate block witness task, %v", err)
+		panic("failed to start generate block witness task, err:" + err.Error())
 	}
 	cronJob.Start()
 

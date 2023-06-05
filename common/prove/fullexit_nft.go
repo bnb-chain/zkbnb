@@ -20,6 +20,7 @@ package prove
 import (
 	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -40,16 +41,15 @@ func (w *WitnessHelper) constructFullExitNftTxWitness(cryptoTx *TxWitness, oTx *
 
 func toCryptoFullExitNftTx(txInfo *txtypes.FullExitNftTxInfo) (info *cryptoTypes.FullExitNftTx, err error) {
 	info = &cryptoTypes.FullExitNftTx{
-		AccountIndex:           txInfo.AccountIndex,
-		AccountNameHash:        txInfo.AccountNameHash,
-		CreatorAccountIndex:    txInfo.CreatorAccountIndex,
-		CreatorAccountNameHash: txInfo.CreatorAccountNameHash,
-		CreatorTreasuryRate:    txInfo.CreatorTreasuryRate,
-		NftIndex:               txInfo.NftIndex,
-		CollectionId:           txInfo.CollectionId,
-		NftContentHash:         txInfo.NftContentHash,
-		NftL1Address:           txInfo.NftL1Address,
-		NftL1TokenId:           txInfo.NftL1TokenId,
+		AccountIndex:        txInfo.AccountIndex,
+		L1Address:           common.AddressStrToBytes(txInfo.L1Address),
+		CreatorAccountIndex: txInfo.CreatorAccountIndex,
+		CreatorL1Address:    common.AddressStrToBytes(txInfo.CreatorL1Address),
+		RoyaltyRate:         txInfo.RoyaltyRate,
+		NftIndex:            txInfo.NftIndex,
+		CollectionId:        txInfo.CollectionId,
+		NftContentHash:      txInfo.NftContentHash,
+		NftContentType:      txInfo.NftContentType,
 	}
 	return info, nil
 }

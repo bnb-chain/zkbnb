@@ -65,12 +65,7 @@ func (l *GetBlockTxsLogic) GetBlockTxs(req *types.ReqGetBlockTxs) (resp *types.T
 
 	resp.Total = uint32(len(block.Txs))
 	for _, dbTx := range block.Txs {
-		tx := utils.ConvertTx(dbTx)
-		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
-		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
-		if tx.ToAccountIndex >= 0 {
-			tx.ToAccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.ToAccountIndex)
-		}
+		tx := utils.ConvertTx(dbTx, l.svcCtx.MemCache)
 		resp.Txs = append(resp.Txs, tx)
 	}
 	return resp, nil

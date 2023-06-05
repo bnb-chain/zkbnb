@@ -1,5 +1,10 @@
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  SlaveDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  #if MasterSecretKey and SlaveSecretKey are not empty,replace database password by secret key
+  #  MasterSecretKey: zkbnb-qa-pgsql
+  #  SlaveSecretKey: zkbnb-qa-pgsql
+  LogLevel: 4
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -7,5 +12,22 @@ CacheRedis:
     Type: node
 
 TreeDB:
-  Driver: memorydb
+  Driver: redis
+  RedisDBOption:
+    Addr: localhost:6666
+    DialTimeout: 10s
+    ReadTimeout: 10s
+    WriteTimeout: 10s
+    PoolTimeout: 15s
+    IdleTimeout: 5m
+    PoolSize: 500
+    MaxRetries: 3
+    MinRetryBackoff: 8ms
+    MaxRetryBackoff: 512ms
   AssetTreeCacheSize: 512000
+
+# aws
+EnvVariables:
+  AwsRegion: ap-northeast-1
+  AwsProfile: bnbcloud-dev
+  AwsSdkLoadConfig: true

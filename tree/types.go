@@ -19,11 +19,7 @@ package tree
 
 import (
 	"encoding/hex"
-
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/bnb-chain/zkbnb-crypto/merkleTree"
 )
 
 const (
@@ -39,7 +35,6 @@ const (
 )
 
 var (
-	NilHash                 = merkleTree.NilHash
 	NilStateRoot            []byte
 	NilAccountRoot          []byte
 	NilNftRoot              []byte
@@ -52,34 +47,21 @@ var (
 func init() {
 	NilAccountAssetNodeHash = EmptyAccountAssetNodeHash()
 	NilAccountAssetRoot = NilAccountAssetNodeHash
-	hFunc := mimc.NewMiMC()
 	for i := 0; i < AssetTreeHeight; i++ {
-		hFunc.Reset()
-		hFunc.Write(NilAccountAssetRoot)
-		hFunc.Write(NilAccountAssetRoot)
-		NilAccountAssetRoot = hFunc.Sum(nil)
+		NilAccountAssetRoot = GMimcBytes(NilAccountAssetRoot, NilAccountAssetRoot)
 	}
 	NilAccountNodeHash = EmptyAccountNodeHash()
 	NilAccountRoot = NilAccountNodeHash
 	NilNftNodeHash = EmptyNftNodeHash()
 	for i := 0; i < AccountTreeHeight; i++ {
-		hFunc.Reset()
-		hFunc.Write(NilAccountRoot)
-		hFunc.Write(NilAccountRoot)
-		NilAccountRoot = hFunc.Sum(nil)
+		NilAccountRoot = GMimcBytes(NilAccountRoot, NilAccountRoot)
 	}
 	NilNftRoot = NilNftNodeHash
 	for i := 0; i < NftTreeHeight; i++ {
-		hFunc.Reset()
-		hFunc.Write(NilNftRoot)
-		hFunc.Write(NilNftRoot)
-		NilNftRoot = hFunc.Sum(nil)
+		NilNftRoot = GMimcBytes(NilNftRoot, NilNftRoot)
 	}
 	// nil state root
-	hFunc.Reset()
-	hFunc.Write(NilAccountRoot)
-	hFunc.Write(NilNftRoot)
-	NilStateRoot = hFunc.Sum(nil)
+	NilStateRoot = GMimcBytes(NilAccountRoot, NilNftRoot)
 
-	logx.Infof("genesis state root: %s", hex.EncodeToString(NilStateRoot))
+	logx.Infof("genesis state root: %s asset %s", hex.EncodeToString(NilStateRoot), hex.EncodeToString(NilAccountAssetRoot))
 }

@@ -48,6 +48,9 @@ func (l *GetAssetsLogic) GetAssets(req *types.ReqGetRange) (resp *types.Assets, 
 		return nil, types2.AppErrInternal
 	}
 
+	if assets == nil {
+		return nil, nil
+	}
 	resp.Assets = make([]*types.Asset, 0)
 	for _, asset := range assets {
 		assetPrice, err := l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
@@ -62,7 +65,7 @@ func (l *GetAssetsLogic) GetAssets(req *types.ReqGetRange) (resp *types.Assets, 
 			Address:    asset.L1Address,
 			Price:      strconv.FormatFloat(assetPrice, 'E', -1, 64),
 			IsGasAsset: asset.IsGasAsset,
-			Icon:       fmt.Sprintf(iconBaseUrl, strings.ToLower(asset.AssetSymbol), strings.ToLower(asset.AssetSymbol)),
+			Icon:       fmt.Sprintf(iconBaseUrl, strings.ToLower(asset.AssetSymbol)),
 		})
 	}
 	return resp, nil

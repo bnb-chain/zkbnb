@@ -2,7 +2,7 @@ package tree
 
 import (
 	"encoding/json"
-	"errors"
+	"github.com/bnb-chain/zkbnb/types"
 	"hash"
 	"strings"
 	"time"
@@ -12,15 +12,10 @@ import (
 	"github.com/bnb-chain/zkbnb-smt/database/leveldb"
 	"github.com/bnb-chain/zkbnb-smt/database/memory"
 	"github.com/bnb-chain/zkbnb-smt/database/redis"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/panjf2000/ants/v2"
 )
 
 const defaultBatchReloadSize = 1000
-
-var (
-	ErrUnsupportedDriver = errors.New("unsupported db driver")
-)
 
 type Driver string
 
@@ -167,7 +162,7 @@ func SetupTreeDB(
 		context.TreeDB = db
 		return nil
 	}
-	return ErrUnsupportedDriver
+	return types.TreeErrUnsupportedDriver
 }
 
 func SetNamespace(
@@ -187,18 +182,26 @@ func SetNamespace(
 
 const (
 	defaultTreeRoutinePoolSize = 10240
+	defaultDbRoutinePoolSize   = 200
 )
 
 func NewContext(
 	name string, driver Driver,
-	reload bool, routineSize int,
+	reload bool, onlyQuery bool, routineSize int,
 	levelDBOption *LevelDBOption,
-	redisDBOption *RedisDBOption) (*Context, error) {
+	redisDBOption *RedisDBOption, assetCacheSize int, fromHistory bool, dbRoutineSize int) (*Context, error) {
 
 	if routineSize <= 0 {
 		routineSize = defaultTreeRoutinePoolSize
 	}
-	pool, err := ants.NewPool(routineSize)
+	if dbRoutineSize <= 0 {
+		dbRoutineSize = defaultDbRoutinePoolSize
+	}
+	//pool, err := ants.NewPool(routineSize)
+	pool, err := ants.NewPool(routineSize, ants.WithPanicHandler(func(p interface{}) {
+		//sets up panic handler.
+		panic("worker exits from a panic")
+	}))
 	if err != nil {
 		return nil, err
 	}
@@ -208,9 +211,13 @@ func NewContext(
 		LevelDBOption:  levelDBOption,
 		RedisDBOption:  redisDBOption,
 		reload:         reload,
+		onlyQuery:      onlyQuery,
 		routinePool:    pool,
-		hasher:         bsmt.NewHasherPool(func() hash.Hash { return mimc.NewMiMC() }),
+		hasher:         bsmt.NewHasherPool(func() hash.Hash { return NewGMimc() }),
 		defaultOptions: []bsmt.Option{bsmt.GoRoutinePool(pool)},
+		assetCacheSize: assetCacheSize,
+		fromHistory:    fromHistory,
+		dbRoutineSize:  dbRoutineSize,
 	}, nil
 }
 
@@ -223,9 +230,13 @@ type Context struct {
 	TreeDB          database.TreeDB
 	defaultOptions  []bsmt.Option
 	reload          bool
+	onlyQuery       bool
 	batchReloadSize int
 	routinePool     *ants.Pool
 	hasher          *bsmt.Hasher
+	assetCacheSize  int
+	fromHistory     bool
+	dbRoutineSize   int
 }
 
 func (ctx *Context) IsLoad() bool {
@@ -233,6 +244,10 @@ func (ctx *Context) IsLoad() bool {
 		return true
 	}
 	return ctx.Driver == MemoryDB
+}
+
+func (ctx *Context) IsOnlyQuery() bool {
+	return ctx.onlyQuery
 }
 
 func (ctx *Context) Options(blockHeight int64) []bsmt.Option {

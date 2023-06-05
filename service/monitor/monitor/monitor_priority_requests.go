@@ -17,8 +17,12 @@
 package monitor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/monitor"
+	"github.com/bnb-chain/zkbnb/dao/dbcache"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -30,15 +34,16 @@ import (
 )
 
 func (m *Monitor) MonitorPriorityRequests() error {
-	pendingRequests, err := m.PriorityRequestModel.GetPriorityRequestsByStatus(PendingStatus)
+	pendingRequests, err := m.PriorityRequestModel.GetPriorityRequestsByStatus(monitor.PendingStatus)
 	if err != nil {
 		if err != types.DbErrNotFound {
 			return err
 		}
+		time.Sleep(5 * time.Second)
 		return nil
 	}
 	var (
-		pendingNewPoolTxs []*tx.Tx
+		pendingNewPoolTxs []*tx.PoolTx
 	)
 	// get last handled request id
 	currentRequestId, err := m.PriorityRequestModel.GetLatestHandledRequestId()
@@ -56,11 +61,13 @@ func (m *Monitor) MonitorPriorityRequests() error {
 
 		txHash := ComputeL1TxTxHash(request.RequestId, request.L1TxHash)
 
-		poolTx := &tx.Tx{
-			TxHash:       txHash,
-			AccountIndex: types.NilAccountIndex,
-			Nonce:        types.NilNonce,
-			ExpiredAt:    types.NilExpiredAt,
+		poolTx := &tx.PoolTx{BaseTx: tx.BaseTx{
+			TxHash:           txHash,
+			AccountIndex:     types.NilAccountIndex,
+			FromAccountIndex: types.NilAccountIndex,
+			ToAccountIndex:   types.NilAccountIndex,
+			Nonce:            types.NilNonce,
+			ExpiredAt:        types.NilExpiredAt,
 
 			GasFeeAssetId: types.NilAssetId,
 			GasFee:        types.NilAssetAmount,
@@ -72,27 +79,14 @@ func (m *Monitor) MonitorPriorityRequests() error {
 
 			BlockHeight: types.NilBlockHeight,
 			TxStatus:    tx.StatusPending,
-		}
+		}}
 
 		request.L2TxHash = txHash
 
 		// handle request based on request type
 		var txInfoBytes []byte
 		switch request.TxType {
-		case TxTypeRegisterZns:
-			// parse request info
-			txInfo, err := chain.ParseRegisterZnsPubData(common.FromHex(request.Pubdata))
-			if err != nil {
-				return fmt.Errorf("unable to parse registerZNS pub data, err: %v", err)
-			}
-
-			poolTx.TxType = int64(txInfo.TxType)
-			txInfoBytes, err = json.Marshal(txInfo)
-			if err != nil {
-				return err
-			}
-
-		case TxTypeDeposit:
+		case monitor.TxTypeDeposit:
 			txInfo, err := chain.ParseDepositPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit pub data: %v", err)
@@ -103,8 +97,16 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
-
-		case TxTypeDepositNft:
+			poolTx.AssetId = txInfo.AssetId
+			poolTx.TxAmount = txInfo.AssetAmount.String()
+			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
+			if err == nil {
+				poolTx.ToAccountIndex = accountIndex
+				poolTx.AccountIndex = accountIndex
+			} else {
+				logx.Errorf("unable to get account index : %v", err)
+			}
+		case monitor.TxTypeDepositNft:
 			txInfo, err := chain.ParseDepositNftPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit nft pub data: %v", err)
@@ -115,8 +117,16 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info: %v", err)
 			}
-
-		case TxTypeFullExit:
+			poolTx.NftIndex = txInfo.NftIndex
+			poolTx.CollectionId = txInfo.CollectionId
+			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
+			if err == nil {
+				poolTx.ToAccountIndex = accountIndex
+				poolTx.AccountIndex = accountIndex
+			} else {
+				logx.Errorf("unable to get account index : %v", err)
+			}
+		case monitor.TxTypeFullExit:
 			txInfo, err := chain.ParseFullExitPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit pub data: %v", err)
@@ -127,8 +137,16 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
-
-		case TxTypeFullExitNft:
+			poolTx.AssetId = txInfo.AssetId
+			poolTx.TxAmount = txInfo.AssetAmount.String()
+			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
+			if err == nil {
+				poolTx.AccountIndex = accountIndex
+				poolTx.FromAccountIndex = accountIndex
+			} else {
+				logx.Errorf("unable to get account index : %v", err)
+			}
+		case monitor.TxTypeFullExitNft:
 			txInfo, err := chain.ParseFullExitNftPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit nft pub data: %v", err)
@@ -139,13 +157,31 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
-
+			poolTx.NftIndex = txInfo.NftIndex
+			poolTx.CollectionId = txInfo.CollectionId
+			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
+			if err == nil {
+				poolTx.AccountIndex = accountIndex
+				poolTx.FromAccountIndex = accountIndex
+			} else {
+				logx.Errorf("unable to get account index : %v", err)
+			}
 		default:
 			return fmt.Errorf("invalid request type")
 		}
-
 		poolTx.TxInfo = string(txInfoBytes)
-		pendingNewPoolTxs = append(pendingNewPoolTxs, poolTx)
+		poolTx.L1RequestId = request.RequestId
+
+		_, err := m.TxPoolModel.GetTxUnscopedByTxHash(poolTx.TxHash)
+		if err != nil {
+			if err == types.DbErrNotFound {
+				pendingNewPoolTxs = append(pendingNewPoolTxs, poolTx)
+			} else {
+				return fmt.Errorf("fail to get pool tx by TxHash=%s,L1TxHash=%s,L1RequestId=%d,err=%v", poolTx.TxHash, request.L1TxHash, request.RequestId, err)
+			}
+		} else {
+			logx.Infof("This tx hash already exists in the pool tx table,TxHash=%s,L1TxHash=%s,L1RequestId=%d", poolTx.TxHash, request.L1TxHash, request.RequestId)
+		}
 	}
 
 	// update db
@@ -173,4 +209,26 @@ func (m *Monitor) MonitorPriorityRequests() error {
 	}
 
 	return nil
+}
+
+func (m *Monitor) GetAccountIndex(l1Address string) (int64, error) {
+	cached, exist := m.L1AddressCache.Get(l1Address)
+	if exist {
+		return cached.(int64), nil
+	} else {
+		var accountIndex interface{}
+		redisAccount, err := m.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(l1Address), &accountIndex)
+		if err == nil && redisAccount != nil {
+			return accountIndex.(int64), nil
+		}
+		dbAccount, err := m.AccountModel.GetAccountByL1Address(l1Address)
+		if err != nil {
+			if err == types.DbErrNotFound {
+				return types.NilAccountIndex, nil
+			}
+			return 0, err
+		}
+		m.L1AddressCache.Add(l1Address, dbAccount.AccountIndex)
+		return dbAccount.AccountIndex, nil
+	}
 }

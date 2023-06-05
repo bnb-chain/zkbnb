@@ -1,0 +1,2433 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "ZKBNB API Document",
+    "description": "Public APIs for zkbnb",
+    "version": "1.0"
+  },
+  "host": "testapi.zkbnbchain.org",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Get status of zkbnb",
+        "operationId": "GetStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "requestBody": {},
+        "tags": [
+          "Root"
+        ]
+      }
+    },
+    "/api/v1/GetNftByNftIndex": {
+      "get": {
+        "summary": "Get nft of nft index",
+        "operationId": "GetNftByNftIndex",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/NftEntity"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "nft_index",
+          "in": "query",
+          "required": true,
+          "type": "integer",
+          "format": "int64",
+          "description": "The nft index query condition to query nft data."
+        }],
+        "requestBody": {},
+        "tags": [
+          "Nft"
+        ]
+      }
+    },
+    "/api/v1/account": {
+      "get": {
+        "summary": "Get account by account's l1_address, index",
+        "operationId": "GetAccount",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Account"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "by",
+          "in": "query",
+          "required": true,
+          "type": "string",
+          "description": "The query condition type to get the account data, and it could be l1_address or account index."
+        },
+          {
+            "name": "value",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "The query condition value to get the account data, and it is specified by the 'by' parameter above."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Account"
+        ]
+      }
+    },
+    "/api/v1/accountNfts": {
+      "get": {
+        "summary": "Get nfts of a specific account",
+        "operationId": "GetAccountNfts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Nfts"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "by",
+          "in": "query",
+          "required": true,
+          "type": "string",
+          "description": "The query condition type to get the nft account data, and it could be l1_address or account index."
+        },
+          {
+            "name": "value",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "The query condition value to get the nft account data, and it is specified by the 'by' parameter above."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The query offset to get some specific range of the nft account data."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The query limit size to get some specific range of the nft account data."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Nft"
+        ]
+      }
+    },
+    "/api/v1/accountPendingTxs": {
+      "get": {
+        "summary": "Get pending transactions of a specific account",
+        "operationId": "GetAccountPendingTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Txs"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "by",
+          "in": "query",
+          "required": true,
+          "type": "string",
+          "description": "The query condition type to get the pending transactions belonging to the account, and it could be l1_address or account index"
+        },
+          {
+            "name": "value",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "The query condition value to get the pending transactions belonging to the account, and it is specified by the 'by' parameter above."
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64",
+            "description": "The transaction types of the pending transactions to be queried, and it could be like TxTypeDeposit, TxTypeTransfer or TxTypeAtomicMatch and so on."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Transaction"
+        ]
+      }
+    },
+    "/api/v1/accountTxs": {
+      "get": {
+        "summary": "Get transactions of a specific account",
+        "operationId": "GetAccountTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Txs"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "by",
+          "in": "query",
+          "required": true,
+          "type": "string",
+          "description": "The query condition type to get the transactions belonging to the account, and it could be l1_address or account index."
+        },
+          {
+            "name": "value",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "The query condition value to get the transactions belonging to the account, and it is specified by the 'by' parameter above."
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64",
+            "description": "The transaction types of the transactions to be queried, and it could be like TxTypeDeposit, TxTypeTransfer or TxTypeAtomicMatch etc."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The query offset to get some specific range of the transactions belonging to the account."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The query limit size to get some specific range of the transactions belonging to the account."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Transaction"
+        ]
+      }
+    },
+    "/api/v1/accounts": {
+      "get": {
+        "summary": "Get accounts",
+        "operationId": "GetAccounts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Accounts"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "offset",
+          "in": "query",
+          "required": true,
+          "type": "integer",
+          "format": "int32",
+          "description": "The query offset to get some specific range of the account list data."
+        },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The query limit size to get some specific range of the account list data."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Account"
+        ]
+      }
+    },
+    "/api/v1/asset": {
+      "get": {
+        "summary": "Get asset",
+        "operationId": "GetAsset",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Asset"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "by",
+          "in": "query",
+          "required": true,
+          "type": "string",
+          "description": "The query condition type to get the asset data, and it could be asset id or asset symbol."
+        },
+          {
+            "name": "value",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "The query condition value to get the asset data, and it is specified by the 'by' parameter above."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Asset"
+        ]
+      }
+    },
+    "/api/v1/assets": {
+      "get": {
+        "summary": "Get assets",
+        "operationId": "GetAssets",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Assets"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "offset",
+          "in": "query",
+          "required": true,
+          "type": "integer",
+          "format": "int32",
+          "description": "The query offset to get some specific range of the asset list data."
+        },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The query limit size to get some specific range of the asset list data."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Asset"
+        ]
+      }
+    },
+    "/api/v1/block": {
+      "get": {
+        "summary": "Get block by its height or commitment",
+        "operationId": "GetBlock",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Block"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "by",
+          "in": "query",
+          "required": true,
+          "type": "string",
+          "description": "The query condition type to get the block data, and it could be block height or block commitment."
+        },
+          {
+            "name": "value",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "The query condition value to get the block data, and it is specified by the 'by' parameter above."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Block"
+        ]
+      }
+    },
+    "/api/v1/blockTxs": {
+      "get": {
+        "summary": "Get transactions in a block",
+        "operationId": "GetBlockTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Txs"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "by",
+          "in": "query",
+          "required": true,
+          "type": "string",
+          "description": "The query condition type to get the transactions in the specified block, and it could be block height or block commitment."
+        },
+          {
+            "name": "value",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "The query condition value to get the transactions in the specified block, and it is specified by the 'by' parameter above."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Transaction"
+        ]
+      }
+    },
+    "/api/v1/blocks": {
+      "get": {
+        "summary": "Get blocks",
+        "operationId": "GetBlocks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Blocks"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "offset",
+          "in": "query",
+          "required": true,
+          "type": "integer",
+          "format": "int32",
+          "description": "The query offset to get some specific range of the block data."
+        },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The query limit size to get some specific range of the block data."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Block"
+        ]
+      }
+    },
+    "/api/v1/currentHeight": {
+      "get": {
+        "operationId": "GetCurrentHeight",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/CurrentHeight"
+            }
+          }
+        },
+        "requestBody": {},
+        "tags": [
+          "Block"
+        ]
+      }
+    },
+    "/api/v1/executedTxs": {
+      "get": {
+        "summary": "Get executed transactions which previously added to tx pool",
+        "operationId": "GetExecutedTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Txs"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "offset",
+          "in": "query",
+          "required": true,
+          "type": "integer",
+          "format": "int32",
+          "description": "The query offset to get some specific range of the executed transactions data."
+        },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The query limit size to get some specific range of the executed transactions data."
+          },
+          {
+            "name": "from_hash",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "The transaction hash query condition for the executed transactions data."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Transaction"
+        ]
+      }
+    },
+    "/api/v1/gasAccount": {
+      "get": {
+        "summary": "Get gas account, who will charge gas fees for transactions",
+        "operationId": "GetGasAccount",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GasAccount"
+            }
+          }
+        },
+        "requestBody": {},
+        "tags": [
+          "Info"
+        ]
+      }
+    },
+    "/api/v1/gasFee": {
+      "get": {
+        "summary": "Get gas fee amount for using a specific asset as gas asset",
+        "operationId": "GetGasFee",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GasFee"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "asset_id",
+          "in": "query",
+          "required": true,
+          "type": "integer",
+          "format": "int32",
+          "description": "The asset id query condition for querying gas fee configuration."
+        },
+          {
+            "name": "tx_type",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The transaction type query condition for querying gas fee configuration."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Info"
+        ]
+      }
+    },
+    "/api/v1/gasFeeAssets": {
+      "get": {
+        "summary": "Get supported gas fee assets",
+        "operationId": "GetGasFeeAssets",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GasFeeAssets"
+            }
+          }
+        },
+        "requestBody": {},
+        "tags": [
+          "Info"
+        ]
+      }
+    },
+    "/api/v1/getNftByTxHash": {
+      "get": {
+        "summary": "Get nft_index of a nft by txHash",
+        "operationId": "GetNftByTxHash",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/NftIndex"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "tx_hash",
+          "in": "query",
+          "required": true,
+          "type": "string",
+          "description": "The tx hash query condition to query nft data."
+        }],
+        "requestBody": {},
+        "tags": [
+          "Nft"
+        ]
+      }
+    },
+    "/api/v1/getProtocolRate": {
+      "get": {
+        "summary": "Get zkbnb platform fee rate",
+        "operationId": "getProtocolRate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ProtocolRate"
+            }
+          }
+        },
+        "requestBody": {},
+        "tags": [
+          "Info"
+        ]
+      }
+    },
+    "/api/v1/l2Signature": {
+      "post": {
+        "summary": "Get transaction signature body",
+        "operationId": "GetL2SignatureBody",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/SignBody"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "body",
+          "in": "body",
+          "required": true,
+          "schema": {
+            "$ref": "#/definitions/ReqSendTx"
+          },
+          "description": "The transaction request body to get the transaction signature body from the system."
+        }],
+        "requestBody": {},
+        "tags": [
+          "Transaction"
+        ]
+      }
+    },
+    "/api/v1/layer2BasicInfo": {
+      "get": {
+        "summary": "Get zkbnb general info, including contract address, and count of transactions and active users",
+        "operationId": "GetLayer2BasicInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Layer2BasicInfo"
+            }
+          }
+        },
+        "requestBody": {},
+        "tags": [
+          "Info"
+        ]
+      }
+    },
+    "/api/v1/maxCollectionId": {
+      "get": {
+        "summary": "Get max nft collection id for a specific account",
+        "operationId": "GetMaxCollectionId",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MaxCollectionId"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "account_index",
+          "in": "query",
+          "required": true,
+          "type": "integer",
+          "format": "int64",
+          "description": "The specific account index to get the max nft collection id."
+        }],
+        "requestBody": {},
+        "tags": [
+          "Nft"
+        ]
+      }
+    },
+    "/api/v1/maxOfferId": {
+      "get": {
+        "summary": "Get max nft offer id for a specific account",
+        "operationId": "GetMaxOfferId",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MaxOfferId"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "account_index",
+          "in": "query",
+          "required": true,
+          "type": "integer",
+          "format": "int32",
+          "description": "The account index query condition for querying maximum offer id in the nft situation."
+        }],
+        "requestBody": {},
+        "tags": [
+          "Nft"
+        ]
+      }
+    },
+    "/api/v1/mergedAccountTxs": {
+      "get": {
+        "summary": "Get merged transactions(including tx and pool_tx) of a specific account",
+        "operationId": "GetMergedAccountTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Txs"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "by",
+          "in": "query",
+          "required": true,
+          "type": "string",
+          "description": "The query condition type to get the transactions belonging to the account, and it could be l1_address or account index."
+        },
+          {
+            "name": "value",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "The query condition value to get the transactions belonging to the account, and it is specified by the 'by' parameter above."
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64",
+            "description": "The transaction types of the transactions to be queried, and it could be like TxTypeDeposit, TxTypeTransfer or TxTypeAtomicMatch etc."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The query offset to get some specific range of the transactions belonging to the account."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The query limit size to get some specific range of the transactions belonging to the account."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Transaction"
+        ]
+      }
+    },
+    "/api/v1/nextNonce": {
+      "get": {
+        "summary": "Get next nonce",
+        "operationId": "GetNextNonce",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/NextNonce"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "account_index",
+          "in": "query",
+          "required": true,
+          "type": "integer",
+          "format": "int32",
+          "description": "The account index query condition for getting the next nonce data."
+        }],
+        "requestBody": {},
+        "tags": [
+          "Transaction"
+        ]
+      }
+    },
+    "/api/v1/nftNextNonce": {
+      "get": {
+        "summary": "Get nft next nonce",
+        "operationId": "GetNftNextNonce",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/NextNonce"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "nft_index",
+          "in": "query",
+          "required": true,
+          "type": "integer",
+          "format": "int64",
+          "description": "The nft index query condition for getting the next nonce data."
+        }],
+        "requestBody": {},
+        "tags": [
+          "Nft"
+        ]
+      }
+    },
+    "/api/v1/pendingTxs": {
+      "get": {
+        "summary": "Get pending transactions",
+        "operationId": "GetPendingTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Txs"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "offset",
+          "in": "query",
+          "required": true,
+          "type": "integer",
+          "format": "int32",
+          "description": "The query offset to get some specific range of the pending transactions data."
+        },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The query limit size to get some specific range of the pending transactions data."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Transaction"
+        ]
+      }
+    },
+    "/api/v1/rollbacks": {
+      "get": {
+        "summary": "Get rollbacks",
+        "operationId": "GetRollbacks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Rollbacks"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "from_block_height",
+          "in": "query",
+          "required": true,
+          "type": "integer",
+          "format": "int64",
+          "description": "The starting block height for performing the rollback operation."
+        },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The query offset to get some specific range of the pending transactions data."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The query limit size to get some specific range of the pending transactions data."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Info"
+        ]
+      }
+    },
+    "/api/v1/search": {
+      "get": {
+        "summary": "Search with a specific keyword",
+        "operationId": "Search",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Search"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "keyword",
+          "in": "query",
+          "required": true,
+          "type": "string",
+          "description": "The keyword condition to search for block data here, and the keyword is actually the block height currently."
+        }],
+        "requestBody": {},
+        "tags": [
+          "Info"
+        ]
+      }
+    },
+    "/api/v1/sendTx": {
+      "post": {
+        "summary": "Send raw transaction",
+        "operationId": "SendTx",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/TxHash"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "body",
+          "in": "body",
+          "required": true,
+          "schema": {
+            "$ref": "#/definitions/ReqSendTx"
+          },
+          "description": "The transaction request body to send the transaction to the system."
+        }],
+        "requestBody": {},
+        "tags": [
+          "Transaction"
+        ]
+      }
+    },
+    "/api/v1/tx": {
+      "get": {
+        "summary": "Get transaction by hash",
+        "operationId": "GetTx",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/EnrichedTx"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "hash",
+          "in": "query",
+          "required": true,
+          "type": "string",
+          "description": "The transaction hash condition to get the transaction data."
+        }],
+        "requestBody": {},
+        "tags": [
+          "Transaction"
+        ]
+      }
+    },
+    "/api/v1/txs": {
+      "get": {
+        "summary": "Get transactions which are already packed into blocks",
+        "operationId": "GetTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Txs"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "offset",
+          "in": "query",
+          "required": true,
+          "type": "integer",
+          "format": "int32",
+          "description": "The query offset to get some specific range of the packed transactions data."
+        },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32",
+            "description": "The query limit size to get some specific range of the packed transactions data."
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "Transaction"
+        ]
+      }
+    },
+    "/api/v1/updateNftByIndex": {
+      "post": {
+        "summary": "update nft metadata by nft_index",
+        "operationId": "UpdateNftByIndex",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/History"
+            }
+          }
+        },
+        "parameters": [{
+          "name": "body",
+          "in": "body",
+          "required": true,
+          "schema": {
+            "$ref": "#/definitions/ReqUpdateNft"
+          },
+          "description": "Nft updating request parameter."
+        }],
+        "requestBody": {},
+        "tags": [
+          "Nft"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "Account": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "l1_address": {
+          "type": "string"
+        },
+        "pk": {
+          "type": "string"
+        },
+        "nonce": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AccountAsset"
+          }
+        },
+        "total_asset_value": {
+          "type": "string"
+        }
+      },
+      "title": "Account",
+      "required": [
+        "status",
+        "index",
+        "l1_address",
+        "pk",
+        "nonce",
+        "assets",
+        "total_asset_value"
+      ]
+    },
+    "AccountAsset": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "name": {
+          "type": "string"
+        },
+        "balance": {
+          "type": "string"
+        },
+        "price": {
+          "type": "string"
+        }
+      },
+      "title": "AccountAsset",
+      "required": [
+        "id",
+        "name",
+        "balance",
+        "price"
+      ]
+    },
+    "Accounts": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "accounts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SimpleAccount"
+          }
+        }
+      },
+      "title": "Accounts",
+      "required": [
+        "total",
+        "accounts"
+      ]
+    },
+    "Asset": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "name": {
+          "type": "string"
+        },
+        "decimals": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "symbol": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "price": {
+          "type": "string"
+        },
+        "is_gas_asset": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "icon": {
+          "type": "string"
+        }
+      },
+      "title": "Asset",
+      "required": [
+        "id",
+        "name",
+        "decimals",
+        "symbol",
+        "address",
+        "price",
+        "is_gas_asset",
+        "icon"
+      ]
+    },
+    "Assets": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Asset"
+          }
+        }
+      },
+      "title": "Assets",
+      "required": [
+        "total",
+        "assets"
+      ]
+    },
+    "Block": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "commitment": {
+          "type": "string"
+        },
+        "height": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "state_root": {
+          "type": "string"
+        },
+        "priority_operations": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "pending_on_chain_operations_hash": {
+          "type": "string"
+        },
+        "pending_on_chain_operations_pub_data": {
+          "type": "string"
+        },
+        "committed_tx_hash": {
+          "type": "string"
+        },
+        "committed_at": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "verified_tx_hash": {
+          "type": "string"
+        },
+        "verified_at": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "txs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Tx"
+          }
+        },
+        "status": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "size": {
+          "type": "integer",
+          "format": "uint16"
+        }
+      },
+      "title": "Block",
+      "required": [
+        "commitment",
+        "height",
+        "state_root",
+        "priority_operations",
+        "pending_on_chain_operations_hash",
+        "pending_on_chain_operations_pub_data",
+        "committed_tx_hash",
+        "committed_at",
+        "verified_tx_hash",
+        "verified_at",
+        "txs",
+        "status",
+        "size"
+      ]
+    },
+    "Blocks": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Block"
+          }
+        }
+      },
+      "title": "Blocks",
+      "required": [
+        "total",
+        "blocks"
+      ]
+    },
+    "ContractAddress": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        }
+      },
+      "title": "ContractAddress",
+      "required": [
+        "name",
+        "address"
+      ]
+    },
+    "CurrentHeight": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "height": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "CurrentHeight",
+      "required": [
+        "height"
+      ]
+    },
+    "EnrichedTx": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "tx": {
+          "$ref": "#/definitions/Tx"
+        },
+        "committed_at": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "verified_at": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "executed_at": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "EnrichedTx",
+      "required": [
+        "committed_at",
+        "verified_at",
+        "executed_at"
+      ]
+    },
+    "GasAccount": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "l1_address": {
+          "type": "string"
+        }
+      },
+      "title": "GasAccount",
+      "required": [
+        "status",
+        "index",
+        "l1_address"
+      ]
+    },
+    "GasFee": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "gas_fee": {
+          "type": "string"
+        }
+      },
+      "title": "GasFee",
+      "required": [
+        "gas_fee"
+      ]
+    },
+    "GasFeeAssets": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Asset"
+          }
+        }
+      },
+      "title": "GasFeeAssets",
+      "required": [
+        "assets"
+      ]
+    },
+    "History": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "ipns_id": {
+          "type": "string"
+        }
+      },
+      "title": "History",
+      "required": [
+        "ipns_id"
+      ]
+    },
+    "Layer2BasicInfo": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "block_committed": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "block_verified": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "total_transaction_count": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "yesterday_transaction_count": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "today_transaction_count": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "yesterday_active_user_count": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "today_active_user_count": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "contract_addresses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ContractAddress"
+          }
+        }
+      },
+      "title": "Layer2BasicInfo",
+      "required": [
+        "block_committed",
+        "block_verified",
+        "total_transaction_count",
+        "yesterday_transaction_count",
+        "today_transaction_count",
+        "yesterday_active_user_count",
+        "today_active_user_count",
+        "contract_addresses"
+      ]
+    },
+    "MaxCollectionId": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "collection_id": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "MaxCollectionId",
+      "required": [
+        "collection_id"
+      ]
+    },
+    "MaxOfferId": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "offer_id": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "MaxOfferId",
+      "required": [
+        "offer_id"
+      ]
+    },
+    "NextNonce": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "nonce": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "NextNonce",
+      "required": [
+        "nonce"
+      ]
+    },
+    "Nft": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "creator_account_index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "creator_l1_address": {
+          "type": "string"
+        },
+        "owner_account_index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "owner_l1_address": {
+          "type": "string"
+        },
+        "content_hash": {
+          "type": "string"
+        },
+        "l1_address": {
+          "type": "string"
+        },
+        "l1_token_id": {
+          "type": "string"
+        },
+        "royalty_rate": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "collection_id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "ipfs_id": {
+          "type": "string"
+        }
+      },
+      "title": "Nft",
+      "required": [
+        "index",
+        "creator_account_index",
+        "creator_l1_address",
+        "owner_account_index",
+        "owner_l1_address",
+        "content_hash",
+        "l1_address",
+        "l1_token_id",
+        "royalty_rate",
+        "collection_id",
+        "ipfs_id"
+      ]
+    },
+    "NftEntity": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "nft": {
+          "$ref": "#/definitions/Nft"
+        }
+      },
+      "title": "NftEntity",
+      "required": [
+        "nft"
+      ]
+    },
+    "NftIndex": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "ipfs_id": {
+          "type": "string"
+        }
+      },
+      "title": "NftIndex",
+      "required": [
+        "index",
+        "ipfs_id"
+      ]
+    },
+    "Nfts": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "nfts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Nft"
+          }
+        }
+      },
+      "title": "Nfts",
+      "required": [
+        "total",
+        "nfts"
+      ]
+    },
+    "ProtocolRate": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "protocol_rate": {
+          "type": "string"
+        }
+      },
+      "title": "ProtocolRate",
+      "required": [
+        "protocol_rate"
+      ]
+    },
+    "ReqAccountParam": {
+      "type": "object",
+      "properties": {
+        "by": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "account_index": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "ReqAccountParam"
+    },
+    "ReqGetAccount": {
+      "type": "object",
+      "properties": {
+        "by": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "title": "ReqGetAccount",
+      "required": [
+        "by",
+        "value"
+      ]
+    },
+    "ReqGetAccountNfts": {
+      "type": "object",
+      "properties": {
+        "by": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "offset": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "ReqGetAccountNfts",
+      "required": [
+        "by",
+        "value",
+        "offset",
+        "limit"
+      ]
+    },
+    "ReqGetAccountPendingTxs": {
+      "type": "object",
+      "properties": {
+        "by": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "title": "ReqGetAccountPendingTxs",
+      "required": [
+        "by",
+        "value"
+      ]
+    },
+    "ReqGetAccountTxs": {
+      "type": "object",
+      "properties": {
+        "by": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "offset": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "ReqGetAccountTxs",
+      "required": [
+        "by",
+        "value",
+        "offset",
+        "limit"
+      ]
+    },
+    "ReqGetAsset": {
+      "type": "object",
+      "properties": {
+        "by": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "title": "ReqGetAsset",
+      "required": [
+        "by",
+        "value"
+      ]
+    },
+    "ReqGetBlock": {
+      "type": "object",
+      "properties": {
+        "by": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "title": "ReqGetBlock",
+      "required": [
+        "by",
+        "value"
+      ]
+    },
+    "ReqGetBlockTxs": {
+      "type": "object",
+      "properties": {
+        "by": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "title": "ReqGetBlockTxs",
+      "required": [
+        "by",
+        "value"
+      ]
+    },
+    "ReqGetGasFee": {
+      "type": "object",
+      "properties": {
+        "asset_id": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "tx_type": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "ReqGetGasFee",
+      "required": [
+        "asset_id",
+        "tx_type"
+      ]
+    },
+    "ReqGetMaxCollectionId": {
+      "type": "object",
+      "properties": {
+        "account_index": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "ReqGetMaxCollectionId",
+      "required": [
+        "account_index"
+      ]
+    },
+    "ReqGetMaxOfferId": {
+      "type": "object",
+      "properties": {
+        "account_index": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "ReqGetMaxOfferId",
+      "required": [
+        "account_index"
+      ]
+    },
+    "ReqGetNextNonce": {
+      "type": "object",
+      "properties": {
+        "account_index": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "ReqGetNextNonce",
+      "required": [
+        "account_index"
+      ]
+    },
+    "ReqGetNft": {
+      "type": "object",
+      "properties": {
+        "nft_index": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "ReqGetNft",
+      "required": [
+        "nft_index"
+      ]
+    },
+    "ReqGetNftIndex": {
+      "type": "object",
+      "properties": {
+        "tx_hash": {
+          "type": "string"
+        }
+      },
+      "title": "ReqGetNftIndex",
+      "required": [
+        "tx_hash"
+      ]
+    },
+    "ReqGetNftNextNonce": {
+      "type": "object",
+      "properties": {
+        "nft_index": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "ReqGetNftNextNonce",
+      "required": [
+        "nft_index"
+      ]
+    },
+    "ReqGetRange": {
+      "type": "object",
+      "properties": {
+        "offset": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "ReqGetRange",
+      "required": [
+        "offset",
+        "limit"
+      ]
+    },
+    "ReqGetRangeWithFromHash": {
+      "type": "object",
+      "properties": {
+        "offset": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "from_hash": {
+          "type": "string"
+        }
+      },
+      "title": "ReqGetRangeWithFromHash",
+      "required": [
+        "offset",
+        "limit"
+      ]
+    },
+    "ReqGetRollbacks": {
+      "type": "object",
+      "properties": {
+        "from_block_height": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "offset": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "ReqGetRollbacks",
+      "required": [
+        "from_block_height",
+        "offset",
+        "limit"
+      ]
+    },
+    "ReqGetTx": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string"
+        }
+      },
+      "title": "ReqGetTx",
+      "required": [
+        "hash"
+      ]
+    },
+    "ReqSearch": {
+      "type": "object",
+      "properties": {
+        "keyword": {
+          "type": "string"
+        }
+      },
+      "title": "ReqSearch",
+      "required": [
+        "keyword"
+      ]
+    },
+    "ReqSendTx": {
+      "type": "object",
+      "properties": {
+        "tx_type": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "tx_info": {
+          "type": "string"
+        }
+      },
+      "title": "ReqSendTx",
+      "required": [
+        "tx_type",
+        "tx_info"
+      ]
+    },
+    "ReqUpdateNft": {
+      "type": "object",
+      "properties": {
+        "tx_info": {
+          "type": "string"
+        }
+      },
+      "title": "ReqUpdateNft",
+      "required": [
+        "tx_info"
+      ]
+    },
+    "ResultCode": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "ResultCode",
+      "required": [
+        "code"
+      ]
+    },
+    "Rollback": {
+      "type": "object",
+      "properties": {
+        "from_block_height": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "from_tx_hash": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "created_at": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "Rollback",
+      "required": [
+        "from_block_height",
+        "from_tx_hash",
+        "id",
+        "created_at"
+      ]
+    },
+    "Rollbacks": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "rollbacks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Rollback"
+          }
+        }
+      },
+      "title": "Rollbacks",
+      "required": [
+        "total",
+        "rollbacks"
+      ]
+    },
+    "Search": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data_type": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Search",
+      "required": [
+        "data_type"
+      ]
+    },
+    "SignBody": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "sign_body": {
+          "type": "string"
+        }
+      },
+      "title": "SignBody",
+      "required": [
+        "sign_body"
+      ]
+    },
+    "SimpleAccount": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "l1_address": {
+          "type": "string"
+        },
+        "pk": {
+          "type": "string"
+        }
+      },
+      "title": "SimpleAccount",
+      "required": [
+        "index",
+        "l1_address",
+        "pk"
+      ]
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "network_id": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Status",
+      "required": [
+        "status",
+        "network_id"
+      ]
+    },
+    "Tx": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "type": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "amount": {
+          "type": "string"
+        },
+        "info": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "gas_fee_asset_id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "gas_fee": {
+          "type": "string"
+        },
+        "nft_index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "collection_id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "asset_id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "asset_name": {
+          "type": "string"
+        },
+        "native_address": {
+          "type": "string"
+        },
+        "extra_info": {
+          "type": "string"
+        },
+        "memo": {
+          "type": "string"
+        },
+        "account_index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "l1_address": {
+          "type": "string"
+        },
+        "nonce": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "expire_at": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "block_height": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "created_at": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "verify_at": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "state_root": {
+          "type": "string"
+        },
+        "to_account_index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "to_l1_address": {
+          "type": "string"
+        }
+      },
+      "title": "Tx",
+      "required": [
+        "hash",
+        "type",
+        "amount",
+        "info",
+        "status",
+        "index",
+        "gas_fee_asset_id",
+        "gas_fee",
+        "nft_index",
+        "collection_id",
+        "asset_id",
+        "asset_name",
+        "native_address",
+        "extra_info",
+        "memo",
+        "account_index",
+        "l1_address",
+        "nonce",
+        "expire_at",
+        "block_height",
+        "created_at",
+        "verify_at",
+        "state_root",
+        "to_account_index",
+        "to_l1_address"
+      ]
+    },
+    "TxHash": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "tx_hash": {
+          "type": "string"
+        }
+      },
+      "title": "TxHash",
+      "required": [
+        "tx_hash"
+      ]
+    },
+    "Txs": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "txs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Tx"
+          }
+        }
+      },
+      "title": "Txs",
+      "required": [
+        "total",
+        "txs"
+      ]
+    }
+  }
+}

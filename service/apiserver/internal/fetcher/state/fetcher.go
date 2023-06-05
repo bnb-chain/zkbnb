@@ -74,8 +74,6 @@ func (f *fetcher) GetLatestNft(nftIndex int64) (*types.NftInfo, error) {
 		n.CreatorAccountIndex,
 		n.OwnerAccountIndex,
 		n.NftContentHash,
-		n.NftL1TokenId,
-		n.NftL1Address,
-		n.CreatorTreasuryRate,
-		n.CollectionId), nil
+		n.RoyaltyRate,
+		n.CollectionId, n.NftContentType), nil
 }

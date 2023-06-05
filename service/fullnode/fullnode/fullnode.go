@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/gorm"
-
 	"github.com/bnb-chain/zkbnb-go-sdk/client"
 	"github.com/bnb-chain/zkbnb/core"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	tx "github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 const (
@@ -35,7 +33,7 @@ type Fullnode struct {
 }
 
 func NewFullnode(config *Config) (*Fullnode, error) {
-	bc, err := core.NewBlockChain(&config.ChainConfig, "fullnode")
+	bc, err := core.NewBlockChain(&config.ChainConfig, 60, "fullnode")
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
 	}
@@ -52,7 +50,7 @@ func NewFullnode(config *Config) (*Fullnode, error) {
 
 	fullnode := &Fullnode{
 		config: config,
-		client: client.NewZkBNBClient(l2EndPoint),
+		client: nil,
 		bc:     bc,
 
 		quitCh: make(chan struct{}),
@@ -63,11 +61,13 @@ func NewFullnode(config *Config) (*Fullnode, error) {
 func (c *Fullnode) Run() {
 	curHeight, err := c.bc.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
+		logx.Severef("get current block height failed, error: %s", err.Error())
 		panic(fmt.Sprintf("get current block height failed, error: %v", err.Error()))
 	}
 
 	curBlock, err := c.bc.BlockModel.GetBlockByHeight(curHeight)
 	if err != nil {
+		logx.Severef("get current block failed, height: %d, error: %s", curHeight, err.Error())
 		panic(fmt.Sprintf("get current block failed, height: %d, error: %v", curHeight, err.Error()))
 	}
 
@@ -84,6 +84,7 @@ func (c *Fullnode) Run() {
 				// init new block, set curBlock.status to block.StatusProposing
 				curBlock, err = c.bc.InitNewBlock()
 				if err != nil {
+					logx.Severef("init new block failed, block height: %d, error: %s", curHeight, err.Error())
 					panic(fmt.Sprintf("init new block failed, block height: %d, error: %v", curHeight, err.Error()))
 				}
 
@@ -119,11 +120,11 @@ func (c *Fullnode) Run() {
 			c.bc.Statedb.PurgeCache(curBlock.StateRoot)
 
 			for _, blockTx := range l2Block.Txs {
-				newTx := &tx.Tx{
+				newTx := &tx.Tx{BaseTx: tx.BaseTx{
 					TxHash: blockTx.Hash, // Would be computed in prepare method of executors.
 					TxType: blockTx.Type,
 					TxInfo: blockTx.Info,
-				}
+				}}
 
 				err = c.bc.ApplyTransaction(newTx)
 				if err != nil {
@@ -132,17 +133,20 @@ func (c *Fullnode) Run() {
 				}
 			}
 
-			err = c.bc.Statedb.IntermediateRoot(true)
+			err = c.bc.Statedb.UpdateAssetTree(nil)
 			if err != nil {
+				logx.Severef("calculate state root failed, err: %v", err)
 				panic(fmt.Sprint("calculate state root failed, err", err))
 			}
 
 			if c.bc.Statedb.StateRoot != l2Block.StateRoot {
+				logx.Severef("state root not matched between statedb and l2block: %d, local: %s, remote: %s", l2Block.Height, c.bc.Statedb.StateRoot, l2Block.StateRoot)
 				panic(fmt.Sprintf("state root not matched between statedb and l2block: %d, local: %s, remote: %s", l2Block.Height, c.bc.Statedb.StateRoot, l2Block.StateRoot))
 			}
 
-			curBlock, err = c.processNewBlock(curBlock, int(l2Block.Size))
+			curBlock, err = c.processNewBlock(int(l2Block.Size))
 			if err != nil {
+				logx.Severef("new block failed, block height: %d, Error: %s", l2Block.Height, err.Error())
 				panic(fmt.Sprintf("new block failed, block height: %d, Error: %s", l2Block.Height, err.Error()))
 			}
 			logx.Infof("created new block on fullnode, height=%d, blockSize=%d", curBlock.BlockHeight, l2Block.Size)
@@ -158,69 +162,71 @@ func (c *Fullnode) Shutdown() {
 	c.bc.ChainDB.Close()
 }
 
-func (c *Fullnode) processNewBlock(curBlock *block.Block, blockSize int) (*block.Block, error) {
-	blockStates, err := c.bc.CommitNewBlock(blockSize, curBlock.CreatedAt.UnixMilli())
-	if err != nil {
-		return nil, err
-	}
-	blockStates.Block.BlockStatus = c.config.SyncBlockStatus
+func (c *Fullnode) processNewBlock(blockSize int) (*block.Block, error) {
+	//blockStates, err := c.bc.CommitNewBlock(blockSize, nil)
+	//if err != nil {
+	//	return nil, err
 
-	// sync gas account
-	err = c.bc.Statedb.SyncGasAccountToRedis()
-	if err != nil {
-		return nil, err
-	}
-
-	// sync pending value to caches
-	err = c.bc.Statedb.SyncStateCacheToRedis()
-	if err != nil {
-		panic("sync redis cache failed: " + err.Error())
-	}
-
-	// update db
-	err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
-		// create block for commit
-		if blockStates.CompressedBlock != nil {
-			err = c.bc.DB().CompressedBlockModel.CreateCompressedBlockInTransact(tx, blockStates.CompressedBlock)
-			if err != nil {
-				return err
-			}
-		}
-		// create or update account
-		if len(blockStates.PendingAccount) != 0 {
-			err = c.bc.DB().AccountModel.UpdateAccountsInTransact(tx, blockStates.PendingAccount)
-			if err != nil {
-				return err
-			}
-		}
-		// create account history
-		if len(blockStates.PendingAccountHistory) != 0 {
-			err = c.bc.DB().AccountHistoryModel.CreateAccountHistoriesInTransact(tx, blockStates.PendingAccountHistory)
-			if err != nil {
-				return err
-			}
-		}
-		// create or update nft
-		if len(blockStates.PendingNft) != 0 {
-			err = c.bc.DB().L2NftModel.UpdateNftsInTransact(tx, blockStates.PendingNft)
-			if err != nil {
-				return err
-			}
-		}
-		// create nft history
-		if len(blockStates.PendingNftHistory) != 0 {
-			err = c.bc.DB().L2NftHistoryModel.CreateNftHistoriesInTransact(tx, blockStates.PendingNftHistory)
-			if err != nil {
-				return err
-			}
-		}
-
-		return c.bc.DB().BlockModel.CreateBlockInTransact(tx, blockStates.Block)
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return blockStates.Block, nil
+	//}
+	//blockStates.Block.BlockStatus = c.config.SyncBlockStatus
+	//
+	//// sync gas account
+	//err = c.bc.Statedb.SyncGasAccountToRedis()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//// sync pending value to caches
+	//err = c.bc.Statedb.SyncStateCacheToRedis()
+	//if err != nil {
+	//	panic("sync redis cache failed: " + err.Error())
+	//}
+	//
+	//// update db
+	//err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
+	//	// create block for commit
+	//	if blockStates.CompressedBlock != nil {
+	//		err = c.bc.DB().CompressedBlockModel.CreateCompressedBlockInTransact(tx, blockStates.CompressedBlock)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//	// create or update account
+	//	if len(blockStates.PendingAccount) != 0 {
+	//		err = c.bc.DB().AccountModel.UpdateAccountsInTransact(tx, blockStates.PendingAccount)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//	// create account history
+	//	if len(blockStates.PendingAccountHistory) != 0 {
+	//		err = c.bc.DB().AccountHistoryModel.CreateAccountHistoriesInTransact(tx, blockStates.PendingAccountHistory)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//	// create or update nft
+	//	if len(blockStates.PendingNft) != 0 {
+	//		err = c.bc.DB().L2NftModel.UpdateNftsInTransact(tx, blockStates.PendingNft)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//	// create nft history
+	//	if len(blockStates.PendingNftHistory) != 0 {
+	//		err = c.bc.DB().L2NftHistoryModel.CreateNftHistoriesInTransact(tx, blockStates.PendingNftHistory)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//
+	//	return c.bc.DB().BlockModel.CreateBlockInTransact(tx, blockStates.Block)
+	//})
+	//
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//return blockStates.Block, nil
+	return nil, nil
 }

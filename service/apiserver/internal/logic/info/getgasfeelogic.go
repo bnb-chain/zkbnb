@@ -27,7 +27,8 @@ func NewGetGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetGasF
 }
 
 func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.GasFee, error) {
-	gasFeeConfig, err := l.svcCtx.MemCache.GetSysConfigWithFallback(types2.SysGasFee, func() (interface{}, error) {
+	gasFeeConfig, err := l.svcCtx.MemCache.GetSysConfigWithFallback(types2.SysGasFee, true, func() (interface{}, error) {
+		logx.Infof("GetGasFee mem cache expired")
 		return l.svcCtx.SysConfigModel.GetSysConfigByName(types2.SysGasFee)
 	})
 	if err != nil {

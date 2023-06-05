@@ -26,7 +26,8 @@ func NewGetGasAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetGasAccountLogic) GetGasAccount() (resp *types.GasAccount, err error) {
-	accountIndexConfig, err := l.svcCtx.MemCache.GetSysConfigWithFallback(types2.GasAccountIndex, func() (interface{}, error) {
+	accountIndexConfig, err := l.svcCtx.MemCache.GetSysConfigWithFallback(types2.GasAccountIndex, true, func() (interface{}, error) {
+		logx.Infof("GetGasAccount mem cache expired")
 		return l.svcCtx.SysConfigModel.GetSysConfigByName(types2.GasAccountIndex)
 	})
 	if err != nil {
@@ -47,9 +48,9 @@ func (l *GetGasAccountLogic) GetGasAccount() (resp *types.GasAccount, err error)
 	}
 
 	resp = &types.GasAccount{
-		Status: int64(account.Status),
-		Index:  account.AccountIndex,
-		Name:   account.AccountName,
+		Status:    int64(account.Status),
+		Index:     account.AccountIndex,
+		L1Address: account.L1Address,
 	}
 	return resp, nil
 }

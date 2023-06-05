@@ -18,6 +18,7 @@
 package tx
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 
 	"gorm.io/gorm"
@@ -80,9 +81,16 @@ type (
 		GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txList []*Tx, err error)
 		GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
 		GetTxByHash(txHash string) (tx *Tx, err error)
+		GetTxsByPoolTxIds(poolTxIds []int64) (txList []*Tx, err error)
 		GetTxsTotalCountBetween(from, to time.Time) (count int64, err error)
 		GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error)
 		UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus map[int64]int) error
+		CreateTxs(txs []*Tx) error
+		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
+		GetMaxPoolTxIdByHeightInTransact(tx *gorm.DB, height int64) (poolTxId uint, err error)
+		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
+		GetOnChainTxsByHeight(blockHeight int64) (txList []*Tx, err error)
+		GetCountByHeights(blockHeights []int64) (count int64, err error)
 	}
 
 	defaultTxModel struct {
@@ -91,32 +99,17 @@ type (
 	}
 
 	Tx struct {
-		gorm.Model
+		BaseTx
+		PoolTxId uint      `gorm:"uniqueIndex"`
+		VerifyAt time.Time // verify time when the transaction status changes to be StatusVerified
 
-		// Assigned when created in the tx pool.
-		TxHash       string `gorm:"uniqueIndex"`
-		TxType       int64
-		TxInfo       string
-		AccountIndex int64
-		Nonce        int64
-		ExpiredAt    int64
+		Rollback bool `gorm:"-"`
+		// l1 request id
+		L1RequestId int64 `gorm:"-"`
+		// update pool tx account index
+		IsPartialUpdate bool `gorm:"-"`
 
-		// Assigned after executed.
-		GasFee        string
-		GasFeeAssetId int64
-		NftIndex      int64
-		CollectionId  int64
-		AssetId       int64
-		TxAmount      string
-		Memo          string
-		ExtraInfo     string
-		NativeAddress string      // a. Priority tx, assigned when created b. Other tx, assigned after executed.
-		TxDetails     []*TxDetail `gorm:"foreignKey:TxId"`
-
-		TxIndex     int64
-		BlockHeight int64 `gorm:"index"`
-		BlockId     int64 `gorm:"index"`
-		TxStatus    int   `gorm:"index"`
+		IsNonceChanged bool `gorm:"-"`
 	}
 )
 
@@ -186,12 +179,23 @@ func (m *defaultTxModel) GetTxsByAccountIndex(accountIndex int64, limit int64, o
 		f(opt)
 	}
 
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex)
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and deleted_at is null", accountIndex)
 	if len(opt.Types) > 0 {
 		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}
 
-	dbTx = dbTx.Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txList)
+	dbTx = dbTx.Limit(int(limit)).Offset(int(offset)).Order("id desc").Find(&txList)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return txList, nil
+}
+
+func (m *defaultTxModel) GetTxsByPoolTxIds(poolTxIds []int64) (txList []*Tx, err error) {
+	dbTx := m.DB.Table(m.table).Where("pool_tx_id IN ? and deleted_at is null", poolTxIds)
+	dbTx = dbTx.Find(&txList)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -206,7 +210,7 @@ func (m *defaultTxModel) GetTxsCountByAccountIndex(accountIndex int64, options .
 		f(opt)
 	}
 
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex)
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and deleted_at is null", accountIndex)
 	if len(opt.Types) > 0 {
 		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}
@@ -231,6 +235,16 @@ func (m *defaultTxModel) GetTxByHash(txHash string) (tx *Tx, err error) {
 	return tx, nil
 }
 
+func (m *defaultTxModel) GetMaxPoolTxIdByHeightInTransact(tx *gorm.DB, blockHeight int64) (poolTxId uint, err error) {
+	dbTx := tx.Table(m.table).Select("pool_tx_id").Where("block_height = ?", blockHeight).Order("pool_tx_id desc").Limit(1).Find(&poolTxId)
+	if dbTx.Error != nil {
+		return 0, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, types.DbErrNotFound
+	}
+	return poolTxId, nil
+}
+
 func (m *defaultTxModel) GetTxsTotalCountBetween(from, to time.Time) (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("created_at BETWEEN ? AND ?", from, to).Count(&count)
 	if dbTx.Error != nil {
@@ -252,8 +266,20 @@ func (m *defaultTxModel) GetDistinctAccountsCountBetween(from, to time.Time) (co
 }
 
 func (m *defaultTxModel) UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus map[int64]int) error {
+
+	//parameters to update the transaction status
 	for height, status := range blockTxStatus {
-		dbTx := tx.Table(m.table).Where("block_height = ?", height).Update("tx_status", status)
+
+		data := &Tx{}
+		data.BlockHeight = height
+		data.TxStatus = status
+
+		// For status = StatusVerified case, the verifyAt field need to be updated meanwhile
+		if status == StatusVerified {
+			data.VerifyAt = time.Now()
+		}
+
+		dbTx := tx.Model(&Tx{}).Where("block_height = ?", height).Updates(data)
 		if dbTx.Error != nil {
 			return dbTx.Error
 		}
@@ -262,4 +288,106 @@ func (m *defaultTxModel) UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus ma
 		}
 	}
 	return nil
+}
+
+func (m *defaultTxModel) CreateTxs(txs []*Tx) error {
+	dbTx := m.DB.Table(m.table).CreateInBatches(txs, len(txs))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(txs)) {
+		logx.Errorf("CreateTxs failed,rows affected not equal txs length,dbTx.RowsAffected:%d,len(txs):%d", int(dbTx.RowsAffected), len(txs))
+		return types.DbErrFailToCreateTx
+	}
+	return nil
+}
+
+func (m *defaultTxModel) DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error {
+	if len(heights) == 0 {
+		return nil
+	}
+	dbTx := tx.Model(&Tx{}).Unscoped().Where("block_height in ?", heights).Delete(&Tx{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	return nil
+}
+
+func (m *defaultTxModel) GetCountByGreaterHeight(blockHeight int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_height > ?", blockHeight).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
+}
+
+func (m *defaultTxModel) GetOnChainTxsByHeight(blockHeight int64) (txList []*Tx, err error) {
+	var changePubKeyTxList []*Tx
+	dbTx := m.DB.Table(m.table).Select("tx_index,id,tx_info").Where("block_height = ? and tx_type = ?", blockHeight, types.TxTypeChangePubKey).Find(&changePubKeyTxList)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, nil
+	}
+
+	dbTx = m.DB.Table(m.table).Select("tx_type,tx_index,id").Where("block_height = ? and tx_type in ?", blockHeight, types.GetOnChainTypes()).Find(&txList)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, nil
+	}
+	for _, changePubKeyTx := range changePubKeyTxList {
+		for _, tx := range txList {
+			if changePubKeyTx.ID == tx.ID {
+				tx.TxInfo = changePubKeyTx.TxInfo
+			}
+		}
+	}
+	return txList, nil
+}
+
+func (m *defaultTxModel) GetCountByHeights(blockHeights []int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_height in ?", blockHeights).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, types.DbErrNotFound
+	}
+	return count, nil
+}
+
+func (ai *Tx) DeepCopy() *Tx {
+	tx := &Tx{}
+	tx.TxHash = ai.TxHash
+	tx.TxType = ai.TxType
+	tx.TxInfo = ai.TxInfo
+	tx.AccountIndex = ai.AccountIndex
+	tx.Nonce = ai.Nonce
+	tx.ExpiredAt = ai.ExpiredAt
+	tx.GasFee = ai.GasFee
+	tx.GasFeeAssetId = ai.GasFeeAssetId
+	tx.NftIndex = ai.NftIndex
+	tx.CollectionId = ai.CollectionId
+	tx.AssetId = ai.AssetId
+	tx.TxAmount = ai.TxAmount
+	tx.Memo = ai.Memo
+	tx.ExtraInfo = ai.ExtraInfo
+	tx.NativeAddress = ai.NativeAddress // a. Priority tx, assigned when created b. Other tx, assigned after executed.
+	//TxDetails:     []*TxDetail `gorm:"foreignKey:TxId"`
+	tx.TxIndex = ai.TxIndex
+	tx.BlockHeight = ai.BlockHeight
+	tx.BlockId = ai.BlockId
+	tx.TxStatus = ai.TxStatus
+	tx.ID = ai.ID
+	tx.PoolTxId = ai.PoolTxId
+	tx.CreatedAt = ai.CreatedAt
+	tx.UpdatedAt = ai.UpdatedAt
+	tx.DeletedAt = ai.DeletedAt
+	tx.FromAccountIndex = ai.FromAccountIndex
+	tx.ToAccountIndex = ai.ToAccountIndex
+	tx.IsCreateAccount = ai.IsCreateAccount
+	tx.IsPartialUpdate = ai.IsPartialUpdate
+	return tx
 }

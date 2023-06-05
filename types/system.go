@@ -22,20 +22,26 @@ import (
 )
 
 const (
-	TreasuryAccountIndex    = "TreasuryAccountIndex"
+	ProtocolAccountIndex    = "ProtocolAccountIndex"
 	GasAccountIndex         = "GasAccountIndex"
 	BscTestNetworkRpc       = "BscTestNetworkRpc"
 	LocalTestNetworkRpc     = "LocalTestNetworkRpc"
 	SysGasFee               = "SysGasFee"
+	ProtocolRate            = "ProtocolRate"
 	ZkBNBContract           = "ZkBNBContract"
+	CommitAddress           = "CommitAddress"
+	VerifyAddress           = "VerifyAddress"
 	GovernanceContract      = "GovernanceContract"
 	AssetGovernanceContract = "AssetGovernanceContract"
+	OptionalBlockSizes      = "OptionalBlockSizes"
 	Validators              = "Validators"
 
 	Governor       = "Governor"
 	ZnsPriceOracle = "ZnsPriceOracle"
 
-	AccountNameSuffix = ".legend"
+	DefaultNftFactory = "DefaultNftFactory"
+
+	AccountNameSuffix = ".zkbnb"
 )
 
 var (

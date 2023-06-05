@@ -2,6 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/bnb-chain/zkbnb/tools/desertexit"
+	"github.com/bnb-chain/zkbnb/tools/estimategas"
+	"github.com/bnb-chain/zkbnb/tools/query"
+	"github.com/bnb-chain/zkbnb/tools/revertblock"
+	"github.com/bnb-chain/zkbnb/tools/rollback"
+	"github.com/bnb-chain/zkbnb/tools/rollbackwitnesssmt"
 	"os"
 	"runtime"
 
@@ -60,13 +66,11 @@ func main() {
 					flags.PProfEnabledFlag,
 					flags.PProfAddrFlag,
 					flags.PProfPortFlag,
+					flags.ProverIdFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
-					return prover.Run(cCtx.String(flags.ConfigFlag.Name))
+					return prover.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.Uint(flags.ProverIdFlag.Name))
 				},
 			},
 			{
@@ -82,9 +86,6 @@ func main() {
 					flags.PProfPortFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return witness.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
@@ -102,9 +103,6 @@ func main() {
 					flags.PProfPortFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return monitor.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
@@ -122,9 +120,6 @@ func main() {
 				},
 				Usage: "Run committer service",
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return committer.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
@@ -136,10 +131,6 @@ func main() {
 				},
 				Usage: "Run fullnode service",
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
-
 					return fullnode.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
 			},
@@ -156,9 +147,6 @@ func main() {
 					flags.PProfPortFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
 					startMetricsServer(cCtx)
 					return sender.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
@@ -176,11 +164,167 @@ func main() {
 					flags.PProfPortFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
+					startMetricsServer(cCtx)
+					return apiserver.Run(cCtx.String(flags.ConfigFlag.Name))
+				},
+			},
+			{
+				Name:  "generateproof",
+				Usage: "Run generateproof service",
+				Flags: []cli.Flag{
+					flags.CommandFlag,
+					flags.ConfigFlag,
+					flags.TokenFlag,
+					flags.NftIndexListFlag,
+					flags.AddressFlag,
+					flags.ProofFolderFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.CommandFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
-					startMetricsServer(cCtx)
-					return apiserver.Run(cCtx.String(flags.ConfigFlag.Name))
+					if cCtx.String(flags.CommandFlag.Name) == desertexit.CommandRunGenerateProof {
+						err := dbinitializer.InitializeDesertExit(
+							cCtx.String(flags.ConfigFlag.Name),
+						)
+						if err != nil {
+							return err
+						}
+						return desertexit.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.TokenFlag.Name), cCtx.String(flags.NftIndexListFlag.Name), cCtx.String(flags.ProofFolderFlag.Name))
+					}
+					if cCtx.String(flags.CommandFlag.Name) == desertexit.CommandContinueGenerateProof {
+						return desertexit.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.TokenFlag.Name), cCtx.String(flags.NftIndexListFlag.Name), cCtx.String(flags.ProofFolderFlag.Name))
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "performdesert",
+				Usage: "Run performdesert service",
+				Flags: []cli.Flag{
+					flags.CommandFlag,
+					flags.ConfigFlag,
+					flags.AmountFlag,
+					flags.NftIndexListFlag,
+					flags.AddressFlag,
+					flags.PrivateKeyFlag,
+					flags.ProofFlag,
+					flags.TokenFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.CommandFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					return desertexit.Perform(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.CommandFlag.Name),
+						cCtx.String(flags.AmountFlag.Name), cCtx.String(flags.NftIndexListFlag.Name),
+						cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.PrivateKeyFlag.Name),
+						cCtx.String(flags.ProofFlag.Name), cCtx.String(flags.TokenFlag.Name))
+				},
+			},
+			{
+				Name:  "rollback",
+				Usage: "Run rollback service",
+				Flags: []cli.Flag{
+					flags.ConfigFlag,
+					flags.RollbackBlockHeightFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.RollbackBlockHeightFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+
+					err := rollback.RollbackAll(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RollbackBlockHeightFlag.Name))
+					if err != nil {
+						logx.Severe(err)
+						return err
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "revertblock",
+				Usage: "Run revertblock service",
+				Flags: []cli.Flag{
+					flags.ConfigFlag,
+					flags.RevertBlockHeightFlag,
+					flags.RevertBlockByBlockFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.RevertBlockHeightFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+
+					err := revertblock.RevertCommittedBlocks(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RevertBlockHeightFlag.Name), cCtx.Int64(flags.RevertBlockByBlockFlag.Name) == 1)
+					if err != nil {
+						logx.Severe(err)
+						return err
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "rollbackwitnesssmt",
+				Usage: "Run rollbackwitnesssmt service",
+				Flags: []cli.Flag{
+					flags.ConfigFlag,
+					flags.RevertBlockHeightFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.RevertBlockHeightFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					err := rollbackwitnesssmt.RollbackWitnessSmt(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RevertBlockHeightFlag.Name))
+					if err != nil {
+						logx.Severe(err)
+						return err
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "estimategas",
+				Usage: "Run estimategas service",
+				Flags: []cli.Flag{
+					flags.ConfigFlag,
+					flags.EstimateGasFromHeightFlag,
+					flags.EstimateGasToHeightFlag,
+					flags.EstimateGasMaxBlockCountFlag,
+					flags.SendToL1Flag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.EstimateGasFromHeightFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.EstimateGasToHeightFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.EstimateGasMaxBlockCountFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+
+					err := estimategas.EstimateGas(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.EstimateGasFromHeightFlag.Name), cCtx.Int64(flags.EstimateGasToHeightFlag.Name), cCtx.Int64(flags.EstimateGasMaxBlockCountFlag.Name))
+					if err != nil {
+						logx.Severe(err)
+						return err
+					}
+
+					if cCtx.Int64(flags.SendToL1Flag.Name) > 0 {
+						err := estimategas.Send(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.EstimateGasFromHeightFlag.Name), cCtx.Int64(flags.EstimateGasToHeightFlag.Name), cCtx.Int64(flags.SendToL1Flag.Name))
+						if err != nil {
+							logx.Severe(err)
+							return err
+						}
+					}
+					return nil
 				},
 			},
 			// tools
@@ -196,6 +340,7 @@ func main() {
 							flags.DSNFlag,
 							flags.BSCTestNetworkRPCFlag,
 							flags.LocalTestNetworkRPCFlag,
+							flags.OptionalBlockSizesFlag,
 						},
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ContractAddrFlag.Name) ||
@@ -208,6 +353,7 @@ func main() {
 								cCtx.String(flags.ContractAddrFlag.Name),
 								cCtx.String(flags.BSCTestNetworkRPCFlag.Name),
 								cCtx.String(flags.LocalTestNetworkRPCFlag.Name),
+								cCtx.String(flags.OptionalBlockSizesFlag.Name),
 							)
 						},
 					},
@@ -222,21 +368,57 @@ func main() {
 						Usage: "Recovery treedb from the database",
 						Flags: []cli.Flag{
 							flags.ConfigFlag,
+							flags.ServiceNameFlag,
+							flags.MetricsEnabledFlag,
+							flags.MetricsHTTPFlag,
+							flags.MetricsPortFlag,
+							flags.PProfEnabledFlag,
+							flags.PProfAddrFlag,
+							flags.PProfPortFlag,
+						},
+						Action: func(cCtx *cli.Context) error {
+							startMetricsServer(cCtx)
+							if !cCtx.IsSet(flags.ServiceNameFlag.Name) {
+								return cli.ShowSubcommandHelp(cCtx)
+							}
+							defer func() {
+								if recoverErr := recover(); recoverErr != nil {
+									logx.Errorf("failed to recover %v", recoverErr)
+								}
+							}()
+							recovery.RecoveryTreeDB(
+								cCtx.String(flags.ConfigFlag.Name),
+								cCtx.String(flags.ServiceNameFlag.Name),
+							)
+							return nil
+						},
+					},
+				},
+			},
+			{
+				Name:  "treedb",
+				Usage: "TreeDB tools",
+				Subcommands: []*cli.Command{
+					{
+						Name:  "query",
+						Usage: "query treedb",
+						Flags: []cli.Flag{
+							flags.ConfigFlag,
 							flags.BlockHeightFlag,
 							flags.ServiceNameFlag,
-							flags.BatchSizeFlag,
+							flags.RecoveryFromHistoryFlag,
+							flags.AccountIndexListFlag,
 						},
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ServiceNameFlag.Name) ||
-								!cCtx.IsSet(flags.BlockHeightFlag.Name) ||
-								!cCtx.IsSet(flags.ConfigFlag.Name) {
+								!cCtx.IsSet(flags.BlockHeightFlag.Name) {
 								return cli.ShowSubcommandHelp(cCtx)
 							}
-							recovery.RecoveryTreeDB(
+							query.QueryTreeDB(
 								cCtx.String(flags.ConfigFlag.Name),
 								cCtx.Int64(flags.BlockHeightFlag.Name),
 								cCtx.String(flags.ServiceNameFlag.Name),
-								cCtx.Int(flags.BatchSizeFlag.Name),
+								cCtx.Bool(flags.RecoveryFromHistoryFlag.Name), cCtx.String(flags.AccountIndexListFlag.Name),
 							)
 							return nil
 						},
@@ -277,7 +459,7 @@ func startMetricsServer(ctx *cli.Context) {
 
 	if ctx.Bool(flags.MetricsEnabledFlag.Name) {
 		go func() {
-			logx.Info("Starting pprof server", "addr", fmt.Sprintf("http://%s/debug/pprof", pprofAddress))
+			logx.Info("Starting pprof server addr", fmt.Sprintf("http://%s/debug/pprof", pprofAddress))
 			if err := pprofServer.Start(); err != nil {
 				logx.Error("Failure in running pprof server", "err", err)
 			}
@@ -286,7 +468,7 @@ func startMetricsServer(ctx *cli.Context) {
 
 	if ctx.Bool(flags.MetricsEnabledFlag.Name) {
 		go func() {
-			logx.Info("Starting metrics server", "addr", fmt.Sprintf("http://%s/debug/metrics", metricsAddress))
+			logx.Info("Starting metrics server addr", fmt.Sprintf("http://%s/debug/metrics", metricsAddress))
 			if err := prometheusServer.Start(); err != nil {
 				logx.Error("Failure in running metrics server", "err", err)
 			}

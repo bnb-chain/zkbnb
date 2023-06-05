@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
@@ -18,24 +17,37 @@ import (
 type CancelOfferExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.CancelOfferTxInfo
+	TxInfo *txtypes.CancelOfferTxInfo
 }
 
 func NewCancelOfferExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	txInfo, err := types.ParseCancelOfferTxInfo(tx.TxInfo)
 	if err != nil {
 		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return nil, errors.New("invalid tx info")
+		return nil, types.AppErrInvalidTxInfo
 	}
 
 	return &CancelOfferExecutor{
-		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo, false),
+		TxInfo:       txInfo,
 	}, nil
 }
 
+func NewCancelOfferExecutorForDesert(bc IBlockchain, txInfo txtypes.TxInfo) (TxExecutor, error) {
+	return &CancelOfferExecutor{
+		BaseExecutor: NewBaseExecutor(bc, nil, txInfo, true),
+		TxInfo:       txInfo.(*txtypes.CancelOfferTxInfo),
+	}, nil
+}
+
+func (e *CancelOfferExecutor) PreLoadAccountAndNft(accountIndexMap map[int64]bool, nftIndexMap map[int64]bool, addressMap map[string]bool) {
+	txInfo := e.TxInfo
+	accountIndexMap[txInfo.AccountIndex] = true
+	accountIndexMap[txInfo.GasAccountIndex] = true
+}
+
 func (e *CancelOfferExecutor) Prepare() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	// Mark the tree states that would be affected in this executor.
 	offerAssetId := txInfo.OfferId / OfferPerAsset
@@ -44,10 +56,10 @@ func (e *CancelOfferExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *CancelOfferExecutor) VerifyInputs(skipGasAmtChk bool) error {
-	txInfo := e.txInfo
+func (e *CancelOfferExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
+	txInfo := e.TxInfo
 
-	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
 		return err
 	}
@@ -56,6 +68,7 @@ func (e *CancelOfferExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	if err != nil {
 		return err
 	}
+
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
 		return types.AppErrBalanceNotEnough
 	}
@@ -75,7 +88,7 @@ func (e *CancelOfferExecutor) VerifyInputs(skipGasAmtChk bool) error {
 
 func (e *CancelOfferExecutor) ApplyTransaction() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	// apply changes
 	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
@@ -99,13 +112,12 @@ func (e *CancelOfferExecutor) ApplyTransaction() error {
 }
 
 func (e *CancelOfferExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeCancelOffer))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
 	buf.Write(common2.Uint24ToBytes(txInfo.OfferId))
-	buf.Write(common2.Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
 	if err != nil {
@@ -113,36 +125,28 @@ func (e *CancelOfferExecutor) GeneratePubData() error {
 		return err
 	}
 	buf.Write(packedFeeBytes)
-	chunk := common2.SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk)
-	buf.Write(common2.PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(common2.PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(common2.PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(common2.PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(common2.PrefixPaddingBufToChunkSize([]byte{}))
-	pubData := buf.Bytes()
+	pubData := common2.SuffixPaddingBuToPubdataSize(buf.Bytes())
 
 	stateCache := e.bc.StateDB()
 	stateCache.PubData = append(stateCache.PubData, pubData...)
 	return nil
 }
 
-func (e *CancelOfferExecutor) GetExecutedTx() (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+func (e *CancelOfferExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return nil, errors.New("unmarshal tx failed")
+		return nil, types.AppErrMarshalTxFailed
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
-	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
-	return e.BaseExecutor.GetExecutedTx()
+	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
+	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
+	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex})
 	if err != nil {
@@ -160,7 +164,7 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.AccountIndex,
-		AccountName:  fromAccount.AccountName,
+		L1Address:    fromAccount.L1Address,
 		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
@@ -171,10 +175,11 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
+		PublicKey:       fromAccount.PublicKey,
 	})
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(types.ZeroBigInt) < 0 {
-		return nil, errors.New("insufficient gas fee balance")
+		return nil, types.AppErrInsufficientGasFeeBalance
 	}
 
 	// from account offer id
@@ -184,7 +189,7 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	// verify whether account offer id is valid for use
 	if oldOffer.Bit(int(offerIndex)) == 1 {
 		logx.Errorf("account %d offer index %d is already in use", txInfo.AccountIndex, offerIndex)
-		return nil, errors.New("unexpected err")
+		return nil, types.AppErrOfferIndexAlreadyInUse
 	}
 	nOffer := new(big.Int).SetBit(oldOffer, int(offerIndex), 1)
 
@@ -193,7 +198,7 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      offerAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.AccountIndex,
-		AccountName:  fromAccount.AccountName,
+		L1Address:    fromAccount.L1Address,
 		Balance:      fromAccount.AssetInfo[offerAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			offerAssetId,
@@ -204,6 +209,7 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
+		PublicKey:       fromAccount.PublicKey,
 	})
 	fromAccount.AssetInfo[offerAssetId].OfferCanceledOrFinalized = nOffer
 
@@ -214,7 +220,7 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  gasAccount.AccountName,
+		L1Address:    gasAccount.L1Address,
 		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
@@ -226,6 +232,7 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder:    accountOrder,
 		CollectionNonce: gasAccount.CollectionNonce,
 		IsGas:           true,
+		PublicKey:       gasAccount.PublicKey,
 	})
 	return txDetails, nil
 }

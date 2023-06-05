@@ -18,14 +18,12 @@
 package prove
 
 import (
-	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
-	"github.com/ethereum/go-ethereum/common"
-
 	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 )
 
 func (w *WitnessHelper) constructTransferTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
@@ -59,7 +57,7 @@ func toCryptoTransferTx(txInfo *txtypes.TransferTxInfo) (info *cryptoTypes.Trans
 	info = &cryptoTypes.TransferTx{
 		FromAccountIndex:  txInfo.FromAccountIndex,
 		ToAccountIndex:    txInfo.ToAccountIndex,
-		ToAccountNameHash: common.FromHex(txInfo.ToAccountNameHash),
+		ToL1Address:       common2.AddressStrToBytes(txInfo.ToL1Address),
 		AssetId:           txInfo.AssetId,
 		AssetAmount:       packedAmount,
 		GasAccountIndex:   txInfo.GasAccountIndex,

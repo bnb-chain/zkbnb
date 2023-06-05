@@ -1,6 +1,8 @@
 package transaction
 
 import (
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/response"
+	zkbnbtypes "github.com/bnb-chain/zkbnb/types"
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -14,16 +16,13 @@ func SendTxHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.ReqSendTx
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.Error(w, err)
+			bizErr := zkbnbtypes.AppErrInvalidParam.RefineError(err)
+			response.Handle(w, nil, bizErr)
 			return
 		}
-
-		l := transaction.NewSendTxLogic(r.Context(), svcCtx)
+		l := transaction.NewSendTxLogic(r.Context(), svcCtx, r.Header)
 		resp, err := l.SendTx(&req)
-		if err != nil {
-			httpx.Error(w, err)
-		} else {
-			httpx.OkJson(w, resp)
-		}
+		svcCtx.SendTxMetrics.Inc()
+		response.Handle(w, resp, err)
 	}
 }

@@ -14,13 +14,17 @@ var (
 		Name:  "contractAddr",
 		Usage: "the contract addresses file",
 	}
+	OptionalBlockSizesFlag = &cli.StringFlag{
+		Name:  "optionalBlockSizes",
+		Usage: "optional block sizes",
+	}
 	DSNFlag = &cli.StringFlag{
 		Name:  "dsn",
 		Usage: "data source name",
 	}
 	BSCTestNetworkRPCFlag = &cli.StringFlag{
 		Name:  "testnet",
-		Value: "https://data-seed-prebsc-1-s1.binance.org:8545/",
+		Value: "https://bsc-testnet.nodereal.io/v1/a1cee760ac744f449416a711f20d99dd",
 		Usage: "the rpc endpoint of bsc testnet",
 	}
 	LocalTestNetworkRPCFlag = &cli.StringFlag{
@@ -70,5 +74,95 @@ var (
 		Name:  "metrics.port",
 		Usage: "Metrics HTTP server listening port",
 		Value: 6060,
+	}
+	CommandFlag = &cli.StringFlag{
+		Name:    "command",
+		Aliases: []string{"m"},
+		Usage:   "command",
+	}
+	RecoveryFromHistoryFlag = &cli.BoolFlag{
+		Name:  "recoveryFromHistory",
+		Value: true,
+		Usage: "read account and nft history record from the database, or read account and nft from the database",
+	}
+	PrivateKeyFlag = &cli.StringFlag{
+		Name:  "privateKey",
+		Usage: "private key",
+		Value: "",
+	}
+	TokenFlag = &cli.StringFlag{
+		Name:  "token",
+		Usage: "token",
+		Value: "",
+	}
+	AmountFlag = &cli.StringFlag{
+		Name:  "amount",
+		Usage: "amount",
+		Value: "",
+	}
+	ProofFlag = &cli.StringFlag{
+		Name:  "proof",
+		Usage: "proof",
+		Value: "",
+	}
+	NftIndexListFlag = &cli.StringFlag{
+		Name:  "nftIndexList",
+		Usage: "nftIndexList",
+		Value: "",
+	}
+	AccountIndexListFlag = &cli.StringFlag{
+		Name:  "accountIndexList",
+		Usage: "accountIndexList",
+		Value: "",
+	}
+	AddressFlag = &cli.StringFlag{
+		Name:  "address",
+		Usage: "address",
+		Value: "",
+	}
+	ProofFolderFlag = &cli.StringFlag{
+		Name:  "proofFolder",
+		Usage: "proofFolder",
+		Value: "",
+	}
+	RevertBlockHeightFlag = &cli.Int64Flag{
+		Name:  "height",
+		Usage: "height",
+		Value: 0,
+	}
+	RevertBlockByBlockFlag = &cli.Int64Flag{
+		Name:  "byBlock",
+		Usage: "byBlock",
+		Value: 1,
+	}
+	RollbackBlockHeightFlag = &cli.Int64Flag{
+		Name:  "height",
+		Usage: "height",
+		Value: 0,
+	}
+	EstimateGasFromHeightFlag = &cli.Int64Flag{
+		Name:  "fromHeight",
+		Usage: "fromHeight",
+		Value: 0,
+	}
+	EstimateGasToHeightFlag = &cli.Int64Flag{
+		Name:  "toHeight",
+		Usage: "toHeight",
+		Value: 0,
+	}
+	EstimateGasMaxBlockCountFlag = &cli.Int64Flag{
+		Name:  "maxBlockCount",
+		Usage: "maxBlockCount",
+		Value: 0,
+	}
+	SendToL1Flag = &cli.Int64Flag{
+		Name:  "sendToL1",
+		Usage: "sendToL1",
+		Value: 0,
+	}
+	ProverIdFlag = &cli.UintFlag{
+		Name:  "proverId",
+		Usage: "proverId",
+		Value: 0,
 	}
 )

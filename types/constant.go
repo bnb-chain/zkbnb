@@ -23,18 +23,18 @@ import (
 )
 
 const (
-	EmptyNonce               = 0
-	EmptyCollectionNonce     = 0
-	EmptyAccountAssetInfo    = "{}"
-	EmptyAccountIndex        = int64(0)
-	EmptyNftContentHash      = "0"
-	EmptyAccountNameHash     = "0"
-	EmptyTxHash              = "0"
-	EmptyL1TokenId           = "0"
-	EmptyL1Address           = "0"
-	EmptyCreatorTreasuryRate = 0
+	EmptyNonce            = 0
+	EmptyCollectionNonce  = 0
+	EmptyAccountAssetInfo = "{}"
+	EmptyAccountIndex     = int64(0)
+	EmptyNftContentHash   = "0"
+	EmptyTxHash           = "0"
+	EmptyL1Address        = "0"
+	EmptyRoyaltyRate      = 0
+	EmptyPk               = "0"
+	EmptyNftContentType   = 0
 
-	NilAccountName     = ""
+	NilL1Address       = ""
 	NilNftIndex        = int64(-1)
 	NilAccountIndex    = int64(-1)
 	NilBlockHeight     = -1
@@ -48,6 +48,10 @@ const (
 	GasAccount  = int64(1)
 	BNBAssetId  = 0
 	BUSDAssetId = 1
+
+	ProtocolAccount = int64(0)
+
+	BNBAddress = "0x00"
 )
 
 var (
