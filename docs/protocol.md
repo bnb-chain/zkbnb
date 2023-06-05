@@ -76,7 +76,7 @@ belongs to `AccountTree(32)`. The empty leaf for all the trees is just set every
 
 ```go
 type AccountNode struct{
-    AccountNameHash string // bytes32   => L1Address
+    L1Address string // bytes20
     PubKey string // bytes32
     Nonce int64
     CollectionNonce int64
@@ -88,27 +88,37 @@ Leaf hash computation:
 
 ```go
 func ComputeAccountLeafHash(
-	accountNameHash string,  => L1Address
-	pk string,
-	nonce int64,
-	collectionNonce int64,
-	assetRoot []byte,
+   l1Address string,
+   pk string,
+   nonce int64,
+   collectionNonce int64,
+   assetRoot []byte,
+   ctx context.Context,
 ) (hashVal []byte, err error) {
-	hFunc := mimc.NewMiMC()
-	var buf bytes.Buffer
-	buf.Write(common.FromHex(accountNameHash))
-	err = util.PaddingPkIntoBuf(&buf, pk)
-	if err != nil {
-		logx.Errorf("[ComputeAccountAssetLeafHash] unable to write pk into buf: %s", err.Error())
-		return nil, err
-	}
-	util.PaddingInt64IntoBuf(&buf, nonce)
-	util.PaddingInt64IntoBuf(&buf, collectionNonce)
-	buf.Write(assetRoot)
-	hFunc.Reset()
-	hFunc.Write(buf.Bytes())
-	hashVal = hFunc.Sum(nil)
-	return hashVal, nil
+   var e0 *fr.Element
+   if l1Address == "" {
+   e0 = &fr.Element{0, 0, 0, 0}
+   e0.SetBytes([]byte{})
+   } else {
+   e0, err = txtypes.FromBytesToFr(common.FromHex(l1Address))
+   if err != nil {
+   return nil, err
+   }
+   }
+   pubKey, err := common2.ParsePubKey(pk)
+   if err != nil {
+   return nil, err
+   }
+   e1 := &pubKey.A.X
+   e2 := &pubKey.A.Y
+   e3 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(nonce))
+   e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionNonce))
+   e5 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(assetRoot))
+   ele := GMimcElements([]*fr.Element{e0, e1, e2, e3, e4, e5})
+   hash := ele.Bytes()
+   logx.WithContext(ctx).Debugf("compute account leaf hash,l1Address=%s,pk=%s,nonce=%d,collectionNonce=%d,assetRoot=%s,hash=%s",
+   l1Address, pk, nonce, collectionNonce, common.Bytes2Hex(assetRoot), common.Bytes2Hex(hash[:]))
+   return hash[:], nil
 }
 ```
 
@@ -127,23 +137,26 @@ Leaf hash computation:
 
 ```go
 func ComputeAccountAssetLeafHash(
-	balance string,
-	offerCanceledOrFinalized string,
+   balance string,
+   offerCanceledOrFinalized string,
+   ctx context.Context,
 ) (hashVal []byte, err error) {
-	hFunc := mimc.NewMiMC()
-	var buf bytes.Buffer
-	err = util.PaddingStringBigIntIntoBuf(&buf, balance)
-	if err != nil {
-		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
-		return nil, err
-	}
-	err = util.PaddingStringBigIntIntoBuf(&buf, offerCanceledOrFinalized)
-	if err != nil {
-		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
-		return nil, err
-	}
-	hFunc.Write(buf.Bytes())
-	return hFunc.Sum(nil), nil
+   balanceBigInt, isValid := new(big.Int).SetString(balance, 10)
+   if !isValid {
+   return nil, zkbnbtypes.AppErrInvalidBalanceString
+   }
+   e0 := txtypes.FromBigIntToFr(balanceBigInt)
+   
+   offerCanceledOrFinalizedBigInt, isValid := new(big.Int).SetString(offerCanceledOrFinalized, 10)
+   if !isValid {
+   return nil, zkbnbtypes.AppErrInvalidBalanceString
+   }
+   e1 := txtypes.FromBigIntToFr(offerCanceledOrFinalizedBigInt)
+   ele := GMimcElements([]*fr.Element{e0, e1})
+   hash := ele.Bytes()
+   logx.WithContext(ctx).Debugf("compute account asset leaf hash,balance=%s,offerCanceledOrFinalized=%s,hash=%s",
+   balance, offerCanceledOrFinalized, common.Bytes2Hex(hash[:]))
+   return hash[:], nil
 }
 ```
 
@@ -156,7 +169,7 @@ type NftNode struct {
     CreatorAccountIndex int64
     OwnerAccountIndex   int64
     NftContentHash      string
-    CreatorTreasuryRate int64
+    RoyaltyRate         int64
     CollectionId        int64 // 32 bit
 }
 ```
@@ -165,22 +178,43 @@ Leaf hash computation:
 
 ```go
 func ComputeNftAssetLeafHash(
-	creatorAccountIndex int64,
-	ownerAccountIndex int64,
-	nftContentHash string,
-	creatorTreasuryRate int64,
-	collectionId int64,
+   creatorAccountIndex int64,
+   ownerAccountIndex int64,
+   nftContentHash string,
+   royaltyRate int64,
+   collectionId int64,
+   ctx context.Context, 
 ) (hashVal []byte, err error) {
-	hFunc := mimc.NewMiMC()
-	var buf bytes.Buffer
-	util.PaddingInt64IntoBuf(&buf, creatorAccountIndex)
-	util.PaddingInt64IntoBuf(&buf, ownerAccountIndex)
-	buf.Write(ffmath.Mod(new(big.Int).SetBytes(common.FromHex(nftContentHash)), curve.Modulus).FillBytes(make([]byte, 32)))
-	util.PaddingInt64IntoBuf(&buf, creatorTreasuryRate)
-	util.PaddingInt64IntoBuf(&buf, collectionId)
-	hFunc.Write(buf.Bytes())
-	hashVal = hFunc.Sum(nil)
-	return hashVal, nil
+   e0 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(creatorAccountIndex))
+   e1 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(ownerAccountIndex))
+   
+   var e2 *fr.Element
+   var e3 *fr.Element
+   contentHash := common.Hex2Bytes(nftContentHash)
+   if len(contentHash) >= types.NftContentHashBytesSize {
+   e2, err = txtypes.FromBytesToFr(contentHash[:types.NftContentHashBytesSize])
+   e3, err = txtypes.FromBytesToFr(contentHash[types.NftContentHashBytesSize:])
+   } else {
+   e2, err = txtypes.FromBytesToFr(contentHash[:])
+   }
+   if err != nil {
+   return nil, err
+   }
+   
+   e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(royaltyRate))
+   e5 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionId))
+   var hash [32]byte
+   if e3 != nil {
+   ele := GMimcElements([]*fr.Element{e0, e1, e2, e3, e4, e5})
+   hash = ele.Bytes()
+   } else {
+   ele := GMimcElements([]*fr.Element{e0, e1, e2, e4, e5})
+   hash = ele.Bytes()
+   }
+   logx.WithContext(ctx).Debugf("compute nft asset leaf hash,creatorAccountIndex=%d,ownerAccountIndex=%d,nftContentHash=%s,royaltyRate=%d,collectionId=%d,hash=%s",
+   creatorAccountIndex, ownerAccountIndex, nftContentHash, royaltyRate, collectionId, common.Bytes2Hex(hash[:]))
+   
+   return hash[:], nil
 }
 ```
 
@@ -192,13 +226,15 @@ func ComputeNftAssetLeafHash(
 
 ```go
 func ComputeStateRootHash(
-	accountRoot []byte,
-	nftRoot []byte,
+   accountRoot []byte,
+   nftRoot []byte,
 ) []byte {
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(accountRoot)
-	hFunc.Write(nftRoot)
-	return hFunc.Sum(nil)
+   e0 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(accountRoot))
+   e1 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(nftRoot))
+   
+   ele := GMimcElements([]*fr.Element{e0, e1})
+   hash := ele.Bytes()
+   return hash[:]
 }
 ```
 
@@ -302,64 +338,44 @@ type ChangePubKeyInfo struct {
 ##### Size
 
 | Chunks | Significant bytes |
-| ------ | ----------------- |
-| 6      | 101               |
+|--------|-------------------|
+|        | 97                |
 
 ##### Pub Data Structure
 
-```go
-struct ChangePubKey {
-uint8 txType;
-uint32 accountIndex;
-bytes20 pubKeyHash;
-address owner;
-uint32 nonce;
-uint16 gasFeeAssetId;
-uint16 gasFeeAssetAmount;
-}
-```
-
-
-| Name               | Size(byte) | Comment                        |
-|--------------------|------------|--------------------------------|
-| TxType             | 1          | transaction type               |
-| AccountIndex       | 4          | unique account index           |
-| pubKeyHash         | 32         | account name                   |
-| owner              | 20         | hash value of the account name |
-| nonce              | 4          | layer-2 account's public key X |
-| gasFeeAssetId      | 2          | layer-2 account's public key Y |
-| gasFeeAssetAmount  | 2          |                                |
+| Name              | Size(byte) | Comment                        |
+|-------------------|------------|--------------------------------|
+| TxType            | 1          | transaction type               |
+| AccountIndex      | 4          | unique account index           |
+| pubKeyX           | 32         | layer-2 account's public key X |
+| pubKeyY           | 32         | layer-2 account's public key Y |
+| l1Address         | 20         | account's l1Address            |
+| nonce             | 4          | layer-2 account's nonce        |
+| gasFeeAssetId     | 2          | gas fee asset id               |
+| gasFeeAssetAmount | 2          | packed fee amount              |
 
 ```go
-func ConvertTxToRegisterZNSPubData(oTx *tx.Tx) (pubData []byte, err error) {
-	if oTx.TxType != commonTx.TxTypeRegisterZns {
-		logx.Errorf("[ConvertTxToRegisterZNSPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToRegisterZNSPubData] invalid tx type")
-	}
-	// parse tx
-	txInfo, err := commonTx.ParseRegisterZnsTxInfo(oTx.TxInfo)
-	if err != nil {
-		logx.Errorf("[ConvertTxToRegisterZNSPubData] unable to parse tx info: %s", err.Error())
-		return nil, err
-	}
-	var buf bytes.Buffer
-	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	chunk := SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk)
-	buf.Write(PrefixPaddingBufToChunkSize(AccountNameToBytes20(txInfo.AccountName)))
-	buf.Write(PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
-	pk, err := ParsePubKey(txInfo.PubKey)
-	if err != nil {
-		logx.Errorf("[ConvertTxToRegisterZNSPubData] unable to parse pub key: %s", err.Error())
-		return nil, err
-	}
-	// because we can get Y from X, so we only need to store X is enough
-	buf.Write(PrefixPaddingBufToChunkSize(pk.A.X.Marshal()))
-	buf.Write(PrefixPaddingBufToChunkSize(pk.A.Y.Marshal()))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	return buf.Bytes(), nil
+func ConvertTxToChangePubKeyPubData(tx *tx.Tx) (pubData []byte, err error) {
+   txInfo, err := types.ParseChangePubKeyTxInfo(tx.TxInfo)
+   if err != nil {
+   logx.Errorf("parse change pub key tx failed: %s", err.Error())
+   return nil, errors.New("invalid tx info")
+   }
+   var buf bytes.Buffer
+   buf.WriteByte(uint8(types.TxTypeChangePubKey))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
+   // because we can get Y from X, so we only need to store X is enough
+   buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.PubKeyX))
+   buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.PubKeyY))
+   buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.Nonce)))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+   packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+   if err != nil {
+   return err
+   }
+   buf.Write(packedFeeBytes)
+   return buf.Bytes(), nil
 }
 ```
 
@@ -412,8 +428,28 @@ txInfo.PubKeyY
 #### Circuit
 
 ```go
-
+func VerifyChangePubKeyTx(
+   api API, flag Variable,
+   tx *ChangePubKeyTxConstraints,
+   accountsBefore [NbAccountsPerTx]AccountConstraints,
+) (pubData [PubDataBitsSizePerTx]Variable) {
+   pubData = CollectPubDataFromChangePubKey(api, *tx)
+   //CheckEmptyAccountNode(api, flag, accountsBefore[0])
+   // verify params
+   // account index
+   IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
+   // l1 address
+   IsVariableEqual(api, flag, tx.L1Address, accountsBefore[0].L1Address)
+   // nonce
+   IsVariableEqual(api, flag, tx.Nonce, accountsBefore[0].Nonce)
+   // asset id
+   IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[0].AssetId)
+   // should have enough assets
+   tx.GasFeeAssetAmount = UnpackAmount(api, tx.GasFeeAssetAmount)
+   IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
+return pubData
 }
+
 ```
 
 ### Deposit
@@ -427,61 +463,47 @@ This is a layer-1 transaction and is used for depositing assets into the layer-2
 ##### Size
 
 | Chunks | Significant bytes |
-| ------ | ----------------- |
-| 6      | 55                |
+|--------|-------------------|
+|        | 43                |
 
 
 
 ##### Structure
 
-| Name            | Size(byte) | Comment           |     |
-| --------------- | ---------- | ----------------- |-----|
-| TxType          | 1          | transaction type  |     |
-| AccountIndex    | 4          | account index     |     |
-| AssetId         | 2          | asset index       |     |
-| AssetAmount     | 16         | state amount      |     |
-| AccountNameHash | 32         | account name hash |     |
+| Name         | Size(byte) | Comment             |     |
+|--------------|------------|---------------------|-----|
+| TxType       | 1          | transaction type    |     |
+| AccountIndex | 4          | account index       |     |
+| AssetId      | 2          | asset index         |     |
+| AssetAmount  | 16         | state amount        |     |
+| L1Address    | 20         | account's l1Address |     |
 
 ```go
 type DepositTxInfo struct {
 	TxType uint8
-
 	// Get from layer1 events.
-	AccountNameHash []byte  =>L1Address
+    L1Address string
 	AssetId         int64
 	AssetAmount     *big.Int
-
 	// Set by layer2.
 	AccountIndex int64
 }
 ```
 
 ```go
-func ConvertTxToDepositPubData(oTx *tx.Tx) (pubData []byte, err error) {
-	if oTx.TxType != commonTx.TxTypeDeposit {
-		logx.Errorf("[ConvertTxToDepositPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToDepositPubData] invalid tx type")
-	}
-	// parse tx
-	txInfo, err := commonTx.ParseDepositTxInfo(oTx.TxInfo)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to parse tx info: %s", err.Error())
-		return nil, err
-	}
-	var buf bytes.Buffer
-	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.AssetId)))
-	buf.Write(Uint128ToBytes(txInfo.AssetAmount))
-	chunk1 := SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk1)
-	buf.Write(PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	return buf.Bytes(), nil
+func ConvertTxToDepositPubData(tx *tx.Tx) (pubData []byte, err error) {
+   txInfo, err := types.ParseDepositTxInfo(tx.TxInfo)
+   if err != nil {
+   logx.Errorf("parse deposit tx failed: %s", err.Error())
+   return nil, types.AppErrInvalidTxInfo
+   }
+   var buf bytes.Buffer
+   buf.WriteByte(uint8(types.TxTypeDeposit))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
+   buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.AssetId)))
+   buf.Write(common2.Uint128ToBytes(txInfo.AssetAmount))
+   return buf.Bytes(), nil
 }
 ```
 
@@ -489,32 +511,34 @@ func ConvertTxToDepositPubData(oTx *tx.Tx) (pubData []byte, err error) {
 
 ##### DepositBNB
 
-| Name            | Size(byte) | Comment           |
-| --------------- | ---------- | ----------------- |
-| AccountNameHash | 32         | account name hash |
+| Name        | Size(byte) | Comment             |
+|-------------|------------|---------------------|
+| L1Address   | 20         | account's l1Address |
 
 ##### DepositBEP20
 
-| Name            | Size(byte) | Comment               |
-| --------------- | ---------- | --------------------- |
-| AssetAddress    | 20         | asset layer-1 address |
-| Amount          | 13         | asset layer-1 amount  |
-| AccountNameHash | 32         | account name hash     |
+| Name         | Size(byte)  | Comment               |
+|--------------|-------------|-----------------------|
+| AssetAddress | 20          | asset layer-1 address |
+| Amount       | 13          | asset layer-1 amount  |
+| L1Address    | 20          | account's l1Address   |
 
 #### Circuit
 
 ```go
 func VerifyDepositTx(
-	api API, flag Variable,
-	tx DepositTxConstraints,
-	accountsBefore [NbAccountsPerTx]AccountConstraints,
-) (pubData [PubDataSizePerTx]Variable) {
-	pubData = CollectPubDataFromDeposit(api, tx)
-	// verify params
-	IsVariableEqual(api, flag, tx.AccountNameHash, accountsBefore[0].AccountNameHash)
-	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.AssetId, accountsBefore[0].AssetsInfo[0].AssetId)
-	return pubData
+   api API, flag Variable,
+   tx DepositTxConstraints,
+   accountsBefore [NbAccountsPerTx]AccountConstraints,
+) (pubData [PubDataBitsSizePerTx]Variable) {
+   pubData = CollectPubDataFromDeposit(api, tx)
+   // verify params
+   isNewAccount := api.IsZero(api.Cmp(accountsBefore[0].L1Address, ZeroInt))
+   address := api.Select(isNewAccount, tx.L1Address, accountsBefore[0].L1Address)
+   IsVariableEqual(api, flag, tx.L1Address, address)
+   IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
+   IsVariableEqual(api, flag, tx.AssetId, accountsBefore[0].AssetsInfo[0].AssetId)
+   return pubData
 }
 ```
 
@@ -529,8 +553,8 @@ This is a layer-1 transaction and is used for depositing NFTs into the layer-2 a
 ##### Size
 
 | Chunks | Significant bytes |
-| ------ | ----------------- |
-| 6      | 134               |
+|--------|-------------------|
+|        | 71                |
 
 ##### Structure
 ```go
@@ -538,7 +562,7 @@ type DepositNftTxInfo struct {
 	TxType uint8
 
 	// Get from layer1 events.
-	AccountNameHash     []byte  =>L1Address
+    L1Address           string
 	CreatorAccountIndex int64
 	CreatorTreasuryRate int64
 	NftContentHash      []byte
@@ -553,75 +577,70 @@ type DepositNftTxInfo struct {
 ```
 
 | Name                | Size(byte) | Comment               |
-| ------------------- | ---------- | --------------------- |
+|---------------------|------------|-----------------------|
 | TxType              | 1          | transaction type      |
 | AccountIndex        | 4          | account index         |
 | NftIndex            | 5          | unique index of a nft |
 | CreatorAccountIndex | 4          | creator account index |
-| CreatorTreasuryRate | 2          | creator treasury rate |
+| RoyaltyRate         | 2          | creator treasury rate |
 | CollectionId        | 2          | collection id         |
 | NftContentHash      | 32         | nft content hash      |
-| AccountNameHash     | 32         | account name hash     |
+| NftContentType      | 1          | nft content type      |
+| L1Address           | 20         | account's l1Address   |
 
 ```go
-func ConvertTxToDepositNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
-	if oTx.TxType != commonTx.TxTypeDepositNft {
-		logx.Errorf("[ConvertTxToDepositNftPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToDepositNftPubData] invalid tx type")
-	}
-	// parse tx
-	txInfo, err := commonTx.ParseDepositNftTxInfo(oTx.TxInfo)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositNftPubData] unable to parse tx info: %s", err.Error())
-		return nil, err
-	}
-	var buf bytes.Buffer
-	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	buf.Write(Uint40ToBytes(txInfo.NftIndex))
-	chunk1 := SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.CollectionId)))
-	chunk2 := PrefixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk1)
-	buf.Write(chunk2)
-	buf.Write(PrefixPaddingBufToChunkSize(txInfo.NftContentHash))
-	buf.Write(PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	return buf.Bytes(), nil
+func ConvertTxToDepositNftPubData(tx *tx.Tx) (pubData []byte, err error) {
+   txInfo, err := types.ParseDepositNftTxInfo(tx.TxInfo)
+   if err != nil {
+   logx.Errorf("parse deposit nft tx failed: %s", err.Error())
+   return nil, types.AppErrInvalidTxInfo
+   }
+   var buf bytes.Buffer
+   buf.WriteByte(uint8(types.TxTypeDepositNft))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.RoyaltyRate)))
+   buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.CollectionId)))
+   buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
+   buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.NftContentHash))
+   buf.WriteByte(uint8(txInfo.NftContentType))
+   return buf.Bytes(), nil
 }
 ```
 
 #### User transaction
 
-| Name            | Size(byte) | Comment                      |
-| --------------- | ---------- | ---------------------------- |
-| AccountNameHash | 32         | account name hash            |
-| AssetAddress    | 20         | nft contract layer-1 address |
-| NftTokenId      | 32         | nft layer-1 token id         |
+| Name         | Size(byte) | Comment                      |
+|--------------|------------|------------------------------|
+| L1Address    | 20         | account's l1Address          |
+| AssetAddress | 20         | nft contract layer-1 address |
+| NftTokenId   | 32         | nft layer-1 token id         |
 
 #### Circuit
 
 ```go
 func VerifyDepositNftTx(
-	api API,
-	flag Variable,
-	tx DepositNftTxConstraints,
-	accountsBefore [NbAccountsPerTx]AccountConstraints,
-	nftBefore NftConstraints,
-) (pubData [PubDataSizePerTx]Variable) {
-	pubData = CollectPubDataFromDepositNft(api, tx)
-	// verify params
-	// check empty nft
-	CheckEmptyNftNode(api, flag, nftBefore)
-	// account index
-	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
-	// account name hash
-	IsVariableEqual(api, flag, tx.AccountNameHash, accountsBefore[0].AccountNameHash)
-	return pubData
+   api API,
+   flag Variable,
+   tx DepositNftTxConstraints,
+   accountsBefore [NbAccountsPerTx]AccountConstraints,
+   nftBefore NftConstraints,
+) (pubData [PubDataBitsSizePerTx]Variable) {
+   pubData = CollectPubDataFromDepositNft(api, tx)
+   
+   // verify params
+   // check empty nft
+   CheckEmptyNftNode(api, flag, nftBefore)
+   // account index
+   IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
+   // account address
+   isNewAccount := api.IsZero(api.Cmp(accountsBefore[0].L1Address, ZeroInt))
+   address := api.Select(isNewAccount, tx.L1Address, accountsBefore[0].L1Address)
+   IsVariableEqual(api, flag, tx.L1Address, address)
+   //NftContentType
+   IsVariableEqual(api, flag, tx.NftContentType, nftBefore.NftContentType)
+   return pubData
 }
 ```
 
@@ -636,64 +655,49 @@ This is a layer-2 transaction and is used for transferring assets in the layer-2
 ##### Size
 
 | Chunks | Significant bytes |
-| ------ | ----------------- |
-| 6      | 56                |
+|--------|-------------------|
+|        | 72                |
 
 ##### Structure
 
-| Name               | Size(byte) | Comment                |
-| ------------------ | ---------- | ---------------------- |
-| TxType             | 1          | transaction type       |
-| FromAccountIndex   | 4          | from account index     |
-| ToAccountIndex     | 4          | receiver account index |
-| AssetId            | 2          | asset index            |
-| AssetAmount        | 5          | packed asset amount    |
-| GasFeeAccountIndex | 4          | gas fee account index  |
-| GasFeeAssetId      | 2          | gas fee asset id       |
-| GasFeeAssetAmount  | 2          | packed fee amount      |
-| CallDataHash       | 32         | call data hash         |
+| Name              | Size(byte) | Comment                  |
+|-------------------|------------|--------------------------|
+| TxType            | 1          | transaction type         |
+| FromAccountIndex  | 4          | from account index       |
+| ToAccountIndex    | 4          | receiver account index   |
+| ToL1Address       | 20         | receiver account address |
+| AssetId           | 2          | asset index              |
+| AssetAmount       | 5          | packed asset amount      |
+| GasFeeAssetId     | 2          | gas fee asset id         |
+| GasFeeAssetAmount | 2          | packed fee amount        |
+| CallDataHash      | 32         | call data hash           |
 
 ```go
-func ConvertTxToTransferPubData(oTx *tx.Tx) (pubData []byte, err error) {
-	if oTx.TxType != commonTx.TxTypeTransfer {
-		logx.Errorf("[ConvertTxToTransferPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToTransferPubData] invalid tx type")
-	}
-	// parse tx
-	txInfo, err := commonTx.ParseTransferTxInfo(oTx.TxInfo)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to parse tx info: %s", err.Error())
-		return nil, err
-	}
-	var buf bytes.Buffer
-	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
-	buf.Write(Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.AssetId)))
-	packedAmountBytes, err := AmountToPackedAmountBytes(txInfo.AssetAmount)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
-		return nil, err
-	}
-	buf.Write(packedAmountBytes)
-	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
-	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
-		return nil, err
-	}
-	buf.Write(packedFeeBytes)
-	chunk := SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk)
-	buf.Write(PrefixPaddingBufToChunkSize(txInfo.CallDataHash))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	pubData = buf.Bytes()
-	return pubData, nil
+func ConvertTxToTransferPubData(tx *tx.Tx) (pubData []byte, err error) {
+   txInfo, err := types.ParseTransferTxInfo(tx.TxInfo)
+   if err != nil {
+   logx.Errorf("parse transfer tx failed: %s", err.Error())
+   return nil, types.AppErrInvalidTxInfo
+   }
+   var buf bytes.Buffer
+   buf.WriteByte(uint8(types.TxTypeTransfer))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
+   buf.Write(common2.AddressStrToBytes(txInfo.ToL1Address))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.AssetId)))
+   packedAmountBytes, err := common2.AmountToPackedAmountBytes(txInfo.AssetAmount)
+   if err != nil {
+   return err
+   }
+   buf.Write(packedAmountBytes)
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+   packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+   if err != nil {
+   return err
+   }
+   buf.Write(packedFeeBytes)
+   buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.CallDataHash))
+   return pubData, nil
 }
 ```
 
@@ -702,8 +706,7 @@ func ConvertTxToTransferPubData(oTx *tx.Tx) (pubData []byte, err error) {
 ```go
 type TransferTxInfo struct {
 FromAccountIndex  int64
-ToAccountIndex    int64  =>Delete the field
-ToAccountNameHash string =>ToL1Address
+ToL1Address       string
 AssetId           int64
 AssetAmount       *big.Int
 GasAccountIndex   int64
@@ -715,7 +718,7 @@ CallDataHash      []byte
 ExpiredAt         int64
 Nonce             int64
 Sig               []byte
-L1Sig             string =>add new field
+L1Sig             string
 }
 ```
 
@@ -723,32 +726,33 @@ L1Sig             string =>add new field
 
 ```go
 func VerifyTransferTx(
-	api API, flag Variable,
-	tx *TransferTxConstraints,
-	accountsBefore [NbAccountsPerTx]AccountConstraints,
-) (pubData [PubDataSizePerTx]Variable) {
-	// collect pub-data
-	pubData = CollectPubDataFromTransfer(api, *tx)
-	// verify params
-	// account index
-	IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.ToAccountIndex, accountsBefore[1].AccountIndex)
-	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[2].AccountIndex)
-	// account name hash
-	IsVariableEqual(api, flag, tx.ToAccountNameHash, accountsBefore[1].AccountNameHash)
-	// asset id
-	IsVariableEqual(api, flag, tx.AssetId, accountsBefore[0].AssetsInfo[0].AssetId)
-	IsVariableEqual(api, flag, tx.AssetId, accountsBefore[1].AssetsInfo[0].AssetId)
-	// gas asset id
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[1].AssetId)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[2].AssetsInfo[0].AssetId)
-	// should have enough balance
-	tx.AssetAmount = UnpackAmount(api, tx.AssetAmount)
-	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
-	//tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
-	IsVariableLessOrEqual(api, flag, tx.AssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
-	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[1].Balance)
-	return pubData
+   api API, flag Variable,
+   tx *TransferTxConstraints,
+   accountsBefore [NbAccountsPerTx]AccountConstraints,
+) (pubData [PubDataBitsSizePerTx]Variable) {
+   fromAccount := 0
+   toAccount := 1
+   
+   // collect pubdata
+   pubData = CollectPubDataFromTransfer(api, *tx)
+   // verify params
+   // account index
+   IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[fromAccount].AccountIndex)
+   // account to l1Address
+   isNewAccount := api.IsZero(api.Cmp(accountsBefore[toAccount].L1Address, ZeroInt))
+   address := api.Select(isNewAccount, tx.ToL1Address, accountsBefore[toAccount].L1Address)
+   IsVariableEqual(api, flag, tx.ToL1Address, address)
+   // asset id
+   IsVariableEqual(api, flag, tx.AssetId, accountsBefore[fromAccount].AssetsInfo[0].AssetId)
+   IsVariableEqual(api, flag, tx.AssetId, accountsBefore[toAccount].AssetsInfo[0].AssetId)
+   // gas asset id
+   IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[fromAccount].AssetsInfo[1].AssetId)
+   // should have enough balance
+   tx.AssetAmount = UnpackAmount(api, tx.AssetAmount)
+   tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
+   IsVariableLessOrEqual(api, flag, tx.AssetAmount, accountsBefore[fromAccount].AssetsInfo[0].Balance)
+   IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[fromAccount].AssetsInfo[1].Balance)
+   return pubData
 }
 ```
 
@@ -763,59 +767,42 @@ This is a layer-2 transaction and is used for withdrawing assets from the layer-
 ##### Size
 
 | Chunks | Significant bytes |
-| ------ | ----------------- |
-| 6      | 51                |
+|--------|-------------------|
+|        | 47                |
 
 ##### Structure
 
-| Name               | Size(byte) | Comment                  |
-| ------------------ | ---------- | ------------------------ |
-| TxType             | 1          | transaction type         |
-| AccountIndex       | 4          | from account index       |
-| ToAddress          | 20         | layer-1 receiver address |
-| AssetId            | 2          | asset index              |
-| AssetAmount        | 16         | state amount             |
-| GasFeeAccountIndex | 4          | gas fee account index    |
-| GasFeeAssetId      | 2          | gas fee asset id         |
-| GasFeeAssetAmount  | 2          | packed fee amount        |
+| Name              | Size(byte) | Comment                  |
+|-------------------|------------|--------------------------|
+| TxType            | 1          | transaction type         |
+| AccountIndex      | 4          | from account index       |
+| ToAddress         | 20         | layer-1 receiver address |
+| AssetId           | 2          | asset index              |
+| AssetAmount       | 16         | state amount             |
+| GasFeeAssetId     | 2          | gas fee asset id         |
+| GasFeeAssetAmount | 2          | packed fee amount        |
 
 ```go
-func ConvertTxToWithdrawPubData(oTx *tx.Tx) (pubData []byte, err error) {
-	if oTx.TxType != commonTx.TxTypeWithdraw {
-		logx.Errorf("[ConvertTxToWithdrawPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToWithdrawPubData] invalid tx type")
-	}
-	// parse tx
-	txInfo, err := commonTx.ParseWithdrawTxInfo(oTx.TxInfo)
-	if err != nil {
-		logx.Errorf("[ConvertTxToWithdrawPubData] unable to parse tx info: %s", err.Error())
-		return nil, err
-	}
-	var buf bytes.Buffer
-	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
-	buf.Write(AddressStrToBytes(txInfo.ToAddress))
-	buf.Write(Uint16ToBytes(uint16(txInfo.AssetId)))
-	chunk1 := SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(Uint128ToBytes(txInfo.AssetAmount))
-	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
-	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
-		return nil, err
-	}
-	buf.Write(packedFeeBytes)
-	chunk2 := PrefixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk1)
-	buf.Write(chunk2)
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	return buf.Bytes(), nil
+func ConvertTxToWithdrawPubData(tx *tx.Tx) (pubData []byte, err error) {
+   txInfo, err := types.ParseWithdrawTxInfo(tx.TxInfo)
+   if err != nil {
+   logx.Errorf("parse withdraw tx failed: %s", err.Error())
+   return nil, types.AppErrInvalidTxInfo
+   }
+   var buf bytes.Buffer
+   buf.WriteByte(uint8(types.TxTypeWithdraw))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
+   buf.Write(common2.AddressStrToBytes(txInfo.ToAddress))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.AssetId)))
+   buf.Write(common2.Uint128ToBytes(txInfo.AssetAmount))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+   packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+   if err != nil {
+   logx.Errorf("unable to convert amount to packed fee amount: %s", err.Error())
+   return err
+   }
+   buf.Write(packedFeeBytes)
+   return buf.Bytes(), nil
 }
 ```
 
@@ -833,7 +820,7 @@ type WithdrawTxInfo struct {
 	ExpiredAt         int64
 	Nonce             int64
 	Sig               []byte
-    L1Sig             string =>add new field
+    L1Sig             string
 }
 ```
 
@@ -841,24 +828,23 @@ type WithdrawTxInfo struct {
 
 ```go
 func VerifyWithdrawTx(
-	api API, flag Variable,
-	tx *WithdrawTxConstraints,
-	accountsBefore [NbAccountsPerTx]AccountConstraints,
-) (pubData [PubDataSizePerTx]Variable) {
-	pubData = CollectPubDataFromWithdraw(api, *tx)
-	// verify params
-	// account index
-	IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[1].AccountIndex)
-	// asset id
-	IsVariableEqual(api, flag, tx.AssetId, accountsBefore[0].AssetsInfo[0].AssetId)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[1].AssetId)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[1].AssetsInfo[0].AssetId)
-	// should have enough assets
-	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
-	IsVariableLessOrEqual(api, flag, tx.AssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
-	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[1].Balance)
-	return pubData
+   api API, flag Variable,
+   tx *WithdrawTxConstraints,
+   accountsBefore [NbAccountsPerTx]AccountConstraints,
+) (pubData [PubDataBitsSizePerTx]Variable) {
+   fromAccount := 0
+   pubData = CollectPubDataFromWithdraw(api, *tx)
+   // verify params
+   // account index
+   IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[fromAccount].AccountIndex)
+   // asset id
+   IsVariableEqual(api, flag, tx.AssetId, accountsBefore[fromAccount].AssetsInfo[0].AssetId)
+   IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[fromAccount].AssetsInfo[1].AssetId)
+   // should have enough assets
+   tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
+   IsVariableLessOrEqual(api, flag, tx.AssetAmount, accountsBefore[fromAccount].AssetsInfo[0].Balance)
+   IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[fromAccount].AssetsInfo[1].Balance)
+   return pubData
 }
 ```
 
@@ -873,53 +859,38 @@ This is a layer-2 transaction and is used for creating a new collection
 ##### Size
 
 | Chunks | Significant bytes |
-| ------ | ----------------- |
-| 6      | 15                |
+|--------|-------------------|
+|        | 11                |
 
 ##### Structure
 
 | Name              | Size(byte) | Comment           |
-| ----------------- | ---------- | ----------------- |
+|-------------------|------------|-------------------|
 | TxType            | 1          | transaction type  |
 | AccountIndex      | 4          | account index     |
 | CollectionId      | 2          | collection index  |
-| GasAccountIndex   | 4          | gas account index |
 | GasFeeAssetId     | 2          | asset id          |
 | GasFeeAssetAmount | 2          | packed fee amount |
 
 ```go
-func ConvertTxToCreateCollectionPubData(oTx *tx.Tx) (pubData []byte, err error) {
-	if oTx.TxType != commonTx.TxTypeCreateCollection {
-		logx.Errorf("[ConvertTxToCreateCollectionPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToCreateCollectionPubData] invalid tx type")
-	}
-	// parse tx
-	txInfo, err := commonTx.ParseCreateCollectionTxInfo(oTx.TxInfo)
-	if err != nil {
-		logx.Errorf("[ConvertTxToCreateCollectionPubData] unable to parse tx info: %s", err.Error())
-		return nil, err
-	}
-	var buf bytes.Buffer
-	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.CollectionId)))
-	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
-	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
-		return nil, err
-	}
-	buf.Write(packedFeeBytes)
-	chunk := SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk)
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	return buf.Bytes(), nil
+func ConvertTxToCreateCollectionPubData(tx *tx.Tx) (pubData []byte, err error) {
+   txInfo, err := types.ParseCreateCollectionTxInfo(tx.TxInfo)
+   if err != nil {
+   logx.Errorf("parse transfer tx failed: %s", err.Error())
+   return nil, types.AppErrInvalidTxInfo
+   }
+   var buf bytes.Buffer
+   buf.WriteByte(uint8(types.TxTypeCreateCollection))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.CollectionId)))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+   packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+   if err != nil {
+   logx.Errorf("unable to convert amount to packed fee amount: %s", err.Error())
+   return err
+   }
+   buf.Write(packedFeeBytes)
+   return buf.Bytes(), nil
 }
 ```
 
@@ -937,7 +908,7 @@ type CreateCollectionTxInfo struct {
 	ExpiredAt         int64
 	Nonce             int64
 	Sig               []byte
-    L1Sig             string =>add new field
+    L1Sig             string
 }
 ```
 
@@ -945,25 +916,24 @@ type CreateCollectionTxInfo struct {
 
 ```go
 func VerifyCreateCollectionTx(
-	api API, flag Variable,
-	tx *CreateCollectionTxConstraints,
-	accountsBefore [NbAccountsPerTx]AccountConstraints,
-) (pubData [PubDataSizePerTx]Variable) {
-	pubData = CollectPubDataFromCreateCollection(api, *tx)
-	// verify params
-	IsVariableLessOrEqual(api, flag, tx.CollectionId, 65535)
-	// account index
-	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[1].AccountIndex)
-	// asset id
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[0].AssetId)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[1].AssetsInfo[0].AssetId)
-	// collection id
-	IsVariableEqual(api, flag, tx.CollectionId, api.Add(accountsBefore[0].CollectionNonce, 1))
-	// should have enough assets
-	tx.GasFeeAssetAmount = UnpackAmount(api, tx.GasFeeAssetAmount)
-	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
-	return pubData
+   api API, flag Variable,
+   tx *CreateCollectionTxConstraints,
+   accountsBefore [NbAccountsPerTx]AccountConstraints,
+) (pubData [PubDataBitsSizePerTx]Variable) {
+   fromAccount := 0
+   pubData = CollectPubDataFromCreateCollection(api, *tx)
+   // verify params
+   IsVariableLessOrEqual(api, flag, tx.CollectionId, 65535)
+   // account index
+   IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[fromAccount].AccountIndex)
+   // asset id
+   IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[fromAccount].AssetsInfo[0].AssetId)
+   // collection id
+   IsVariableEqual(api, flag, tx.CollectionId, accountsBefore[fromAccount].CollectionNonce)
+   // should have enough assets
+   tx.GasFeeAssetAmount = UnpackAmount(api, tx.GasFeeAssetAmount)
+   IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[fromAccount].AssetsInfo[0].Balance)
+   return pubData
 }
 ```
 
@@ -978,60 +948,50 @@ This is a layer-2 transaction and is used for minting NFTs in the layer-2 networ
 ##### Size
 
 | Chunks | Significant bytes |
-| ------ | ----------------- |
-| 6      | 58                |
+|--------|-------------------|
+|        | 75                |
 
 ##### Structure
 
-| Name                | Size(byte) | Comment                |
-|---------------------| ---------- | ---------------------- |
-| TxType              | 1          | transaction type       |
-| CreatorAccountIndex | 4          | creator account index  |
-| ToAccountIndex      | 4          | receiver account index |
-| NftIndex            | 5          | unique nft index       |
-| GasFeeAccountIndex  | 4          | gas fee account index  |
-| GasFeeAssetId       | 2          | gas fee asset id       |
-| GasFeeAssetAmount   | 2          | packed fee amount      |
-| CreatorTreasuryRate | 2          | creator treasury rate  |
-| CollectionId        | 2          | collection index       |
-| NftContentHash      | 32         | nft content hash       |
+| Name                | Size(byte) | Comment                  |
+|---------------------|------------|--------------------------|
+| TxType              | 1          | transaction type         |
+| CreatorAccountIndex | 4          | creator account index    |
+| ToAccountIndex      | 4          | receiver account index   |
+| ToL1Address         | 20         | receiver account address |
+| NftIndex            | 5          | unique nft index         |
+| GasFeeAssetId       | 2          | gas fee asset id         |
+| GasFeeAssetAmount   | 2          | packed fee amount        |
+| RoyaltyRate         | 2          | creator treasury rate    |
+| CollectionId        | 2          | collection index         |
+| NftContentHash      | 32         | nft content hash         |
+| NftContentType      | 1          | nft content type         |
 
 ```go
-func ConvertTxToMintNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
-	if oTx.TxType != commonTx.TxTypeMintNft {
-		logx.Errorf("[ConvertTxToMintNftPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToMintNftPubData] invalid tx type")
-	}
-	// parse tx
-	txInfo, err := commonTx.ParseMintNftTxInfo(oTx.TxInfo)
-	if err != nil {
-		logx.Errorf("[ConvertTxToMintNftPubData] unable to parse tx info: %s", err.Error())
-		return nil, err
-	}
-	var buf bytes.Buffer
-	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
-	buf.Write(Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
-	buf.Write(Uint40ToBytes(txInfo.NftIndex))
-	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
-	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
-		return nil, err
-	}
-	buf.Write(packedFeeBytes)
-	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.NftCollectionId)))
-	chunk := SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk)
-	buf.Write(PrefixPaddingBufToChunkSize(common.FromHex(txInfo.NftContentHash)))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	return buf.Bytes(), nil
+func ConvertTxToMintNftPubData(tx *tx.Tx) (pubData []byte, err error) {
+   txInfo, err := types.ParseMintNftTxInfo(tx.TxInfo)
+   if err != nil {
+   logx.Errorf("parse transfer tx failed: %s", err.Error())
+   return nil, types.AppErrInvalidTxInfo
+   }
+   var buf bytes.Buffer
+   buf.WriteByte(uint8(types.TxTypeMintNft))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
+   buf.Write(common2.AddressStrToBytes(txInfo.ToL1Address))
+   buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+   packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+   if err != nil {
+   logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+   return err
+   }
+   buf.Write(packedFeeBytes)
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.RoyaltyRate)))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.NftCollectionId)))
+   buf.Write(common2.PrefixPaddingBufToChunkSize(common.FromHex(txInfo.NftContentHash)))
+   buf.WriteByte(uint8(txInfo.NftContentType))
+   return buf.Bytes(), nil
 }
 ```
 
@@ -1041,7 +1001,7 @@ func ConvertTxToMintNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 type MintNftTxInfo struct {
 	CreatorAccountIndex int64
 	ToAccountIndex      int64
-	ToAccountNameHash   string =>ToL1Address
+    ToL1Address         string
 	NftIndex            int64
 	NftContentHash      string
 	NftCollectionId     int64
@@ -1054,7 +1014,7 @@ type MintNftTxInfo struct {
     MetaData            string
     MutableAttributes   string
 	Sig                 []byte
-    L1Sig               string =>add new field
+    L1Sig               string
 }
 ```
 
@@ -1062,30 +1022,38 @@ type MintNftTxInfo struct {
 
 ```go
 func VerifyMintNftTx(
-	api API, flag Variable,
-	tx *MintNftTxConstraints,
-	accountsBefore [NbAccountsPerTx]AccountConstraints, nftBefore NftConstraints,
-) (pubData [PubDataSizePerTx]Variable) {
-	pubData = CollectPubDataFromMintNft(api, *tx)
-	// verify params
-	// check empty nft
-	CheckEmptyNftNode(api, flag, nftBefore)
-	// account index
-	IsVariableEqual(api, flag, tx.CreatorAccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.ToAccountIndex, accountsBefore[1].AccountIndex)
-	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[2].AccountIndex)
-	// account name hash
-	IsVariableEqual(api, flag, tx.ToAccountNameHash, accountsBefore[1].AccountNameHash)
-	// content hash
-	isZero := api.IsZero(tx.NftContentHash)
-	IsVariableEqual(api, flag, isZero, 0)
-	// gas asset id
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[0].AssetId)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[2].AssetsInfo[0].AssetId)
-	// should have enough balance
-	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
-	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
-	return pubData
+   api API, flag Variable,
+   tx *MintNftTxConstraints,
+   accountsBefore [NbAccountsPerTx]AccountConstraints, nftBefore NftConstraints,
+) (pubData [PubDataBitsSizePerTx]Variable) {
+   fromAccount := 0
+   toAccount := 1
+   
+   pubData = CollectPubDataFromMintNft(api, *tx)
+   // verify params
+   // check empty nft
+   CheckEmptyNftNode(api, flag, nftBefore)
+   // account index
+   IsVariableEqual(api, flag, tx.CreatorAccountIndex, accountsBefore[fromAccount].AccountIndex)
+   IsVariableEqual(api, flag, tx.ToAccountIndex, accountsBefore[toAccount].AccountIndex)
+   // account address
+   // account to l1Address
+   isNewAccount := api.IsZero(api.Cmp(accountsBefore[toAccount].L1Address, ZeroInt))
+   address := api.Select(isNewAccount, tx.ToL1Address, accountsBefore[toAccount].L1Address)
+   IsVariableEqual(api, flag, tx.ToL1Address, address)
+   // content hash
+   isZero := api.Or(api.IsZero(tx.NftContentHash[0]), api.IsZero(tx.NftContentHash[1]))
+   IsVariableEqual(api, flag, isZero, 0)
+   // gas asset id
+   IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[fromAccount].AssetsInfo[0].AssetId)
+   // should have enough balance
+   tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
+   IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[fromAccount].AssetsInfo[0].Balance)
+   // collection id should be less than creator's collection nonce
+   IsVariableLess(api, flag, tx.CollectionId, accountsBefore[fromAccount].CollectionNonce)
+   //NftContentType
+   IsVariableLessOrEqual(api, flag, 0, tx.NftContentType)
+return pubData
 }
 ```
 
@@ -1100,56 +1068,43 @@ This is a layer-2 transaction and is used for transferring NFTs to others in the
 ##### Size
 
 | Chunks | Significant bytes |
-| ------ | ----------------- |
-| 6      | 54                |
+|--------|-------------------|
+|        | 70                |
 
 ##### Structure
 
-| Name               | Size(byte) | Comment                |
-| ------------------ | ---------- | ---------------------- |
-| TxType             | 1          | transaction type       |
-| FromAccountIndex   | 4          | from account index     |
-| ToAccountIndex     | 4          | receiver account index |
-| NftIndex           | 5          | unique nft index       |
-| GasFeeAccountIndex | 4          | gas fee account index  |
-| GasFeeAssetId      | 2          | gas fee asset id       |
-| GasFeeAssetAmount  | 2          | packed fee amount      |
-| CallDataHash       | 32         | call data hash         |
+| Name              | Size(byte) | Comment                  |
+|-------------------|------------|--------------------------|
+| TxType            | 1          | transaction type         |
+| FromAccountIndex  | 4          | from account index       |
+| ToAccountIndex    | 4          | receiver account index   |
+| ToL1Address       | 20         | receiver account address |
+| NftIndex          | 5          | unique nft index         |
+| GasFeeAssetId     | 2          | gas fee asset id         |
+| GasFeeAssetAmount | 2          | packed fee amount        |
+| CallDataHash      | 32         | call data hash           |
 
 ```go
-func ConvertTxToTransferNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
-	if oTx.TxType != commonTx.TxTypeTransferNft {
-		logx.Errorf("[ConvertTxToMintNftPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToMintNftPubData] invalid tx type")
-	}
-	// parse tx
-	txInfo, err := commonTx.ParseTransferNftTxInfo(oTx.TxInfo)
-	if err != nil {
-		logx.Errorf("[ConvertTxToMintNftPubData] unable to parse tx info: %s", err.Error())
-		return nil, err
-	}
-	var buf bytes.Buffer
-	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
-	buf.Write(Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
-	buf.Write(Uint40ToBytes(txInfo.NftIndex))
-	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
-	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
-		return nil, err
-	}
-	buf.Write(packedFeeBytes)
-	chunk := SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk)
-	buf.Write(PrefixPaddingBufToChunkSize(txInfo.CallDataHash))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	return buf.Bytes(), nil
+func ConvertTxToTransferNftPubData(tx *tx.Tx) (pubData []byte, err error) {
+   txInfo, err := types.ParseTransferNftTxInfo(tx.TxInfo)
+   if err != nil {
+   logx.Errorf("parse transfer tx failed: %s", err.Error())
+   return nil, errors.New("invalid tx info")
+   }
+   var buf bytes.Buffer
+   buf.WriteByte(uint8(types.TxTypeTransferNft))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
+   buf.Write(common2.AddressStrToBytes(txInfo.ToL1Address))
+   buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+   packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+   if err != nil {
+   return err
+   }
+   buf.Write(packedFeeBytes)
+   buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.CallDataHash))
+   return buf.Bytes(), nil
 }
 ```
 
@@ -1158,8 +1113,7 @@ func ConvertTxToTransferNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 ```go
 type TransferNftTxInfo struct {
 	FromAccountIndex  int64
-	ToAccountIndex    int64  =>Delete the field
-	ToAccountNameHash string =>ToL1Address
+    ToL1Address       string
 	NftIndex          int64
 	GasAccountIndex   int64
 	GasFeeAssetId     int64
@@ -1169,7 +1123,7 @@ type TransferNftTxInfo struct {
 	ExpiredAt         int64
 	Nonce             int64
 	Sig               []byte
-    L1Sig             string =>add new field
+    L1Sig             string
 }
 ```
 
@@ -1177,30 +1131,31 @@ type TransferNftTxInfo struct {
 
 ```go
 func VerifyTransferNftTx(
-	api API,
-	flag Variable,
-	tx *TransferNftTxConstraints,
-	accountsBefore [NbAccountsPerTx]AccountConstraints,
-	nftBefore NftConstraints,
-) (pubData [PubDataSizePerTx]Variable) {
-	pubData = CollectPubDataFromTransferNft(api, *tx)
-	// verify params
-	// account index
-	IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.ToAccountIndex, accountsBefore[1].AccountIndex)
-	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[2].AccountIndex)
-	// account name
-	IsVariableEqual(api, flag, tx.ToAccountNameHash, accountsBefore[1].AccountNameHash)
-	// asset id
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[0].AssetId)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[2].AssetsInfo[0].AssetId)
-	// nft info
-	IsVariableEqual(api, flag, tx.NftIndex, nftBefore.NftIndex)
-	IsVariableEqual(api, flag, tx.FromAccountIndex, nftBefore.OwnerAccountIndex)
-	// should have enough balance
-	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
-	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
-	return pubData
+   api API,
+   flag Variable,
+   tx *TransferNftTxConstraints,
+   accountsBefore [NbAccountsPerTx]AccountConstraints,
+   nftBefore NftConstraints,
+) (pubData [PubDataBitsSizePerTx]Variable) {
+   fromAccount := 0
+   toAccount := 1
+   pubData = CollectPubDataFromTransferNft(api, *tx)
+   // verify params
+   // account index
+   IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[fromAccount].AccountIndex)
+   // account address
+   isNewAccount := api.IsZero(api.Cmp(accountsBefore[toAccount].L1Address, ZeroInt))
+   address := api.Select(isNewAccount, tx.ToL1Address, accountsBefore[toAccount].L1Address)
+   IsVariableEqual(api, flag, tx.ToL1Address, address)
+   // asset id
+   IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[fromAccount].AssetsInfo[0].AssetId)
+   // nft info
+   IsVariableEqual(api, flag, tx.NftIndex, nftBefore.NftIndex)
+   IsVariableEqual(api, flag, tx.FromAccountIndex, nftBefore.OwnerAccountIndex)
+   // should have enough balance
+   tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
+   IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[fromAccount].AssetsInfo[0].Balance)
+   return pubData
 }
 ```
 
@@ -1215,100 +1170,113 @@ This is a layer-2 transaction that will be used for buying or selling Nft in the
 ##### Size
 
 | Chunks | Significant bytes |
-| ------ | ----------------- |
-| 6      | 44                |
+|--------|-------------------|
+|        | 63                |
 
 ##### Structure
 
 `Offer`:
 
-| Name         | Size(byte) | Comment                                                      |
-| ------------ | ---------- | ------------------------------------------------------------ |
-| Type         | 1          | transaction type, 0 indicates this is a  `BuyNftOffer` , 1 indicate this is a  `SellNftOffer` |
-| OfferId      | 3          | used to identify the oﬀer                                    |
-| AccountIndex | 4          | who want to buy/sell nft                                     |
-| AssetId      | 2          | the asset id which buyer/seller want to use pay for nft      |
-| AssetAmount  | 5          | the asset amount                                             |
-| ListedAt     | 8          | timestamp when the order is signed                           |
-| ExpiredAt    | 8          | timestamp after which the order is invalid                   |
-| Sig          | 64         | signature generated by buyer/seller_account_index's private key |
+| Name                | Size(byte) | Comment                                                                                       |
+|---------------------|------------|-----------------------------------------------------------------------------------------------|
+| Type                | 1          | transaction type, 0 indicates this is a  `BuyNftOffer` , 1 indicate this is a  `SellNftOffer` |
+| OfferId             | 3          | used to identify the oﬀer                                                                     |
+| AccountIndex        | 4          | who want to buy/sell nft                                                                      |
+| AssetId             | 2          | the asset id which buyer/seller want to use pay for nft                                       |
+| AssetAmount         | 5          | the asset amount                                                                              |
+| ListedAt            |            | timestamp when the order is signed                                                            |
+| ExpiredAt           |            | timestamp after which the order is invalid                                                    |
+| ChannelAccountIndex | 4          | channel account index                                                                         |
+| ChannelRate         | 5          | channel rate                                                                                  |
+| ProtocolRate        |            | protocol rate                                                                                 |
+| ProtocolAmount      | 5          | protocol amount                                                                               |
+| Sig                 |            | signature generated by buyer/seller_account_index's private key                               |
+| L1Sig               |            | l1 signature generated by buyer/seller_account_index's private key                            |
 
 `AtomicMatch`(**below is the only info that will be uploaded on-chain**):
 
-| Name                  | Size(byte) | Comment                    |
-| --------------------- | ---------- | -------------------------- |
-| TxType                | 1          | transaction type           |
-| SubmitterAccountIndex | 4          | submitter account index    |
-| BuyerAccountIndex     | 4          | buyer account index        |
-| BuyerOfferId          | 3          | used to identify the offer |
-| SellerAccountIndex    | 4          | seller account index       |
-| SellerOfferId         | 3          | used to identify the offer |
-| AssetId               | 2          | asset id                   |
-| AssetAmount           | 5          | packed asset amount        |
-| CreatorAmount         | 5          | packed creator amount      |
-| TreasuryAmount        | 5          | packed treasury amount     |
-| GasFeeAccountIndex    | 4          | gas fee account index      |
-| GasFeeAssetId         | 2          | gas fee asset id           |
-| GasFeeAssetAmount     | 2          | packed fee amount          |
+| Name                    | Size(byte) | Comment                    |
+|-------------------------|------------|----------------------------|
+| TxType                  | 1          | transaction type           |
+| SubmitterAccountIndex   | 4          | submitter account index    |
+| BuyerAccountIndex       | 4          | buyer account index        |
+| BuyerOfferId            | 3          | used to identify the offer |
+| SellerAccountIndex      | 4          | seller account index       |
+| SellerOfferId           | 3          | used to identify the offer |
+| NftIndex                | 5          | nft id                     |
+| AssetId                 | 2          | asset id                   |
+| AssetAmount             | 5          | packed asset amount        |
+| RoyaltyAmount           | 5          | packed creator amount      |
+| GasFeeAssetId           | 2          | gas fee asset id           |
+| GasFeeAssetAmount       | 2          | packed fee amount          |
+| BuyProtocolAmount       | 5          | packed buy protocol amount |
+| BuyChannelAccountIndex  | 4          | buy  ChannelAccountIndex   |
+| BuyChannelAmount        | 5          | buy  ChannelAmount         |
+| SellChannelAccountIndex | 4          | sell  ChannelAccountIndex  |
+| SellChannelAmount       | 5          | sell  ChannelAmount        |
+
 
 ```go
-func ConvertTxToAtomicMatchPubData(oTx *tx.Tx) (pubData []byte, err error) {
-	if oTx.TxType != commonTx.TxTypeAtomicMatch {
-		logx.Errorf("[ConvertTxToAtomicMatchPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToAtomicMatchPubData] invalid tx type")
-	}
-	// parse tx
-	txInfo, err := commonTx.ParseAtomicMatchTxInfo(oTx.TxInfo)
-	if err != nil {
-		logx.Errorf("[ConvertTxToAtomicMatchPubData] unable to parse tx info: %s", err.Error())
-		return nil, err
-	}
-	var buf bytes.Buffer
-	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	buf.Write(Uint32ToBytes(uint32(txInfo.BuyOffer.AccountIndex)))
-	buf.Write(Uint24ToBytes(txInfo.BuyOffer.OfferId))
-	buf.Write(Uint32ToBytes(uint32(txInfo.SellOffer.AccountIndex)))
-	buf.Write(Uint24ToBytes(txInfo.SellOffer.OfferId))
-	buf.Write(Uint40ToBytes(txInfo.BuyOffer.NftIndex))
-	buf.Write(Uint16ToBytes(uint16(txInfo.SellOffer.AssetId)))
-	chunk1 := SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	packedAmountBytes, err := AmountToPackedAmountBytes(txInfo.BuyOffer.AssetAmount)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
-		return nil, err
-	}
-	buf.Write(packedAmountBytes)
-	creatorAmountBytes, err := AmountToPackedAmountBytes(txInfo.CreatorAmount)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
-		return nil, err
-	}
-	buf.Write(creatorAmountBytes)
-	treasuryAmountBytes, err := AmountToPackedAmountBytes(txInfo.TreasuryAmount)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
-		return nil, err
-	}
-	buf.Write(treasuryAmountBytes)
-	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
-	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
-		return nil, err
-	}
-	buf.Write(packedFeeBytes)
-	chunk2 := PrefixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk1)
-	buf.Write(chunk2)
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	return buf.Bytes(), nil
+func ConvertTxToAtomicMatchPubData(tx *tx.Tx) (pubData []byte, err error) {
+   txInfo, err := types.ParseAtomicMatchTxInfo(tx.TxInfo)
+   if err != nil {
+   logx.Errorf("parse atomic match tx failed: %s", err.Error())
+   return nil, types.AppErrInvalidTxInfo
+   }
+   var buf bytes.Buffer
+   buf.WriteByte(uint8(types.TxTypeAtomicMatch))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.BuyOffer.AccountIndex)))
+   buf.Write(common2.Uint24ToBytes(txInfo.BuyOffer.OfferId))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.SellOffer.AccountIndex)))
+   buf.Write(common2.Uint24ToBytes(txInfo.SellOffer.OfferId))
+   buf.Write(common2.Uint40ToBytes(txInfo.BuyOffer.NftIndex))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.SellOffer.AssetId)))
+   packedAmountBytes, err := common2.AmountToPackedAmountBytes(txInfo.BuyOffer.AssetAmount)
+   if err != nil {
+   logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
+   return err
+   }
+   buf.Write(packedAmountBytes)
+   
+   royaltyAmountBytes, err := common2.AmountToPackedAmountBytes(txInfo.RoyaltyAmount)
+   if err != nil {
+   logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
+   return err
+   }
+   buf.Write(royaltyAmountBytes)
+   
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+   packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+   if err != nil {
+   logx.Errorf("unable to convert amount to packed fee amount: %s", err.Error())
+   return err
+   }
+   buf.Write(packedFeeBytes)
+   
+   protocolAmountBytes, err := common2.AmountToPackedAmountBytes(txInfo.BuyOffer.ProtocolAmount)
+   if err != nil {
+   logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
+   return err
+   }
+   buf.Write(protocolAmountBytes)
+   
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.BuyOffer.ChannelAccountIndex)))
+   buyChanelAmount, err := common2.AmountToPackedAmountBytes(txInfo.BuyChannelAmount)
+   if err != nil {
+   logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
+   return err
+   }
+   buf.Write(buyChanelAmount)
+   
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.SellOffer.ChannelAccountIndex)))
+   sellChanelAmount, err := common2.AmountToPackedAmountBytes(txInfo.SellChannelAmount)
+   if err != nil {
+   logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
+   return err
+   }
+   buf.Write(sellChanelAmount)
+   return buf.Bytes(), nil
 }
 ```
 
@@ -1316,31 +1284,38 @@ func ConvertTxToAtomicMatchPubData(oTx *tx.Tx) (pubData []byte, err error) {
 
 ```go
 type OfferTxInfo struct {
-	Type         int64
-	OfferId      int64
-	AccountIndex int64
-	NftIndex     int64
-	AssetId      int64
-	AssetAmount  *big.Int
-	ListedAt     int64
-	ExpiredAt    int64
-	TreasuryRate int64
-	Sig          []byte
-    L1Sig        string =>add new field
+   Type                int64
+   OfferId             int64
+   AccountIndex        int64
+   NftIndex            int64
+   NftName             string
+   AssetId             int64
+   AssetName           string
+   AssetAmount         *big.Int
+   ListedAt            int64
+   ExpiredAt           int64
+   RoyaltyRate         int64
+   ChannelAccountIndex int64
+   ChannelRate         int64
+   ProtocolRate        int64
+   ProtocolAmount      *big.Int
+   Sig                 []byte
+   L1Sig               string
 }
 
 type AtomicMatchTxInfo struct {
-	AccountIndex      int64
-	BuyOffer          *OfferTxInfo
-	SellOffer         *OfferTxInfo
-	GasAccountIndex   int64
-	GasFeeAssetId     int64
-	GasFeeAssetAmount *big.Int
-	CreatorAmount     *big.Int
-	TreasuryAmount    *big.Int
-	Nonce             int64
-	ExpiredAt         int64
-	Sig               []byte
+   AccountIndex      int64
+   BuyOffer          *OfferTxInfo
+   SellOffer         *OfferTxInfo
+   GasAccountIndex   int64
+   GasFeeAssetId     int64
+   GasFeeAssetAmount *big.Int
+   RoyaltyAmount     *big.Int
+   BuyChannelAmount  *big.Int
+   SellChannelAmount *big.Int
+   Nonce             int64
+   ExpiredAt         int64
+   Sig               []byte
 }
 ```
 
@@ -1348,93 +1323,110 @@ type AtomicMatchTxInfo struct {
 
 ```go
 func VerifyAtomicMatchTx(
-	api API, flag Variable,
-	tx *AtomicMatchTxConstraints,
-	accountsBefore [NbAccountsPerTx]AccountConstraints,
-	nftBefore NftConstraints,
-	blockCreatedAt Variable,
-	hFunc MiMC,
-) (pubData [PubDataSizePerTx]Variable, err error) {
-	pubData = CollectPubDataFromAtomicMatch(api, *tx)
-	// verify params
-	IsVariableEqual(api, flag, tx.BuyOffer.Type, 0)
-	IsVariableEqual(api, flag, tx.SellOffer.Type, 1)
-	IsVariableEqual(api, flag, tx.BuyOffer.AssetId, tx.SellOffer.AssetId)
-	IsVariableEqual(api, flag, tx.BuyOffer.AssetAmount, tx.SellOffer.AssetAmount)
-	IsVariableEqual(api, flag, tx.BuyOffer.NftIndex, tx.SellOffer.NftIndex)
-	IsVariableEqual(api, flag, tx.BuyOffer.AssetId, accountsBefore[1].AssetsInfo[0].AssetId)
-	IsVariableEqual(api, flag, tx.SellOffer.AssetId, accountsBefore[2].AssetsInfo[0].AssetId)
-	IsVariableEqual(api, flag, tx.SellOffer.AssetId, accountsBefore[3].AssetsInfo[0].AssetId)
-	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[4].AccountIndex)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[0].AssetId)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[4].AssetsInfo[1].AssetId)
-	IsVariableLessOrEqual(api, flag, blockCreatedAt, tx.BuyOffer.ExpiredAt)
-	IsVariableLessOrEqual(api, flag, blockCreatedAt, tx.SellOffer.ExpiredAt)
-	IsVariableEqual(api, flag, nftBefore.NftIndex, tx.SellOffer.NftIndex)
-	IsVariableEqual(api, flag, tx.BuyOffer.TreasuryRate, tx.SellOffer.TreasuryRate)
-	// verify signature
-	hFunc.Reset()
-	buyOfferHash := ComputeHashFromOfferTx(tx.BuyOffer, hFunc)
-	hFunc.Reset()
-	notBuyer := api.IsZero(api.IsZero(api.Sub(tx.AccountIndex, tx.BuyOffer.AccountIndex)))
-	notBuyer = api.And(flag, notBuyer)
-	err = VerifyEddsaSig(notBuyer, api, hFunc, buyOfferHash, accountsBefore[1].AccountPk, tx.BuyOffer.Sig)
-	if err != nil {
-		return pubData, err
-	}
-	hFunc.Reset()
-	sellOfferHash := ComputeHashFromOfferTx(tx.SellOffer, hFunc)
-	hFunc.Reset()
-	notSeller := api.IsZero(api.IsZero(api.Sub(tx.AccountIndex, tx.SellOffer.AccountIndex)))
-	notSeller = api.And(flag, notSeller)
-	err = VerifyEddsaSig(notSeller, api, hFunc, sellOfferHash, accountsBefore[2].AccountPk, tx.SellOffer.Sig)
-	if err != nil {
-		return pubData, err
-	}
-	// verify account index
-	// submitter
-	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
-	// buyer
-	IsVariableEqual(api, flag, tx.BuyOffer.AccountIndex, accountsBefore[1].AccountIndex)
-	// seller
-	IsVariableEqual(api, flag, tx.SellOffer.AccountIndex, accountsBefore[2].AccountIndex)
-	// creator
-	IsVariableEqual(api, flag, nftBefore.CreatorAccountIndex, accountsBefore[3].AccountIndex)
-	// gas
-	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[4].AccountIndex)
-	// verify buy offer id
-	buyOfferIdBits := api.ToBinary(tx.BuyOffer.OfferId, 24)
-	buyAssetId := api.FromBinary(buyOfferIdBits[7:]...)
-	buyOfferIndex := api.Sub(tx.BuyOffer.OfferId, api.Mul(buyAssetId, OfferSizePerAsset))
-	buyOfferIndexBits := api.ToBinary(accountsBefore[1].AssetsInfo[1].OfferCanceledOrFinalized, OfferSizePerAsset)
-	for i := 0; i < OfferSizePerAsset; i++ {
-		isZero := api.IsZero(api.Sub(buyOfferIndex, i))
-		isCheckVar := api.And(isZero, flag)
-		isCheck := api.Compiler().IsBoolean(isCheckVar)
-		if isCheck {
-			IsVariableEqual(api, 1, buyOfferIndexBits[i], 0)
-		}
-	}
-	// verify sell offer id
-	sellOfferIdBits := api.ToBinary(tx.SellOffer.OfferId, 24)
-	sellAssetId := api.FromBinary(sellOfferIdBits[7:]...)
-	sellOfferIndex := api.Sub(tx.SellOffer.OfferId, api.Mul(sellAssetId, OfferSizePerAsset))
-	sellOfferIndexBits := api.ToBinary(accountsBefore[2].AssetsInfo[1].OfferCanceledOrFinalized, OfferSizePerAsset)
-	for i := 0; i < OfferSizePerAsset; i++ {
-		isZero := api.IsZero(api.Sub(sellOfferIndex, i))
-		isCheckVar := api.And(isZero, flag)
-		isCheck := api.Compiler().IsBoolean(isCheckVar)
-		if isCheck {
-			IsVariableEqual(api, 1, sellOfferIndexBits[i], 0)
-		}
-	}
-	// buyer should have enough balance
-	tx.BuyOffer.AssetAmount = UnpackAmount(api, tx.BuyOffer.AssetAmount)
-	IsVariableLessOrEqual(api, flag, tx.BuyOffer.AssetAmount, accountsBefore[1].AssetsInfo[0].Balance)
-	// submitter should have enough balance
-	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
-	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
-	return pubData, nil
+   api API, flag Variable,
+   tx *AtomicMatchTxConstraints,
+   accountsBefore [NbAccountsPerTx]AccountConstraints,
+   nftBefore NftConstraints,
+   blockCreatedAt Variable,
+   hFunc MiMC,
+) (pubData [PubDataBitsSizePerTx]Variable, err error) {
+   fromAccount := 0
+   buyAccount := 1
+   sellAccount := 2
+   creatorAccount := 3
+   buyChanelAccount := 4
+   sellChanelAccount := 5
+   protocolAccount := 6
+   
+   pubData = CollectPubDataFromAtomicMatch(api, *tx)
+   // verify params
+   IsVariableEqual(api, flag, tx.BuyOffer.Type, 0)
+   IsVariableEqual(api, flag, tx.SellOffer.Type, 1)
+   IsVariableEqual(api, flag, tx.BuyOffer.AssetId, tx.SellOffer.AssetId)
+   IsVariableEqual(api, flag, tx.BuyOffer.AssetAmount, tx.SellOffer.AssetAmount)
+   IsVariableEqual(api, flag, tx.BuyOffer.NftIndex, tx.SellOffer.NftIndex)
+   IsVariableEqual(api, flag, tx.BuyOffer.AssetId, accountsBefore[buyAccount].AssetsInfo[0].AssetId)
+   IsVariableEqual(api, flag, tx.BuyOffer.AssetId, accountsBefore[creatorAccount].AssetsInfo[0].AssetId)
+   IsVariableEqual(api, flag, tx.BuyOffer.AssetId, accountsBefore[buyChanelAccount].AssetsInfo[0].AssetId)
+   IsVariableEqual(api, flag, tx.BuyOffer.AssetId, accountsBefore[sellChanelAccount].AssetsInfo[0].AssetId)
+   IsVariableEqual(api, flag, tx.BuyOffer.AssetId, accountsBefore[protocolAccount].AssetsInfo[0].AssetId)
+   IsVariableEqual(api, flag, tx.SellOffer.AssetId, accountsBefore[sellAccount].AssetsInfo[0].AssetId)
+   IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[fromAccount].AssetsInfo[0].AssetId)
+   IsVariableLessOrEqual(api, flag, blockCreatedAt, tx.BuyOffer.ExpiredAt)
+   IsVariableLessOrEqual(api, flag, blockCreatedAt, tx.SellOffer.ExpiredAt)
+   IsVariableEqual(api, flag, nftBefore.NftIndex, tx.SellOffer.NftIndex)
+   IsVariableEqual(api, flag, nftBefore.RoyaltyRate, tx.BuyOffer.RoyaltyRate)
+   
+   // verify signature
+   buyOfferHash := ComputeHashFromBuyOfferTx(api, tx.BuyOffer)
+   notBuyer := api.IsZero(api.IsZero(api.Sub(tx.AccountIndex, tx.BuyOffer.AccountIndex)))
+   notBuyer = api.And(flag, notBuyer)
+   err = VerifyEddsaSig(notBuyer, api, hFunc, buyOfferHash, accountsBefore[1].AccountPk, tx.BuyOffer.Sig)
+   if err != nil {
+   return pubData, err
+   }
+   sellOfferHash := ComputeHashFromSellOfferTx(api, tx.SellOffer)
+   notSeller := api.IsZero(api.IsZero(api.Sub(tx.AccountIndex, tx.SellOffer.AccountIndex)))
+   notSeller = api.And(flag, notSeller)
+   err = VerifyEddsaSig(notSeller, api, hFunc, sellOfferHash, accountsBefore[2].AccountPk, tx.SellOffer.Sig)
+   if err != nil {
+   return pubData, err
+   }
+   // verify account index
+   // submitter
+   IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[fromAccount].AccountIndex)
+   // buyer
+   IsVariableEqual(api, flag, tx.BuyOffer.AccountIndex, accountsBefore[buyAccount].AccountIndex)
+   // seller
+   IsVariableEqual(api, flag, tx.SellOffer.AccountIndex, accountsBefore[sellAccount].AccountIndex)
+   // creator
+   IsVariableEqual(api, flag, nftBefore.CreatorAccountIndex, accountsBefore[creatorAccount].AccountIndex)
+   // buyChanelAccount
+   IsVariableEqual(api, flag, tx.BuyOffer.ChannelAccountIndex, accountsBefore[buyChanelAccount].AccountIndex)
+   // sellChanelAccount
+   IsVariableEqual(api, flag, tx.SellOffer.ChannelAccountIndex, accountsBefore[sellChanelAccount].AccountIndex)
+   // sellChanelAccount
+   IsVariableEqual(api, flag, tx.ProtocolAccountIndex, accountsBefore[protocolAccount].AccountIndex)
+   
+   // verify buy offer id
+   buyOfferIdBits := api.ToBinary(tx.BuyOffer.OfferId, 24)
+   buyAssetId := api.FromBinary(buyOfferIdBits[7:]...)
+   buyOfferIndex := api.Sub(tx.BuyOffer.OfferId, api.Mul(buyAssetId, OfferSizePerAsset))
+   buyOfferIndexBits := api.ToBinary(accountsBefore[buyAccount].AssetsInfo[1].OfferCanceledOrFinalized, OfferSizePerAsset)
+   for i := 0; i < OfferSizePerAsset; i++ {
+   isZero := api.IsZero(api.Sub(buyOfferIndex, i))
+   IsVariableEqual(api, isZero, buyOfferIndexBits[i], 0)
+   }
+   // verify sell offer id
+   sellOfferIdBits := api.ToBinary(tx.SellOffer.OfferId, 24)
+   sellAssetId := api.FromBinary(sellOfferIdBits[7:]...)
+   sellOfferIndex := api.Sub(tx.SellOffer.OfferId, api.Mul(sellAssetId, OfferSizePerAsset))
+   sellOfferIndexBits := api.ToBinary(accountsBefore[sellAccount].AssetsInfo[1].OfferCanceledOrFinalized, OfferSizePerAsset)
+   for i := 0; i < OfferSizePerAsset; i++ {
+   isZero := api.IsZero(api.Sub(sellOfferIndex, i))
+   IsVariableEqual(api, isZero, sellOfferIndexBits[i], 0)
+   }
+   // buyer should have enough balance
+   tx.BuyOffer.AssetAmount = UnpackAmount(api, tx.BuyOffer.AssetAmount)
+   tx.BuyOffer.ProtocolAmount = UnpackAmount(api, tx.BuyOffer.ProtocolAmount)
+   tx.BuyChannelAmount = UnpackAmount(api, tx.BuyChannelAmount)
+   tx.RoyaltyAmount = UnpackAmount(api, tx.RoyaltyAmount)
+   totalAmount := api.Add(tx.BuyOffer.AssetAmount, tx.BuyOffer.ProtocolAmount, tx.BuyChannelAmount, tx.RoyaltyAmount)
+   IsVariableLessOrEqual(api, flag, totalAmount, accountsBefore[buyAccount].AssetsInfo[0].Balance)
+   // submitter should have enough balance
+   tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
+   IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[fromAccount].AssetsInfo[0].Balance)
+   
+   // verify protocol amount
+   protocolAmount := api.Mul(tx.BuyOffer.AssetAmount, tx.BuyOffer.ProtocolRate)
+   protocolAmount = api.Div(protocolAmount, RateBase)
+   IsVariableEqual(api, flag, tx.BuyOffer.ProtocolAmount, protocolAmount)
+   
+   // verify royalty amount
+   royaltyAmount := api.Mul(tx.BuyOffer.AssetAmount, tx.BuyOffer.RoyaltyRate)
+   royaltyAmount = api.Div(royaltyAmount, RateBase)
+   IsVariableEqual(api, flag, tx.RoyaltyAmount, royaltyAmount)
+   return pubData, nil
 }
 ```
 
@@ -1449,53 +1441,38 @@ This is a layer-2 transaction and is used for canceling nft offer.
 ##### Size
 
 | Chunks | Significant bytes |
-| ------ | ----------------- |
-| 6      | 16                |
+|--------|-------------------|
+|        | 12                |
 
 ##### Structure
 
-| Name               | Size(byte) | Comment               |
-| ------------------ | ---------- | --------------------- |
-| TxType             | 1          | transaction type      |
-| AccountIndex       | 4          | account index         |
-| OfferId            | 3          | nft offer id          |
-| GasFeeAccountIndex | 4          | gas fee account index |
-| GasFeeAssetId      | 2          | gas fee asset id      |
-| GasFeeAssetAmount  | 2          | packed fee amount     |
+| Name              | Size(byte) | Comment           |
+|-------------------|------------|-------------------|
+| TxType            | 1          | transaction type  |
+| AccountIndex      | 4          | account index     |
+| OfferId           | 3          | nft offer id      |
+| GasFeeAssetId     | 2          | gas fee asset id  |
+| GasFeeAssetAmount | 2          | packed fee amount |
 
 ```go
-func ConvertTxToCancelOfferPubData(oTx *tx.Tx) (pubData []byte, err error) {
-	if oTx.TxType != commonTx.TxTypeCancelOffer {
-		logx.Errorf("[ConvertTxToCancelOfferPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToCancelOfferPubData] invalid tx type")
-	}
-	// parse tx
-	txInfo, err := commonTx.ParseCancelOfferTxInfo(oTx.TxInfo)
-	if err != nil {
-		logx.Errorf("[ConvertTxToCancelOfferPubData] unable to parse tx info: %s", err.Error())
-		return nil, err
-	}
-	var buf bytes.Buffer
-	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	buf.Write(Uint24ToBytes(txInfo.OfferId))
-	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
-	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
-		return nil, err
-	}
-	buf.Write(packedFeeBytes)
-	chunk := SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk)
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	return buf.Bytes(), nil
+func ConvertTxToCancelOfferPubData(tx *tx.Tx) (pubData []byte, err error) {
+   txInfo, err := types.ParseCancelOfferTxInfo(tx.TxInfo)
+   if err != nil {
+   logx.Errorf("parse transfer tx failed: %s", err.Error())
+   return nil, types.AppErrInvalidTxInfo
+   }
+   var buf bytes.Buffer
+   buf.WriteByte(uint8(types.TxTypeCancelOffer))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
+   buf.Write(common2.Uint24ToBytes(txInfo.OfferId))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+   packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+   if err != nil {
+   logx.Errorf("unable to convert amount to packed fee amount: %s", err.Error())
+   return err
+   }
+   buf.Write(packedFeeBytes)
+   return buf.Bytes(), nil
 }
 ```
 
@@ -1503,15 +1480,16 @@ func ConvertTxToCancelOfferPubData(oTx *tx.Tx) (pubData []byte, err error) {
 
 ```go
 type CancelOfferTxInfo struct {
-	AccountIndex      int64
-	OfferId           int64
-	GasAccountIndex   int64
-	GasFeeAssetId     int64
-	GasFeeAssetAmount *big.Int
-	ExpiredAt         int64
-	Nonce             int64
-	Sig               []byte
-    L1Sig             string =>add new field
+   AccountIndex      int64
+   OfferId           int64
+   NftName           string
+   GasAccountIndex   int64
+   GasFeeAssetId     int64
+   GasFeeAssetAmount *big.Int
+   ExpiredAt         int64
+   Nonce             int64
+   Sig               []byte
+   L1Sig             string
 }
 ```
 
@@ -1519,23 +1497,22 @@ type CancelOfferTxInfo struct {
 
 ```go
 func VerifyCancelOfferTx(
-	api API, flag Variable,
-	tx *CancelOfferTxConstraints,
-	accountsBefore [NbAccountsPerTx]AccountConstraints,
-) (pubData [PubDataSizePerTx]Variable) {
-	pubData = CollectPubDataFromCancelOffer(api, *tx)
-	// verify params
-	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[1].AccountIndex)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[0].AssetId)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[1].AssetsInfo[0].AssetId)
-	offerIdBits := api.ToBinary(tx.OfferId, 24)
-	assetId := api.FromBinary(offerIdBits[7:]...)
-	IsVariableEqual(api, flag, assetId, accountsBefore[0].AssetsInfo[1].AssetId)
-	// should have enough balance
-	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
-	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[1].Balance)
-	return pubData
+   api API, flag Variable,
+   tx *CancelOfferTxConstraints,
+   accountsBefore [NbAccountsPerTx]AccountConstraints,
+) (pubData [PubDataBitsSizePerTx]Variable) {
+   fromAccount := 0
+   pubData = CollectPubDataFromCancelOffer(api, *tx)
+   // verify params
+   IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[fromAccount].AccountIndex)
+   IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[fromAccount].AssetsInfo[0].AssetId)
+   offerIdBits := api.ToBinary(tx.OfferId, 24)
+   assetId := api.FromBinary(offerIdBits[7:]...)
+   IsVariableEqual(api, flag, assetId, accountsBefore[fromAccount].AssetsInfo[1].AssetId)
+   // should have enough balance
+   tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
+   IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[fromAccount].AssetsInfo[0].Balance)
+   return pubData
 }
 ```
 
@@ -1550,66 +1527,52 @@ This is a layer-2 transaction and is used for withdrawing nft from the layer-2 t
 ##### Size
 
 | Chunks | Significant bytes |
-| ------ | ----------------- |
-| 6      | 162               |
+|--------|-------------------|
+| 0      | 95                |
 
 ##### Structure
 
-| Name                   | Size(byte) | Comment                   |
-| ---------------------- | ---------- | ------------------------- |
-| TxType                 | 1          | transaction type          |
-| AccountIndex           | 4          | account index             |
-| CreatorAccountIndex    | 4          | creator account index     |
-| CreatorTreasuryRate    | 2          | creator treasury rate     |
-| NftIndex               | 5          | unique nft index          |
-| CollectionId           | 2          | collection id             |
-| ToAddress              | 20         | receiver address          |
-| GasFeeAccountIndex     | 4          | gas fee account index     |
-| GasFeeAssetId          | 2          | gas fee asset id          |
-| GasFeeAssetAmount      | 2          | packed fee amount         |
-| NftContentHash         | 32         | nft content hash          |
-| CreatorAccountNameHash | 32         | creator account name hash |
+| Name                | Size(byte) | Comment               |
+|---------------------|------------|-----------------------|
+| TxType              | 1          | transaction type      |
+| AccountIndex        | 4          | account index         |
+| CreatorAccountIndex | 4          | creator account index |
+| RoyaltyRate         | 2          | creator treasury rate |
+| NftIndex            | 5          | unique nft index      |
+| CollectionId        | 2          | collection id         |
+| GasFeeAssetId       | 2          | gas fee asset id      |
+| GasFeeAssetAmount   | 2          | packed fee amount     |
+| ToAddress           | 20         | receiver address      |
+| CreatorL1Address    | 20         | creatot l1Address     |
+| NftContentHash      | 32         | nft content hash      |
+| NftContentType      | 1          | nft content type      |
 
 ```go
-func ConvertTxToWithdrawNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
-	if oTx.TxType != commonTx.TxTypeWithdrawNft {
-		logx.Errorf("[ConvertTxToWithdrawNftPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToWithdrawNftPubData] invalid tx type")
-	}
-	// parse tx
-	txInfo, err := commonTx.ParseWithdrawNftTxInfo(oTx.TxInfo)
-	if err != nil {
-		logx.Errorf("[ConvertTxToWithdrawNftPubData] unable to parse tx info: %s", err.Error())
-		return nil, err
-	}
-	var buf bytes.Buffer
-	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	buf.Write(Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
-	buf.Write(Uint40ToBytes(txInfo.NftIndex))
-	buf.Write(Uint16ToBytes(uint16(txInfo.CollectionId)))
-	chunk1 := SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	chunk2 := PrefixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(AddressStrToBytes(txInfo.ToAddress))
-	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
-	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
-	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
-		return nil, err
-	}
-	buf.Write(packedFeeBytes)
-	chunk3 := PrefixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk1)
-	buf.Write(chunk2)
-	buf.Write(chunk3)
-	buf.Write(PrefixPaddingBufToChunkSize(txInfo.NftContentHash))
-	buf.Write(PrefixPaddingBufToChunkSize(txInfo.CreatorAccountNameHash))
-	return buf.Bytes(), nil
+func ConvertTxToWithdrawNftPubData(tx *tx.Tx) (pubData []byte, err error) {
+   txInfo, err := types.ParseWithdrawNftTxInfo(tx.TxInfo)
+   if err != nil {
+   logx.Errorf("parse transfer tx failed: %s", err.Error())
+   return nil, types.AppErrInvalidTxInfo
+   }
+   var buf bytes.Buffer
+   buf.WriteByte(uint8(types.TxTypeWithdrawNft))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.RoyaltyRate)))
+   buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.CollectionId)))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+   packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+   if err != nil {
+   logx.Errorf("unable to convert amount to packed fee amount: %s", err.Error())
+   return err
+   }
+   buf.Write(packedFeeBytes)
+   buf.Write(common2.AddressStrToBytes(txInfo.ToAddress))
+   buf.Write(common2.AddressStrToBytes(txInfo.CreatorL1Address))
+   buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.NftContentHash))
+   buf.WriteByte(uint8(txInfo.NftContentType))
+   return buf.Bytes(), nil
 }
 ```
 
@@ -1617,21 +1580,23 @@ func ConvertTxToWithdrawNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 
 ```go
 type WithdrawNftTxInfo struct {
-	AccountIndex           int64
-	CreatorAccountIndex    int64
-	CreatorAccountNameHash []byte =>CreatorL1Address
-	CreatorTreasuryRate    int64
-	NftIndex               int64
-	NftContentHash         []byte
-	CollectionId           int64
-	ToAddress              string
-	GasAccountIndex        int64
-	GasFeeAssetId          int64
-	GasFeeAssetAmount      *big.Int
-	ExpiredAt              int64
-	Nonce                  int64
-	Sig                    []byte
-    L1Sig                  string =>add new field
+   AccountIndex        int64
+   CreatorAccountIndex int64
+   CreatorL1Address    string
+   RoyaltyRate         int64
+   NftIndex            int64
+   NftName             string
+   NftContentHash      []byte
+   NftContentType      int64
+   CollectionId        int64
+   ToAddress           string
+   GasAccountIndex     int64
+   GasFeeAssetId       int64
+   GasFeeAssetAmount   *big.Int
+   ExpiredAt           int64
+   Nonce               int64
+   Sig                 []byte
+   L1Sig               string
 }
 ```
 
@@ -1639,35 +1604,38 @@ type WithdrawNftTxInfo struct {
 
 ```go
 func VerifyWithdrawNftTx(
-	api API,
-	flag Variable,
-	tx *WithdrawNftTxConstraints,
-	accountsBefore [NbAccountsPerTx]AccountConstraints,
-	nftBefore NftConstraints,
-) (pubData [PubDataSizePerTx]Variable) {
-	pubData = CollectPubDataFromWithdrawNft(api, *tx)
-	// verify params
-	// account index
-	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.CreatorAccountIndex, accountsBefore[1].AccountIndex)
-	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[2].AccountIndex)
-	// account name hash
-	IsVariableEqual(api, flag, tx.CreatorAccountNameHash, accountsBefore[1].AccountNameHash)
-	// collection id
-	IsVariableEqual(api, flag, tx.CollectionId, nftBefore.CollectionId)
-	// asset id
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[0].AssetId)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[2].AssetsInfo[0].AssetId)
-	// nft info
-	IsVariableEqual(api, flag, tx.NftIndex, nftBefore.NftIndex)
-	IsVariableEqual(api, flag, tx.CreatorAccountIndex, nftBefore.CreatorAccountIndex)
-	IsVariableEqual(api, flag, tx.CreatorTreasuryRate, nftBefore.CreatorTreasuryRate)
-	IsVariableEqual(api, flag, tx.AccountIndex, nftBefore.OwnerAccountIndex)
-	IsVariableEqual(api, flag, tx.NftContentHash, nftBefore.NftContentHash)
-	// have enough assets
-	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
-	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
-	return pubData
+   api API,
+   flag Variable,
+   tx *WithdrawNftTxConstraints,
+   accountsBefore [NbAccountsPerTx]AccountConstraints,
+   nftBefore NftConstraints,
+) (pubData [PubDataBitsSizePerTx]Variable) {
+   fromAccount := 0
+   creatorAccount := 1
+   pubData = CollectPubDataFromWithdrawNft(api, *tx)
+   // verify params
+   // account index
+   IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[fromAccount].AccountIndex)
+   IsVariableEqual(api, flag, tx.CreatorAccountIndex, accountsBefore[creatorAccount].AccountIndex)
+   // account name hash
+   IsVariableEqual(api, flag, tx.CreatorL1Address, accountsBefore[creatorAccount].L1Address)
+   // collection id
+   IsVariableEqual(api, flag, tx.CollectionId, nftBefore.CollectionId)
+   //NftContentType
+   IsVariableEqual(api, flag, tx.NftContentType, nftBefore.NftContentType)
+   // asset id
+   IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[fromAccount].AssetsInfo[0].AssetId)
+   // nft info
+   IsVariableEqual(api, flag, tx.NftIndex, nftBefore.NftIndex)
+   IsVariableEqual(api, flag, tx.CreatorAccountIndex, nftBefore.CreatorAccountIndex)
+   IsVariableEqual(api, flag, tx.RoyaltyRate, nftBefore.RoyaltyRate)
+   IsVariableEqual(api, flag, tx.AccountIndex, nftBefore.OwnerAccountIndex)
+   IsVariableEqual(api, flag, tx.NftContentHash[0], nftBefore.NftContentHash[0])
+   IsVariableEqual(api, flag, tx.NftContentHash[1], nftBefore.NftContentHash[1])
+   // have enough assets
+   tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
+   IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[fromAccount].AssetsInfo[0].Balance)
+   return pubData
 }
 ```
 
@@ -1682,83 +1650,75 @@ This is a layer-1 transaction and is used for full exit assets from the layer-2 
 ##### Size
 
 | Chunks | Significant bytes |
-| ------ | ----------------- |
-| 6      | 55                |
+|--------|-------------------|
+|        | 43                |
 
 ##### Structure
 
-| Name            | Size(byte) | Comment            |
-| --------------- | ---------- | ------------------ |
-| TxType          | 1          | transaction type   |
-| AccountIndex    | 4          | from account index |
-| AssetId         | 2          | asset index        |
-| AssetAmount     | 16         | state amount       |
-| AccountNameHash | 32         | account name hash  |
+| Name         | Size(byte) | Comment             |
+|--------------|------------|---------------------|
+| TxType       | 1          | transaction type    |
+| AccountIndex | 4          | from account index  |
+| AssetId      | 2          | asset index         |
+| AssetAmount  | 16         | state amount        |
+| L1Address    | 20         | account's l1Address |
 ```go
 type FullExitTxInfo struct {
-	TxType uint8
-
-	// Get from layer1 events.
-	AccountNameHash []byte =>L1Address
-	AssetId         int64
-    AccountIndex    int64  =>add new field
-
-
-    // Set by layer2.
-	AssetAmount  *big.Int
+   TxType uint8
+   
+   // Get from layer1 events.
+   L1Address    string
+   AssetId      int64
+   AccountIndex int64
+   
+   // Set by layer2.
+   AssetAmount *big.Int
 }
 ```
 ```go
-func ConvertTxToFullExitPubData(oTx *tx.Tx) (pubData []byte, err error) {
-	if oTx.TxType != commonTx.TxTypeFullExit {
-		logx.Errorf("[ConvertTxToFullExitPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToFullExitPubData] invalid tx type")
-	}
-	// parse tx
-	txInfo, err := commonTx.ParseFullExitTxInfo(oTx.TxInfo)
-	if err != nil {
-		logx.Errorf("[ConvertTxToFullExitPubData] unable to parse tx info: %s", err.Error())
-		return nil, err
-	}
-	var buf bytes.Buffer
-	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.AssetId)))
-	buf.Write(Uint128ToBytes(txInfo.AssetAmount))
-	chunk := SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk)
-	buf.Write(PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
-	return buf.Bytes(), nil
+func ConvertTxToFullExitPubData(tx *tx.Tx) (pubData []byte, err error) {
+   txInfo, err := types.ParseFullExitTxInfo(tx.TxInfo)
+   if err != nil {
+   logx.Errorf("parse full exit tx failed: %s", err.Error())
+   return nil, types.AppErrInvalidTxInfo
+   }
+   var buf bytes.Buffer
+   buf.WriteByte(uint8(types.TxTypeFullExit))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.AssetId)))
+   buf.Write(common2.Uint128ToBytes(txInfo.AssetAmount))
+   buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
+   return buf.Bytes(), nil
 }
 ```
 
 #### User transaction
 
-| Name            | Size(byte) | Comment               |
-| --------------- | ---------- | --------------------- |
-| AccountNameHash | 32         | account name hash     |
-| AssetAddress    | 20         | asset layer-1 address |
+| Name         | Size(byte) | Comment               |
+|--------------|------------|-----------------------|
+| L1Address    | 20         | account's l1Address   |
+| AssetAddress | 20         | asset layer-1 address |
 
 #### Circuit
 
 ```go
 func VerifyFullExitTx(
-	api API, flag Variable,
-	tx FullExitTxConstraints,
-	accountsBefore [NbAccountsPerTx]AccountConstraints,
-) (pubData [PubDataSizePerTx]Variable) {
-	pubData = CollectPubDataFromFullExit(api, tx)
-	// verify params
-	IsVariableEqual(api, flag, tx.AccountNameHash, accountsBefore[0].AccountNameHash)
-	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.AssetId, accountsBefore[0].AssetsInfo[0].AssetId)
-	IsVariableEqual(api, flag, tx.AssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
-	return pubData
+   api API, flag Variable,
+   tx FullExitTxConstraints,
+   accountsBefore [NbAccountsPerTx]AccountConstraints,
+) (pubData [PubDataBitsSizePerTx]Variable) {
+   txInfoL1Address := api.Select(flag, tx.L1Address, ZeroInt)
+   beforeL1Address := api.Select(flag, accountsBefore[0].L1Address, ZeroInt)
+   isOwner := api.And(api.IsZero(api.Cmp(txInfoL1Address, beforeL1Address)), flag)
+   tx.AssetAmount = api.Select(isOwner, tx.AssetAmount, ZeroInt)
+   pubData = CollectPubDataFromFullExit(api, tx)
+   // verify params
+   IsVariableEqual(api, isOwner, tx.L1Address, accountsBefore[0].L1Address)
+   IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
+   IsVariableEqual(api, flag, tx.AssetId, accountsBefore[0].AssetsInfo[0].AssetId)
+   
+   IsVariableEqual(api, isOwner, tx.AssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
+   return pubData
 }
 ```
 
@@ -1773,104 +1733,109 @@ This is a layer-1 transaction and is used for full exit NFTs from the layer-2 to
 ##### Size
 
 | Chunks | Significant bytes |
-| ------ | ----------------- |
-| 6      | 164               |
+|--------|-------------------|
+|        | 91                |
 
 ##### Structure
 
-| Name                   | Size(byte) | Comment                   |
-| ---------------------- | ---------- | ------------------------- |
-| TxType                 | 1          | transaction type          |
-| AccountIndex           | 4          | from account index        |
-| CreatorAccountIndex    | 2          | creator account index     |
-| CreatorTreasuryRate    | 2          | creator treasury rate     |
-| NftIndex               | 5          | unique nft index          |
-| CollectionId           | 2          | collection id             |
-| AccountNameHash        | 32         | account name hash         |
-| CreatorAccountNameHash | 32         | creator account name hash |
-| NftContentHash         | 32         | nft content hash          |
+| Name                | Size(byte) | Comment                   |
+|---------------------|------------|---------------------------|
+| TxType              | 1          | transaction type          |
+| AccountIndex        | 4          | from account index        |
+| CreatorAccountIndex | 4          | creator account index     |
+| RoyaltyRate         | 2          | creator treasury rate     |
+| NftIndex            | 5          | unique nft index          |
+| CollectionId        | 2          | collection id             |
+| L1Address           | 20         | account's L1Address       |
+| CreatorL1Address    | 20         | creator account l1Address |
+| NftContentHash      | 32         | nft content hash          |
+| NftContentType      | 1          | nft content type          |
 
 ```go
 type FullExitNftTxInfo struct {
-	TxType uint8
-
-	// Get from layer1 events.
-	NftIndex        int64
-	AccountNameHash []byte  =>L1Address
-    AccountIndex    int64   =>add new field
-
-
-// Set by layer2.
-	CreatorAccountIndex    int64
-	CreatorTreasuryRate    int64
-	CreatorAccountNameHash []byte  =>CreatorL1Address
-	NftContentHash         []byte
-	CollectionId           int64
+   TxType uint8
+   
+   // Get from layer1 events.
+   NftIndex     int64
+   L1Address    string
+   AccountIndex int64
+   // Set by layer2.
+   CreatorAccountIndex int64
+   RoyaltyRate         int64
+   CreatorL1Address    string
+   NftContentHash      []byte
+   NftContentType      int64
+   CollectionId        int64
 }
 
 ```
 ```go
-func ConvertTxToFullExitNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
-	if oTx.TxType != commonTx.TxTypeFullExitNft {
-		logx.Errorf("[ConvertTxToFullExitNftPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToFullExitNftPubData] invalid tx type")
-	}
-	// parse tx
-	txInfo, err := commonTx.ParseFullExitNftTxInfo(oTx.TxInfo)
-	if err != nil {
-		logx.Errorf("[ConvertTxToFullExitNftPubData] unable to parse tx info: %s", err.Error())
-		return nil, err
-	}
-	var buf bytes.Buffer
-	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	buf.Write(Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
-	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
-	buf.Write(Uint40ToBytes(txInfo.NftIndex))
-	buf.Write(Uint16ToBytes(uint16(txInfo.CollectionId)))
-	chunk1 := SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	chunk2 := PrefixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk1)
-	buf.Write(chunk2)
-	buf.Write(PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
-	buf.Write(PrefixPaddingBufToChunkSize(txInfo.CreatorAccountNameHash))
-	buf.Write(PrefixPaddingBufToChunkSize(txInfo.NftContentHash))
-	return buf.Bytes(), nil
+func ConvertTxToFullExitNftPubData(tx *tx.Tx) (pubData []byte, err error) {
+   txInfo, err := types.ParseFullExitNftTxInfo(tx.TxInfo)
+   if err != nil {
+   logx.Errorf("parse full exit nft tx failed: %s", err.Error())
+   return nil, types.AppErrInvalidTxInfo
+   }
+   var buf bytes.Buffer
+   buf.WriteByte(uint8(types.TxTypeFullExitNft))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
+   buf.Write(common2.Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.RoyaltyRate)))
+   buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
+   buf.Write(common2.Uint16ToBytes(uint16(txInfo.CollectionId)))
+   buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
+   buf.Write(common2.AddressStrToBytes(txInfo.CreatorL1Address))
+   buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.NftContentHash))
+   buf.WriteByte(uint8(txInfo.NftContentType))
+   return buf.Bytes(), nil
 }
 ```
 
 #### User transaction
 
-| Name            | Size(byte) | Comment           |
-| --------------- | ---------- | ----------------- |
-| AccountNameHash | 32         | account name hash |
-| NftIndex        | 5          | unique nft index  |
+| Name      | Size(byte) | Comment             |
+|-----------|------------|---------------------|
+| L1Address | 20         | account's L1Address |
+| NftIndex  | 5          | unique nft index    |
 
 #### Circuit
 
 ```go
 func VerifyFullExitNftTx(
-	api API, flag Variable,
-	tx FullExitNftTxConstraints,
-	accountsBefore [NbAccountsPerTx]AccountConstraints, nftBefore NftConstraints,
-) (pubData [PubDataSizePerTx]Variable) {
-	pubData = CollectPubDataFromFullExitNft(api, tx)
-	// verify params
-	IsVariableEqual(api, flag, tx.AccountNameHash, accountsBefore[0].AccountNameHash)
-	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.NftIndex, nftBefore.NftIndex)
-	isCheck := api.IsZero(api.IsZero(tx.CreatorAccountNameHash))
-	isCheck = api.And(flag, isCheck)
-	IsVariableEqual(api, isCheck, tx.CreatorAccountIndex, accountsBefore[1].AccountIndex)
-	IsVariableEqual(api, isCheck, tx.CreatorAccountNameHash, accountsBefore[1].AccountNameHash)
-	IsVariableEqual(api, flag, tx.CreatorAccountIndex, nftBefore.CreatorAccountIndex)
-	IsVariableEqual(api, flag, tx.CreatorTreasuryRate, nftBefore.CreatorTreasuryRate)
-	isOwner := api.And(api.IsZero(api.Sub(tx.AccountIndex, nftBefore.OwnerAccountIndex)), flag)
-	IsVariableEqual(api, isOwner, tx.NftContentHash, nftBefore.NftContentHash)
-	tx.NftContentHash = api.Select(isOwner, tx.NftContentHash, 0)
-	return pubData
+   api API, flag Variable,
+   tx FullExitNftTxConstraints,
+   accountsBefore [NbAccountsPerTx]AccountConstraints,
+   nftBefore NftConstraints,
+) (pubData [PubDataBitsSizePerTx]Variable) {
+   fromAccount := 0
+   creatorAccount := 1
+   
+   txInfoL1Address := api.Select(flag, tx.L1Address, ZeroInt)
+   beforeL1Address := api.Select(flag, accountsBefore[fromAccount].L1Address, ZeroInt)
+   isFullExitSuccess := api.IsZero(api.Cmp(txInfoL1Address, beforeL1Address))
+   isOwner := api.And(isFullExitSuccess, api.And(api.IsZero(api.Sub(tx.AccountIndex, nftBefore.OwnerAccountIndex)), flag))
+   
+   tx.CreatorAccountIndex = api.Select(isOwner, tx.CreatorAccountIndex, ZeroInt)
+   tx.NftContentHash[0] = api.Select(isOwner, tx.NftContentHash[0], ZeroInt)
+   tx.NftContentHash[1] = api.Select(isOwner, tx.NftContentHash[1], ZeroInt)
+   tx.RoyaltyRate = api.Select(isOwner, tx.RoyaltyRate, ZeroInt)
+   tx.CollectionId = api.Select(isOwner, tx.CollectionId, ZeroInt)
+   tx.NftContentType = api.Select(isOwner, tx.NftContentType, ZeroInt)
+   
+   pubData = CollectPubDataFromFullExitNft(api, tx)
+   // verify params
+   IsVariableEqual(api, isOwner, tx.L1Address, accountsBefore[fromAccount].L1Address)
+   IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[fromAccount].AccountIndex)
+   IsVariableEqual(api, flag, tx.NftIndex, nftBefore.NftIndex)
+   IsVariableEqual(api, flag, tx.CreatorAccountIndex, accountsBefore[creatorAccount].AccountIndex)
+   IsVariableEqual(api, flag, tx.CreatorL1Address, accountsBefore[creatorAccount].L1Address)
+   IsVariableEqual(api, isOwner, tx.CreatorAccountIndex, nftBefore.CreatorAccountIndex)
+   IsVariableEqual(api, isOwner, tx.RoyaltyRate, nftBefore.RoyaltyRate)
+   IsVariableEqual(api, isOwner, tx.NftContentHash[0], nftBefore.NftContentHash[0])
+   IsVariableEqual(api, isOwner, tx.NftContentHash[1], nftBefore.NftContentHash[1])
+   //NftContentType
+   IsVariableEqual(api, flag, tx.NftContentType, nftBefore.NftContentType)
+   return pubData
 }
 ```
 
