@@ -134,10 +134,6 @@ func (m *DesertExit) MonitorGenericBlocks() (err error) {
 				logx.Errorf("Removed to get vlog,TxHash:%v,Index:%v", l1EventInfo.TxHash, l1EventInfo.Index)
 				continue
 			}
-			logBlock, err := m.cli.GetBlockHeaderByNumber(big.NewInt(int64(vlog.BlockNumber)))
-			if err != nil {
-				return fmt.Errorf("failed to get block header, err: %v", err)
-			}
 
 			switch vlog.Topics[0].Hex() {
 			case monitor2.ZkbnbLogNewPriorityRequestSigHash.Hex():
@@ -161,7 +157,6 @@ func (m *DesertExit) MonitorGenericBlocks() (err error) {
 					relatedBlocks[blockHeight] = &desertexit.DesertExitBlock{}
 				}
 				relatedBlocks[blockHeight].CommittedTxHash = vlog.TxHash.Hex()
-				relatedBlocks[blockHeight].CommittedAt = int64(logBlock.Time)
 				relatedBlocks[blockHeight].L1CommittedHeight = vlog.BlockNumber
 				relatedBlocks[blockHeight].BlockStatus = desertexit.StatusCommitted
 				relatedBlocks[blockHeight].BlockHeight = blockHeight
@@ -178,7 +173,6 @@ func (m *DesertExit) MonitorGenericBlocks() (err error) {
 					relatedBlocks[blockHeight] = &desertexit.DesertExitBlock{}
 				}
 				relatedBlocks[blockHeight].VerifiedTxHash = vlog.TxHash.Hex()
-				relatedBlocks[blockHeight].VerifiedAt = int64(logBlock.Time)
 				relatedBlocks[blockHeight].L1VerifiedHeight = vlog.BlockNumber
 				relatedBlocks[blockHeight].BlockStatus = desertexit.StatusVerified
 				relatedBlocks[blockHeight].BlockHeight = blockHeight
@@ -224,6 +218,9 @@ func (m *DesertExit) MonitorGenericBlocks() (err error) {
 			if pendingUpdateBlock.CommittedTxHash == "" {
 				pendingUpdateBlock.CommittedTxHash = block.CommittedTxHash
 			}
+			if pendingUpdateBlock.L1CommittedHeight == 0 {
+				pendingUpdateBlock.L1CommittedHeight = block.L1CommittedHeight
+			}
 		}
 
 		commitBlockInfoHashMap := make(map[uint32]*ZkBNBCommitBlockInfo, 0)
@@ -242,7 +239,14 @@ func (m *DesertExit) MonitorGenericBlocks() (err error) {
 				return err
 			}
 			for _, blocksData := range commitBlocksCallData.NewBlocksData {
-				commitBlockInfoHashMap[blocksData.BlockNumber] = &blocksData
+				commitBlockInfoHashMap[blocksData.BlockNumber] = &ZkBNBCommitBlockInfo{
+					NewStateRoot:      blocksData.NewStateRoot,
+					PublicData:        blocksData.PublicData,
+					Timestamp:         blocksData.Timestamp,
+					OnchainOperations: blocksData.OnchainOperations,
+					BlockNumber:       blocksData.BlockNumber,
+					BlockSize:         blocksData.BlockSize,
+				}
 			}
 		}
 

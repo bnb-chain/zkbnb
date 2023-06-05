@@ -80,8 +80,8 @@ create index if not exists idx_account_history_l2_block_height
 create index if not exists idx_account_history_l1_address
     on account_history (l1_address);
 
-create index if not exists idx_account_history_account_index
-    on account_history (account_index);
+create index if not exists idx_account_history_account_index_height
+    on account_history (account_index, l2_block_height);
 
 create index if not exists idx_account_history_deleted_at
     on account_history (deleted_at);
@@ -547,6 +547,13 @@ create table if not exists l2_nft_history
 
 create index if not exists idx_l2_nft_history_deleted_at
     on l2_nft_history (deleted_at);
+
+create index if not exists idx_l2_nft_history_height
+    on l2_nft_history (l2_block_height);
+
+create index if not exists idx_l2_nft_history_nft_index_height
+    on l2_nft_history (nft_index,l2_block_height);
+
 
 create table if not exists rollback
 (

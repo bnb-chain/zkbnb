@@ -514,6 +514,7 @@ func (s *StateDB) GetPendingNft(blockHeight int64, stateDataCopy *StateDataCopy)
 	pendingNftHistory := make([]*nft.L2NftHistory, 0)
 
 	for _, newNft := range stateDataCopy.StateCache.PendingNftMap {
+		newNft.L2BlockHeight = blockHeight
 		pendingNft = append(pendingNft, newNft)
 		pendingNftHistory = append(pendingNftHistory, &nft.L2NftHistory{
 			NftIndex:            newNft.NftIndex,

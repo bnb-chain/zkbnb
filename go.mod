@@ -11,7 +11,6 @@ require (
 	github.com/bnb-chain/zkbnb-go-sdk v1.0.7-0.20230522134048-bcfa8070ef7e
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/gin-gonic/gin v1.8.1
-	github.com/goccy/go-json v0.9.11
 	github.com/hashicorp/golang-lru v0.5.5-0.20221011183528-d4900dc688bf
 	github.com/ipfs/go-ipfs-api v0.3.0
 	github.com/ipfs/go-ipfs-files v0.0.9
@@ -81,6 +80,7 @@ require (
 	github.com/go-playground/validator/v10 v10.11.1 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
+	github.com/goccy/go-json v0.9.11 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
@@ -197,8 +197,8 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20230522071809-e4ad33260f18
-	github.com/bnb-chain/zkbnb-eth-rpc v0.0.3-0.20230522124337-4e3b2805b2d9
+	github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20230605064829-ad6dbe39b843
+	github.com/bnb-chain/zkbnb-eth-rpc v0.0.3-0.20230605074525-1c3e46d3b694
 	github.com/bnb-chain/zkbnb-smt v0.0.3-0.20230519064631-0f9993341ee0
 	github.com/consensys/gnark v0.8.0
 	github.com/consensys/gnark-crypto v0.9.1
@@ -217,4 +217,5 @@ require (
 replace (
 	github.com/consensys/gnark => github.com/bnb-chain/gnark v0.7.2-0.20230425010344-8e482963e1ae
 	github.com/consensys/gnark-crypto => github.com/bnb-chain/gnark-crypto v0.8.1-0.20230412133626-30223a679fb7
+
 )

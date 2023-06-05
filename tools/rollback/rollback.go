@@ -7,7 +7,6 @@ import (
 	"github.com/bnb-chain/zkbnb/service/sender/config"
 	"github.com/bnb-chain/zkbnb/tools/revertblock"
 	"github.com/bnb-chain/zkbnb/tools/rollback/internal/svc"
-	"github.com/bnb-chain/zkbnb/tools/rollbackwitnesssmt"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 	"time"
@@ -56,12 +55,6 @@ func RollbackAll(configFile string, height int64) error {
 	err = ctx.ProofModel.DeleteGreaterOrEqualToHeight(height)
 	if err != nil {
 		logx.Severe(err)
-		return err
-	}
-
-	logx.Infof("roll back witness smt tree,start height=%d", height)
-	err = rollbackwitnesssmt.RollbackWitnessSmt(configFile, height)
-	if err != nil {
 		return err
 	}
 

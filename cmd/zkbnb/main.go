@@ -175,7 +175,7 @@ func main() {
 					flags.CommandFlag,
 					flags.ConfigFlag,
 					flags.TokenFlag,
-					flags.NftIndexListFlag,
+					flags.NftIndexFlag,
 					flags.AddressFlag,
 					flags.ProofFolderFlag,
 				},
@@ -193,10 +193,10 @@ func main() {
 						if err != nil {
 							return err
 						}
-						return desertexit.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.TokenFlag.Name), cCtx.String(flags.NftIndexListFlag.Name), cCtx.String(flags.ProofFolderFlag.Name))
+						return desertexit.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.TokenFlag.Name), cCtx.String(flags.NftIndexFlag.Name), cCtx.String(flags.ProofFolderFlag.Name))
 					}
 					if cCtx.String(flags.CommandFlag.Name) == desertexit.CommandContinueGenerateProof {
-						return desertexit.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.TokenFlag.Name), cCtx.String(flags.NftIndexListFlag.Name), cCtx.String(flags.ProofFolderFlag.Name))
+						return desertexit.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.TokenFlag.Name), cCtx.String(flags.NftIndexFlag.Name), cCtx.String(flags.ProofFolderFlag.Name))
 					}
 					return nil
 				},
@@ -208,7 +208,7 @@ func main() {
 					flags.CommandFlag,
 					flags.ConfigFlag,
 					flags.AmountFlag,
-					flags.NftIndexListFlag,
+					flags.NftIndexFlag,
 					flags.AddressFlag,
 					flags.PrivateKeyFlag,
 					flags.ProofFlag,
@@ -222,7 +222,7 @@ func main() {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
 					return desertexit.Perform(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.CommandFlag.Name),
-						cCtx.String(flags.AmountFlag.Name), cCtx.String(flags.NftIndexListFlag.Name),
+						cCtx.String(flags.AmountFlag.Name), cCtx.String(flags.NftIndexFlag.Name),
 						cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.PrivateKeyFlag.Name),
 						cCtx.String(flags.ProofFlag.Name), cCtx.String(flags.TokenFlag.Name))
 				},

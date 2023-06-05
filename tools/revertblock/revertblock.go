@@ -72,6 +72,11 @@ func RevertCommittedBlocks(configFile string, height int64, byBlock bool) (err e
 	}
 	logx.Infof("the last committed height is %d", totalBlocksCommitted)
 
+	if height > totalBlocksCommitted {
+		logx.Infof("No need to rollback committed block")
+		return nil
+	}
+
 	chainId, err := cli.ChainID(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to get chainId, %v", err)

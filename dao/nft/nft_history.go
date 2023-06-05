@@ -49,7 +49,7 @@ type (
 
 	L2NftHistory struct {
 		gorm.Model
-		NftIndex            int64 `gorm:"index:idx_nft_index"`
+		NftIndex            int64 `gorm:"index"`
 		CreatorAccountIndex int64
 		OwnerAccountIndex   int64
 		NftContentHash      string
@@ -57,7 +57,7 @@ type (
 		RoyaltyRate         int64
 		CollectionId        int64
 		Status              int
-		L2BlockHeight       int64 `gorm:"index:idx_nft_index"`
+		L2BlockHeight       int64 `gorm:"index"`
 	}
 )
 

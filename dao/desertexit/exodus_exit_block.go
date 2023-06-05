@@ -61,10 +61,8 @@ type (
 		BlockHeight       int64 `gorm:"uniqueIndex"`
 		PubData           string
 		CommittedTxHash   string
-		CommittedAt       int64
 		L1CommittedHeight uint64 `gorm:"index"`
 		VerifiedTxHash    string
-		VerifiedAt        int64
 		L1VerifiedHeight  uint64 `gorm:"index"`
 		BlockStatus       int64  `gorm:"index"`
 	}
@@ -111,7 +109,7 @@ func (m *defaultBlockModel) GetBlocksByHeights(blockHeights []int64) (blocks []*
 func (m *defaultBlockModel) BatchInsertOrUpdateInTransact(tx *gorm.DB, desertExitBlocks []*DesertExitBlock) (err error) {
 	dbTx := tx.Table(m.table).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"block_size", "block_height", "pub_data", "committed_tx_hash", "committed_at", "verified_tx_hash", "verified_at", "block_status"}),
+		DoUpdates: clause.AssignmentColumns([]string{"block_size", "block_height", "pub_data", "committed_tx_hash", "verified_tx_hash", "block_status", "l1_committed_height", "l1_verified_height"}),
 	}).CreateInBatches(&desertExitBlocks, len(desertExitBlocks))
 	if dbTx.Error != nil {
 		return dbTx.Error
