@@ -1,6 +1,6 @@
 module github.com/bnb-chain/zkbnb
 
-go 1.17
+go 1.20
 
 require (
 	github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d

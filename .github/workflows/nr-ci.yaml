@@ -1,0 +1,18 @@
+name: nr-ci-pr
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+    branches:
+      - master
+      - testnet
+      - develop
+    paths-ignore:
+      - 'docs/**'
+
+jobs:
+  ci:
+    uses: node-real/github-workflows/.github/workflows/ci-pr.yml@v1
+    secrets: inherit
