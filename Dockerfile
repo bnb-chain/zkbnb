@@ -1,22 +1,37 @@
-FROM golang:1.18.10-alpine as builder
+FROM --platform=${BUILDPLATFORM} public.ecr.aws/docker/library/golang:1.20.3-alpine3.17 as builder
+
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+ARG TARGETARCH
+ARG GIT_TOKEN
+
 
 RUN apk add --no-cache make git bash
 
-ADD . /zkbnb
+WORKDIR /zkbnb
+ADD . .
 
 ENV CGO_ENABLED=0
 ENV GO111MODULE=on
 
-RUN cd /zkbnb && make build-only
+RUN go install github.com/zeromicro/go-zero/tools/goctl@latest && make api-server
+
+RUN if [[ "$TARGETARCH" == "arm64" ]] ; then \
+    wget -P ~ https://musl.cc/aarch64-linux-musl-cross.tgz && \
+    tar -xvf ~/aarch64-linux-musl-cross.tgz -C ~ && \
+    GOOS=linux GOARCH=${TARGETARCH} CGO_ENABLED=1 CC=~/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc go build -o build/bin/zkbnb -ldflags="-X main.version=${VERSION} -X main.gitCommit=${GIT_COMMIT} -X main.gitDate=${GIT_COMMIT_DATE}" ./cmd/zkbnb ; \
+  else \
+    GOOS=linux GOARCH=${TARGETARCH} go build -o build/bin/zkbnb -ldflags="-X main.version=${VERSION} -X main.gitCommit=${GIT_COMMIT} -X main.gitDate=${GIT_COMMIT_DATE}" ./cmd/zkbnb ; \
+  fi
 
 # Pull ZkBNB into a second stage deploy alpine container
-FROM alpine:3.17
+FROM --platform=${TARGETPLATFORM} public.ecr.aws/docker/library/alpine:3.17.3
 
 ARG USER=bsc
 ARG USER_UID=1000
 ARG USER_GID=1000
 
-ENV PACKAGES ca-certificates~=20220614-r4 bash~=5.2.15-r0 curl
+ENV PACKAGES ca-certificates bash
 ENV WORKDIR=/server
 
 RUN apk add --no-cache $PACKAGES \

@@ -1,6 +1,6 @@
 module github.com/bnb-chain/zkbnb
 
-go 1.18
+go 1.20
 
 require (
 	github.com/apolloconfig/agollo/v4 v4.2.1
