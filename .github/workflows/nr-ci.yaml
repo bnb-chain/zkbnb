@@ -30,7 +30,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push op-node image
+      - name: Build and push zkbnb image
         uses: docker/build-push-action@v4
         with:
           context: .
