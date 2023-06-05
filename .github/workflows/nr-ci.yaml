@@ -1,4 +1,4 @@
-name: nr-ci-pr
+name: Build and Push Images
 
 on:
   pull_request:
@@ -13,6 +13,27 @@ on:
       - 'docs/**'
 
 jobs:
-  ci:
-    uses: node-real/github-workflows/.github/workflows/ci-pr.yml@v1
-    secrets: inherit
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push op-node image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ghcr.io/node-real/zkbnb:${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
