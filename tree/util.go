@@ -284,6 +284,7 @@ func ComputeNftAssetLeafHash(
 		e3, err = txtypes.FromBytesToFr(contentHash[types.NftContentHashBytesSize:])
 	} else {
 		e2, err = txtypes.FromBytesToFr(contentHash[:])
+		e3 = &fr.Element{0, 0, 0, 0}
 	}
 	if err != nil {
 		return nil, err
@@ -292,13 +293,9 @@ func ComputeNftAssetLeafHash(
 	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(royaltyRate))
 	e5 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionId))
 	var hash [32]byte
-	if e3 != nil {
-		ele := GMimcElements([]*fr.Element{e0, e1, e2, e3, e4, e5})
-		hash = ele.Bytes()
-	} else {
-		ele := GMimcElements([]*fr.Element{e0, e1, e2, e4, e5})
-		hash = ele.Bytes()
-	}
+	ele := GMimcElements([]*fr.Element{e0, e1, e2, e3, e4, e5})
+	hash = ele.Bytes()
+	
 	logx.WithContext(ctx).Debugf("compute nft asset leaf hash,creatorAccountIndex=%d,ownerAccountIndex=%d,nftContentHash=%s,royaltyRate=%d,collectionId=%d,hash=%s",
 		creatorAccountIndex, ownerAccountIndex, nftContentHash, royaltyRate, collectionId, common.Bytes2Hex(hash[:]))
 
