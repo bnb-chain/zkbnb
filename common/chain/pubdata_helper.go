@@ -312,12 +312,15 @@ func ParseAtomicMatchPubDataForDesert(pubData []byte) (txInfo txtypes.TxInfo, er
 			AssetAmount:         buyOfferAssetAmount,
 			ChannelAccountIndex: int64(buyChanelAccountIndex),
 			ProtocolAmount:      buyProtocolAmount,
+			AssetId:             int64(sellOfferAssetId),
 		},
 		SellOffer: &txtypes.OfferTxInfo{
 			AccountIndex:        int64(sellOfferAccountIndex),
 			OfferId:             int64(sellOfferOfferId),
 			AssetId:             int64(sellOfferAssetId),
 			ChannelAccountIndex: int64(sellChannelAccountIndex),
+			NftIndex:            buyOfferNftIndex,
+			AssetAmount:         buyOfferAssetAmount,
 		},
 		SellChannelAmount: sellChanelAmount,
 		BuyChannelAmount:  buyChanelAmount,
@@ -391,7 +394,7 @@ func ParseDepositNftPubDataForDesert(pubData []byte) (txInfo txtypes.TxInfo, err
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, collectionId := common2.ReadUint16(pubData, offset)
 	offset, l1Address := common2.ReadAddress(pubData, offset)
-	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, nftContentHash := common2.ReadBytes32(pubData, offset)
 	offset, nftContentType := common2.ReadUint8(pubData, offset)
 
 	txInfo = &txtypes.DepositNftTxInfo{
@@ -434,7 +437,7 @@ func ParseFullExitNftPubDataForDesert(pubData []byte) (txInfo txtypes.TxInfo, er
 	offset, collectionId := common2.ReadUint16(pubData, offset)
 	offset, l1Address := common2.ReadAddress(pubData, offset)
 	offset, creatorL1Address := common2.ReadAddress(pubData, offset)
-	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, nftContentHash := common2.ReadBytes32(pubData, offset)
 	offset, nftContentType := common2.ReadUint8(pubData, offset)
 
 	txInfo = &txtypes.FullExitNftTxInfo{
@@ -467,7 +470,7 @@ func ParseMintNftPubDataForDesert(pubData []byte) (txInfo txtypes.TxInfo, err er
 	}
 	offset, royaltyRate := common2.ReadUint16(pubData, offset)
 	offset, collectionId := common2.ReadUint16(pubData, offset)
-	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, nftContentHash := common2.ReadBytes32(pubData, offset)
 
 	txInfo = &txtypes.MintNftTxInfo{
 		CreatorAccountIndex: int64(creatorAccountIndex),
@@ -557,7 +560,7 @@ func ParseTransferNftPubDataForDesert(pubData []byte) (txInfo txtypes.TxInfo, er
 	if err != nil {
 		return nil, err
 	}
-	offset, callDataHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, callDataHash := common2.ReadBytes32(pubData, offset)
 	txInfo = &txtypes.TransferNftTxInfo{
 		FromAccountIndex:  int64(fromAccountIndex),
 		ToAccountIndex:    int64(toAccountIndex),
@@ -612,7 +615,7 @@ func ParseWithdrawNftPubDataForDesert(pubData []byte) (txInfo txtypes.TxInfo, er
 	}
 	offset, toAddress := common2.ReadAddress(pubData, offset)
 	offset, creatorL1Address := common2.ReadAddress(pubData, offset)
-	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, nftContentHash := common2.ReadBytes32(pubData, offset)
 	offset, nftContentType := common2.ReadUint8(pubData, offset)
 	txInfo = &txtypes.WithdrawNftTxInfo{
 		AccountIndex:        int64(fromAccountIndex),

@@ -170,6 +170,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 func sendToIpfs(txInfo *txtypes.MintNftTxInfo, txHash string) (string, error) {
 	ipnsId, err := common2.Ipfs.GenerateIPNS(txHash)
 	if err != nil {
+		logx.Severef("ipfs server is error,fail to generate ipns id: %s", err.Error())
 		return "", err
 	}
 	cid, err := uploadIpfs(txInfo.MetaData, fmt.Sprintf("%s%s", "ipns://", ipnsId.Id))

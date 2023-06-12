@@ -105,9 +105,9 @@ var (
 		Usage: "proof",
 		Value: "",
 	}
-	NftIndexListFlag = &cli.StringFlag{
-		Name:  "nftIndexList",
-		Usage: "nftIndexList",
+	NftIndexFlag = &cli.StringFlag{
+		Name:  "nftIndex",
+		Usage: "nftIndex",
 		Value: "",
 	}
 	AccountIndexListFlag = &cli.StringFlag{

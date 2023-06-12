@@ -75,12 +75,14 @@ func (e *AtomicMatchExecutor) Prepare() error {
 		return err
 	}
 
-	// Set the right creator treasury amount.
-	txInfo.RoyaltyAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(matchNft.RoyaltyRate)), big.NewInt(TenThousand))
+	if !e.isDesertExit {
+		// Set the right creator treasury amount.
+		txInfo.RoyaltyAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(matchNft.RoyaltyRate)), big.NewInt(TenThousand))
 
-	// Set the right BuyChanel and SellChanel amount.
-	txInfo.BuyChannelAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.BuyOffer.ChannelRate)), big.NewInt(TenThousand))
-	txInfo.SellChannelAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.SellOffer.ChannelRate)), big.NewInt(TenThousand))
+		// Set the right BuyChanel and SellChanel amount.
+		txInfo.BuyChannelAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.BuyOffer.ChannelRate)), big.NewInt(TenThousand))
+		txInfo.SellChannelAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.SellOffer.ChannelRate)), big.NewInt(TenThousand))
+	}
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkNftDirty(txInfo.SellOffer.NftIndex)

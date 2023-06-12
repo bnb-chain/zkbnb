@@ -32,6 +32,7 @@ func (l *GetNftByNftIndexLogic) GetNftByNftIndex(req *types.ReqGetNft) (resp *ty
 		if err != types2.DbErrNotFound {
 			return nil, types2.AppErrInternal
 		}
+		return nil, types2.AppErrNftNotFound
 	}
 	creatorL1Address, _ := l.svcCtx.MemCache.GetL1AddressByIndex(nft.CreatorAccountIndex)
 	ownerL1Address, _ := l.svcCtx.MemCache.GetL1AddressByIndex(nft.OwnerAccountIndex)

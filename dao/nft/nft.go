@@ -47,6 +47,7 @@ type (
 		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
 		GetMaxNftIndex() (nftIndex int64, err error)
 		GetByNftIndexRange(fromNftIndex int64, toNftIndex int64) (nfts []*L2Nft, err error)
+		GetAllNftByAccountIndex(accountIndex int64) (nftList []*L2Nft, err error)
 	}
 	defaultL2NftModel struct {
 		table string
@@ -119,6 +120,16 @@ func (m *defaultL2NftModel) GetLatestNftIndex() (nftIndex int64, err error) {
 func (m *defaultL2NftModel) GetNftsByAccountIndex(accountIndex, limit, offset int64) (nftList []*L2Nft, err error) {
 	dbTx := m.DB.Table(m.table).Where("owner_account_index = ? and nft_content_hash != ?", accountIndex, "0").
 		Limit(int(limit)).Offset(int(offset)).Order("nft_index desc").Find(&nftList)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return nftList, nil
+}
+
+func (m *defaultL2NftModel) GetAllNftByAccountIndex(accountIndex int64) (nftList []*L2Nft, err error) {
+	dbTx := m.DB.Table(m.table).Where("owner_account_index = ? and nft_content_hash != ?", accountIndex, "0").Order("nft_index desc").Find(&nftList)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
