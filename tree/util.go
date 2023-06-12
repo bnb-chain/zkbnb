@@ -70,7 +70,7 @@ func EmptyNftNodeHash() []byte {
 		collectionId
 	*/
 	zero := &fr.Element{0, 0, 0, 0}
-	ele := GMimcElements([]*fr.Element{zero, zero, zero, zero, zero})
+	ele := GMimcElements([]*fr.Element{zero, zero, zero, zero, zero, zero})
 	hash := ele.Bytes()
 	return hash[:]
 }
