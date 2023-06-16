@@ -1467,13 +1467,13 @@ func (s *Sender) getZkBnbClient(cli *rpc.ProviderClient) *zkbnb.ZkBNBClient {
 		logx.Severef("fatal error, GenerateConstructorForCommit raises error:%v", err)
 		panic("fatal error, GenerateConstructorForCommit raises error:" + err.Error())
 	}
-	logx.Info("commit address from CommitKeyId,value is :%s", commitConstructor.GetL1Address().Hex())
+	logx.Infof("commit address from CommitKeyId,value is :%s", commitConstructor.GetL1Address().Hex())
 	verifyConstructor, err := s.GenerateConstructorForVerifyAndExecute()
 	if err != nil {
 		logx.Severef("fatal error, GenerateConstructorForVerifyAndExecute raises error:%v", err)
 		panic("fatal error, GenerateConstructorForVerifyAndExecute raises error:" + err.Error())
 	}
-	logx.Info("verify address from VerifyKeyId,value is :%s", verifyConstructor.GetL1Address().Hex())
+	logx.Infof("verify address from VerifyKeyId,value is :%s", verifyConstructor.GetL1Address().Hex())
 
 	zkBnbClient, err := zkbnb.NewZkBNBClient(cli, s.ZkBNBContractAddress)
 	if err != nil {

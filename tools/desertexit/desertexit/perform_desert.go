@@ -170,14 +170,14 @@ func (m *PerformDesert) WithdrawPendingBalance(owner common.Address, token commo
 		logx.Errorf("failed to get pending balance: %v", err)
 		return err
 	}
-	logx.Infof("get pending balance,pendingBalanceBefore=%d", pendingBalanceBefore.Int64())
+	logx.Infof("get pending balance,pendingBalanceBefore=%s", pendingBalanceBefore.String())
 
 	balanceBefore, err := m.GetBalance(owner, token)
 	if err != nil {
 		logx.Errorf("failed to get balance: %v", err)
 		return err
 	}
-	logx.Infof("get balance,balanceBefore=%d", balanceBefore.Int64())
+	logx.Infof("get balance,balanceBefore=%s", balanceBefore.String())
 
 	gasPrice, err := m.cli.SuggestGasPrice(context.Background())
 	if err != nil {
@@ -202,7 +202,7 @@ func (m *PerformDesert) WithdrawPendingBalance(owner common.Address, token commo
 		logx.Errorf("failed to get pending balance: %v", err)
 		return err
 	}
-	logx.Infof("get pending balance,pendingBalanceAfter=%d", pendingBalanceAfter.Int64())
+	logx.Infof("get pending balance,pendingBalanceAfter=%s", pendingBalanceAfter.String())
 
 	//time.Sleep(30 * time.Second)
 	balanceAfter, err := m.GetBalance(owner, token)
@@ -210,7 +210,7 @@ func (m *PerformDesert) WithdrawPendingBalance(owner common.Address, token commo
 		logx.Errorf("failed to get balance: %v", err)
 		return err
 	}
-	logx.Infof("get balance,balanceAfter=%d", balanceAfter.Int64())
+	logx.Infof("get balance,balanceAfter=%s", balanceAfter.String())
 	return nil
 }
 
@@ -356,7 +356,7 @@ func (m *PerformDesert) GetBalance(address common.Address, assetAddr common.Addr
 		if err != nil {
 			return nil, err
 		}
-		logx.Infof("get balance,balance=%d", amount.Int64())
+		logx.Infof("get balance,balance=%s", amount.String())
 		return amount, nil
 	}
 
@@ -370,7 +370,7 @@ func (m *PerformDesert) GetBalance(address common.Address, assetAddr common.Addr
 	if err != nil {
 		return nil, err
 	}
-	logx.Infof("get balance,balance=%d", amount.Int64())
+	logx.Infof("get balance,balance=%s", amount.String())
 	return amount, nil
 }
 
@@ -380,7 +380,7 @@ func (m *PerformDesert) GetPendingBalance(address common.Address, token common.A
 		logx.Errorf("failed to get pending balance: %v", err)
 		return nil, err
 	}
-	logx.Infof("get pending balance,pendingBalance=%d", amount.Int64())
+	logx.Infof("get pending balance,pendingBalance=%s", amount.String())
 	return amount, nil
 }
 
@@ -414,6 +414,7 @@ func (m *PerformDesert) checkTxSuccess(txHash string) error {
 			if time.Now().After(startDate.Add(time.Duration(m.Config.ChainConfig.MaxWaitingTime) * time.Second)) {
 				return fmt.Errorf("failed to sent tx, tx_hash=%s,error=%s", txHash, err)
 			}
+			time.Sleep(3*time.Second)
 			continue
 		}
 
