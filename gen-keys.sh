@@ -24,7 +24,7 @@ mkdir -p $KEY_PATH
 cp -r ./zkbnb-crypto/circuit/solidity/* ${KEY_PATH}
 rm ${KEY_PATH}/*.go
 
-cp -r ${KEY_PATH}/*.sol > ${SOL_PATH}
+cp -r ${KEY_PATH}/*.sol ${SOL_PATH}
 
 cd ${DEPLOY_PATH}/zkbnb/service/prover
 
