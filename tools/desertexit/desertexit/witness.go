@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+
 	"github.com/bnb-chain/zkbnb-crypto/circuit"
 	"github.com/bnb-chain/zkbnb-crypto/circuit/desert"
 	desertTypes "github.com/bnb-chain/zkbnb-crypto/circuit/desert/types"
@@ -161,6 +163,10 @@ func (c *GenerateProof) generateWitness(blockHeight int64, accountIndex int64, n
 		pubData = GenerateExitPubData(exitTxInfo)
 	} else {
 		nftInfo, err := c.bc.DB().L2NftModel.GetNft(nftIndex)
+		if err != nil {
+			logx.Errorf("get nft failed: %s", err)
+			return desertInfo, pubData, err
+		}
 		nft = &cryptoTypes.Nft{
 			NftIndex:            nftInfo.NftIndex,
 			NftContentHash:      common.FromHex(nftInfo.NftContentHash),
@@ -170,9 +176,9 @@ func (c *GenerateProof) generateWitness(blockHeight int64, accountIndex int64, n
 			CollectionId:        nftInfo.CollectionId,
 			NftContentType:      nftInfo.NftContentType,
 		}
-		if err != nil {
-			logx.Errorf("get nft failed: %s", err)
-			return desertInfo, pubData, err
+		if nftInfo.NftContentHash == "0" {
+			logx.Errorf("nft %d is already withdrawed to L1", nft.NftIndex)
+			return desertInfo, pubData, errors.New(fmt.Sprintf("Nft %d Already withdrawed to L1", nft.NftIndex))
 		}
 		nftMerkleProofs, err := nftTree.GetProof(uint64(nftIndex))
 		if err != nil {
