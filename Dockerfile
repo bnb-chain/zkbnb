@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} public.ecr.aws/docker/library/golang:1.20.3-alpine3.17 as builder
+FROM --platform=${BUILDPLATFORM} public.ecr.aws/docker/library/golang:1.19.10-alpine3.17 as builder
 
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM

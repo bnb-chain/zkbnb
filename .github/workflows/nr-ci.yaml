@@ -1,4 +1,4 @@
-name: Build and Push Images
+name: nr-ci-ghcr
 
 on:
   pull_request:
@@ -9,6 +9,7 @@ on:
       - master
       - testnet
       - develop
+      - hotfix*
     paths-ignore:
       - 'docs/**'
 
