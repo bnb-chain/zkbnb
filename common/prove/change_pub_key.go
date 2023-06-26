@@ -59,7 +59,6 @@ func toCryptoChangePubKeyTx(txInfo *txtypes.ChangePubKeyInfo) (info *cryptoTypes
 		AccountIndex:      txInfo.AccountIndex,
 		L1Address:         common.AddressStrToBytes(txInfo.L1Address),
 		PubKey:            pk,
-		Nonce:             txInfo.Nonce,
 		GasFeeAssetId:     txInfo.GasFeeAssetId,
 		GasFeeAssetAmount: packedFee,
 	}

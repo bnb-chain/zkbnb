@@ -57,8 +57,6 @@ func toCryptoCreateCollectionTx(txInfo *txtypes.CreateCollectionTxInfo) (info *c
 		GasAccountIndex:   txInfo.GasAccountIndex,
 		GasFeeAssetId:     txInfo.GasFeeAssetId,
 		GasFeeAssetAmount: packedFee,
-		ExpiredAt:         txInfo.ExpiredAt,
-		Nonce:             txInfo.Nonce,
 	}
 	return info, nil
 }

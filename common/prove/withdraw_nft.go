@@ -58,7 +58,7 @@ func toCryptoWithdrawNftTx(txInfo *txtypes.WithdrawNftTxInfo) (info *cryptoTypes
 		RoyaltyRate:         txInfo.RoyaltyRate,
 		NftIndex:            txInfo.NftIndex,
 		NftContentHash:      txInfo.NftContentHash,
-		ToAddress:           txInfo.ToAddress,
+		ToAddress:           common.AddressStrToBytes(txInfo.ToAddress),
 		GasAccountIndex:     txInfo.GasAccountIndex,
 		GasFeeAssetId:       txInfo.GasFeeAssetId,
 		GasFeeAssetAmount:   packedFee,
