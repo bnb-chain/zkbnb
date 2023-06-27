@@ -18,8 +18,6 @@
 package prove
 
 import (
-	"math/big"
-
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 
 	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
@@ -53,7 +51,6 @@ func toCryptoWithdrawTx(txInfo *txtypes.WithdrawTxInfo) (info *cryptoTypes.Withd
 	if err != nil {
 		return nil, err
 	}
-	addrBytes := txtypes.PaddingAddressToBytes32(txInfo.ToAddress)
 	info = &cryptoTypes.WithdrawTx{
 		FromAccountIndex:  txInfo.FromAccountIndex,
 		AssetId:           txInfo.AssetId,
@@ -61,7 +58,7 @@ func toCryptoWithdrawTx(txInfo *txtypes.WithdrawTxInfo) (info *cryptoTypes.Withd
 		GasAccountIndex:   txInfo.GasAccountIndex,
 		GasFeeAssetId:     txInfo.GasFeeAssetId,
 		GasFeeAssetAmount: packedFee,
-		ToAddress:         new(big.Int).SetBytes(addrBytes),
+		ToAddress:         common.AddressStrToBytes(txInfo.ToAddress),
 	}
 	return info, nil
 }
