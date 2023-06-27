@@ -334,6 +334,7 @@ func (w *WitnessHelper) constructAccountWitness(
 			w.gasAccountInfo.Nonce = nonce
 			w.gasAccountInfo.CollectionNonce = collectionNonce
 			w.gasAccountInfo.AssetRoot = common.Bytes2Hex(w.assetTrees.Get(accountKey).Root())
+			w.gasAccountInfo.PublicKey = nPubKey
 		}
 
 		// set account info before
@@ -841,6 +842,7 @@ func (w *WitnessHelper) ResetCache(height int64) error {
 		gasAccount.CollectionNonce = history.CollectionNonce
 		gasAccount.AssetInfo = history.AssetInfo
 		gasAccount.AssetRoot = history.AssetRoot
+		gasAccount.PublicKey = history.PublicKey
 		formatGasAccount, err := chain.ToFormatAccountInfo(gasAccount)
 		if err != nil {
 			return err
