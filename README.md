@@ -12,11 +12,11 @@ can prove the validity of every single transaction in the Rollup Block. It means
 while computation and storage are performed on BAS with less cost and fast speed.
 
 ZkBNB achieves the following goals:
-- **L1 security**. The ZkBNB share the same security as BSC does. Thanks to zkSNARK proofs, the security is guaranteed by
+- **L1 security**. The ZkBNB shares the same security as BSC does. Thanks to zkSNARK proofs, the security is guaranteed by
   cryptographic. Users do not have to trust any third parties or keep monitoring the Rollup blocks in order to 
   prevent fraud.
 - **L1<>L2 Communication**. BNB, and BEP20/BEP721/BEP1155 created on BSC or ZkBNB can flow freely between BSC and ZkBNB.
-- **Built-in NFT marketplace**. Developer can build marketplace for crypto collectibles and non-fungible tokens (NFTs) 
+- **Built-in NFT marketplace**. Developers can build a marketplace for crypto collectibles and non-fungible tokens (NFTs) 
   out of box on ZkBNB.
 - **Fast transaction speed and faster finality**.
 - **Low gas fee**. The gas token on the ZkBNB can be either BEP20 or BNB.
