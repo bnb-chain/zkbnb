@@ -1,6 +1,9 @@
-# BNB ZkRollup
+# BNB ZkRollup (Archived)
+
+> ⚠️ **Archival Notice**: This repository is no longer actively maintained and has been archived. The code and documentation are provided as-is, without any warranty or support. For current BNB Chain development resources, please visit [BNB Chain's official documentation](https://docs.bnbchain.org/).
 
 ![banner](./docs/assets/banner.png)
+
 
 
 The BNB ZkRollup(ZkBNB) is an infrastructure for developers that helps them to build large scale
